@@ -435,110 +435,99 @@ export async function sendGiftSequenceEmail3(to: { name: string; email: string }
 }
 
 export async function sendGiftSequenceEmail4(to: { name: string; email: string }) {
+  const communityLink = process.env.COMMUNITY_GROUP_LINK || 'https://www.facebook.com/groups/nauancungcoha'
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: [to.email],
-    subject: 'Có 149+ người đã làm được, tại sao bạn chưa? 🤔',
+    subject: 'Bí quyết giữ dưa ngon 30 ngày – không cần tủ lạnh 🥒',
     html: `
 <!DOCTYPE html>
 <html lang="vi">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f0fff0;font-family:'Segoe UI',Arial,sans-serif;">
   <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-    <div style="background:linear-gradient(135deg,#0369a1,#075985);padding:36px 32px;text-align:center;">
-      <p style="font-size:40px;margin:0 0 8px;">👥</p>
-      <h1 style="color:#fff;margin:0;font-size:26px;font-weight:800;">149+ Thành Viên Đã Thành Công</h1>
-      <p style="margin:8px 0 0;font-size:14px;color:#bae6fd;">Bạn sẽ là người tiếp theo?</p>
+
+    <div style="background:linear-gradient(135deg,#003200,#006400);padding:36px 32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">🥒</p>
+      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">Giữ Dưa Ngon 30 Ngày</h1>
+      <p style="margin:8px 0 0;font-size:14px;color:#dcfce7;">Không cần tủ lạnh – Bí quyết lên men đúng cách từ Cô Hạ</p>
     </div>
+
     <div style="padding:36px 32px;">
-      <h2 style="color:#0369a1;font-size:22px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Chúng tôi vừa kiểm tra số liệu: <strong>90% học viên tuần đầu đã áp dụng thành công</strong> và thấy kết quả rõ rệt!
+        Hôm nay Cô Hạ muốn chia sẻ với bạn một bí quyết mà nhiều người làm dưa lâu năm vẫn chưa biết:
+      </p>
+      <p style="color:#006400;font-weight:700;font-size:16px;line-height:1.8;">
+        👉 Dưa cà muối bảo quản được 30 ngày ở nhiệt độ phòng mà vẫn giòn ngon – hoàn toàn không cần tủ lạnh!
+      </p>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Bí quyết nằm ở kỹ thuật lên men đúng cách. Cô sẽ chia sẻ <strong>4 nguyên tắc vàng</strong> dưới đây:
       </p>
 
-      <div style="background:#eff6ff;border:2px solid #0369a1;border-radius:10px;padding:24px;margin:24px 0;">
-        <h3 style="color:#0369a1;margin-top:0;font-size:16px;">📊 Số liệu từ học viên</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0;">
-          <div style="background:#fff;border-radius:8px;padding:12px;text-align:center;border-left:3px solid #0ea5e9;">
-            <p style="margin:0;font-size:24px;color:#0369a1;font-weight:800;">149+</p>
-            <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Học viên tham gia</p>
-          </div>
-          <div style="background:#fff;border-radius:8px;padding:12px;text-align:center;border-left:3px solid #16a34a;">
-            <p style="margin:0;font-size:24px;color:#16a34a;font-weight:800;">90%</p>
-            <p style="margin:4px 0 0;font-size:12px;color:#6b7280;">Thành công tuần 1</p>
-          </div>
-        </div>
-      </div>
-
-      <div style="background:#fff8f0;border-radius:10px;padding:0;margin:24px 0;overflow:hidden;">
-        <h3 style="color:#dc2626;margin:0;padding:16px 24px;background:#fff3e0;font-size:16px;">✨ 3 Câu Chuyện Thành Công</h3>
-
-        <div style="padding:20px 24px;border-bottom:1px solid #e5e7eb;">
-          <div style="display:flex;gap:12px;">
-            <div style="flex-shrink:0;width:40px;height:40px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;">A</div>
-            <div style="flex:1;">
-              <p style="margin:0 0 4px;font-weight:700;color:#1f2937;">Chị A – Bình Dương</p>
-              <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">
-                Dưa bán chạy hơn 40%, thu nhập tăng 3 triệu/tháng. "Cô Hạ thật tuyệt vời!"
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div style="padding:20px 24px;border-bottom:1px solid #e5e7eb;">
-          <div style="display:flex;gap:12px;">
-            <div style="flex-shrink:0;width:40px;height:40px;background:#0ea5e9;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;">B</div>
-            <div style="flex:1;">
-              <p style="margin:0 0 4px;font-weight:700;color:#1f2937;">Chị B – Hà Nội</p>
-              <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">
-                Từ làm dưa lẻ, nay đã có khách đặt hàng định kỳ. Lợi nhuận tăng 5x.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div style="padding:20px 24px;">
-          <div style="display:flex;gap:12px;">
-            <div style="flex-shrink:0;width:40px;height:40px;background:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;">C</div>
-            <div style="flex:1;">
-              <p style="margin:0 0 4px;font-weight:700;color:#1f2937;">Chị C – TP.HCM</p>
-              <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.5;">
-                Dưa không còn bị hỏng, gia đình cực vui. "Đó chính là điều tôi cần!"
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style="background:#fef08a;border:2px solid #eab308;border-radius:10px;padding:20px 24px;margin:24px 0;text-align:center;">
-        <p style="color:#854d0e;margin:0 0 8px;font-size:13px;font-weight:700;">⏰ CẢNH BÁO: GIÁ SẮP TĂNG</p>
-        <p style="color:#854d0e;margin:0;font-size:14px;">
-          Giá hiện tại: <strong>299.000đ</strong><br>
-          Giá từ ngày mai: <strong>399.000đ</strong>
+      <!-- NGUYÊN TẮC 1 -->
+      <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:18px 20px;margin:16px 0;">
+        <p style="margin:0 0 6px;color:#006400;font-weight:800;font-size:15px;">① Tỉ lệ muối là tất cả</p>
+        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
+          Dùng <strong>3–4% muối so với trọng lượng rau củ</strong>. Ít hơn → dưa chua nhanh, dễ hỏng. Nhiều hơn → ức chế vi khuẩn có lợi, dưa không lên men được.
+          <br><span style="color:#6b7280;font-size:13px;">Ví dụ: 1kg dưa cần 30–40g muối hạt (không phải muối iốt).</span>
         </p>
       </div>
 
-      <div style="background:#f0fdf4;border-left:4px solid #006400;border-radius:8px;padding:20px 24px;margin:24px 0;">
-        <h3 style="color:#006400;margin-top:0;font-size:16px;">🎁 Bonus: Checklist 12 Dấu Hiệu Dưa Sắp Hỏng</h3>
-        <p style="color:#374151;margin:0 0 12px;font-size:14px;">
-          Tặng kèm cho bạn – giúp bạn phát hiện & xử lý sớm trước khi dưa bị hỏng!
+      <!-- NGUYÊN TẮC 2 -->
+      <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:18px 20px;margin:16px 0;">
+        <p style="margin:0 0 6px;color:#006400;font-weight:800;font-size:15px;">② Ngăn không khí tiếp xúc với dưa</p>
+        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
+          Vi khuẩn có hại cần oxy để sống. Muốn dưa lâu ngày, phải <strong>dìm dưa chìm hoàn toàn dưới nước muối</strong> – không để phần nào nổi lên. Dùng đá hoặc túi nước đặt lên trên để ép xuống.
         </p>
       </div>
+
+      <!-- NGUYÊN TẮC 3 -->
+      <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:18px 20px;margin:16px 0;">
+        <p style="margin:0 0 6px;color:#006400;font-weight:800;font-size:15px;">③ Nhiệt độ lên men lý tưởng: 18–22°C</p>
+        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
+          Quá nóng (>30°C) → vi khuẩn có hại thắng thế → dưa hỏng nhanh.<br>
+          Quá lạnh (<15°C) → lên men chậm, dưa nhạt vị.<br>
+          <strong>Để nơi thoáng mát, tránh ánh nắng trực tiếp</strong> là đủ trong điều kiện Việt Nam.
+        </p>
+      </div>
+
+      <!-- NGUYÊN TẮC 4 -->
+      <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:18px 20px;margin:16px 0;">
+        <p style="margin:0 0 6px;color:#006400;font-weight:800;font-size:15px;">④ Hũ thủy tinh sạch – không dùng kim loại</p>
+        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
+          Acid lactic sinh ra trong quá trình lên men sẽ phản ứng với kim loại → dưa bị đổi màu, mùi lạ. Dùng <strong>hũ thủy tinh hoặc sành sứ</strong>, rửa sạch bằng nước sôi trước khi dùng.
+        </p>
+      </div>
+
+      <!-- BONUS TIP -->
+      <div style="background:#fff8f0;border:2px solid #f59e0b;border-radius:10px;padding:20px 24px;margin:24px 0;">
+        <h3 style="color:#d97706;margin-top:0;font-size:15px;">💡 Mẹo nhỏ từ Cô Hạ</h3>
+        <p style="color:#374151;font-size:14px;line-height:1.7;margin:0;">
+          Sau khi dưa đã chua đúng vị (khoảng 2–3 ngày ở nhiệt độ phòng), <strong>đậy kín và chuyển vào chỗ mát hơn</strong> hoặc tủ lạnh để giữ nguyên vị. Lúc này dưa có thể để được thêm 3–4 tuần mà không lo bị chua thêm hay hỏng.
+        </p>
+      </div>
+
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Bạn thử áp dụng xem sao nhé! Có kết quả gì – dù thành công hay còn thắc mắc – cứ vào nhóm chia sẻ với Cô Hạ nhé! 💚
+      </p>
 
       <div style="text-align:center;margin:24px 0;">
-        <a href="https://khoaduacamuoi.hacofood.vn#khoa-hoc" style="display:inline-block;background:#16a34a;color:#fff;padding:16px 40px;border-radius:8px;text-decoration:none;font-weight:800;font-size:16px;margin-bottom:12px;">
-          🚀 Đăng ký khóa học ngay
+        <a href="${communityLink}" style="display:inline-block;background:#006400;color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
+          💬 Chia sẻ kết quả lên nhóm
         </a>
-        <p style="color:#6b7280;font-size:12px;margin:12px 0 0;">Còn 299.000đ hôm nay – Giá tăng từ ngày mai</p>
       </div>
 
       <p style="color:#6b7280;font-size:13px;line-height:1.7;margin-top:20px;">
-        Đừng để tiếc nuối – Hãy tham gia cùng 149+ thành viên hôm nay! 🌸
+        Cô Hạ còn nhiều bí quyết hay hơn nữa – hẹn bạn ở email tiếp theo! 🌸
       </p>
     </div>
+
     <div style="background:#f9fafb;padding:18px 32px;text-align:center;border-top:1px solid #e5e7eb;">
       <p style="color:#9ca3af;font-size:12px;margin:0;">
-        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp; <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a>
+        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp;
+        <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a><br>
+        Bạn nhận email này vì đã đăng ký nhận quà tại website của chúng tôi.
       </p>
     </div>
   </div>
