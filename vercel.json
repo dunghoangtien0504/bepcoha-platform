@@ -2,10 +2,7 @@
   "crons": [
     {
       "path": "/api/email-sequences/send",
-      "schedule": "0 * * * *",
-      "headers": {
-        "x-api-key": "REPLACE_WITH_YOUR_SECRET_KEY"
-      }
+      "schedule": "0 8 * * *"
     }
   ]
 }
