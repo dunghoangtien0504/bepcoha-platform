@@ -31,17 +31,19 @@ export async function notifyCourseLead(data: {
   status: 'pending' | 'paid'
   amount?: number
 }) {
-  const icon = data.status === 'paid' ? '✅' : '⏳'
-  const statusText = data.status === 'paid' ? 'ĐÃ THANH TOÁN' : 'CHỜ THANH TOÁN'
+  // Telegram không hỗ trợ chữ màu → dùng ô vuông màu để nổi bật: 🟢 xanh (đã TT), 🔴 đỏ (chờ TT)
+  const isPaid = data.status === 'paid'
+  const square = isPaid ? '🟢' : '🔴'
+  const statusText = isPaid ? 'ĐÃ THANH TOÁN' : 'CHỜ THANH TOÁN'
   const amountText = (data.amount ?? 299000).toLocaleString('vi-VN') + 'đ'
 
-  const msg = `${icon} <b>KHÓA DƯA CÀ MUỐI – ${statusText}</b>
+  const msg = `${square} <b>KHÓA DƯA CÀ MUỐI – ${statusText}</b> ${square}
 
 👤 Tên: <b>${data.name}</b>
 📧 Email: ${data.email}
 📞 SĐT: ${data.phone}
 🔑 Mã giao dịch: <code>${data.paymentRef}</code>
-💰 Số tiền: ${amountText}
+💰 Số tiền: <b>${amountText}</b>
 ⏰ Thời gian: ${new Date().toLocaleString('vi-VN')}`
 
   await sendMessage(COURSE_GROUP_ID, msg)
@@ -54,7 +56,7 @@ export async function notifyPaymentMismatch(data: {
   expected: number
   content: string
 }) {
-  const msg = `⚠️ <b>CHUYỂN KHOẢN KHÔNG KHỚP – CẦN KIỂM TRA</b>
+  const msg = `🔴 <b>CHUYỂN KHOẢN KHÔNG KHỚP – CẦN KIỂM TRA</b> 🔴
 
 🔑 Mã đơn: <code>${data.paymentRef}</code>
 💸 Nhận được: <b>${data.received.toLocaleString('vi-VN')}đ</b>
@@ -62,7 +64,7 @@ export async function notifyPaymentMismatch(data: {
 📝 Nội dung CK: ${data.content}
 ⏰ ${new Date().toLocaleString('vi-VN')}
 
-❗ Đơn CHƯA được kích hoạt. Vui lòng kiểm tra & xử lý thủ công.`
+❗️ <b>Đơn CHƯA được kích hoạt.</b> Vui lòng kiểm tra & xử lý thủ công.`
 
   await sendMessage(COURSE_GROUP_ID, msg)
 }
