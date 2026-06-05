@@ -33,6 +33,11 @@ export async function initDb() {
       last_email_sent_at TIMESTAMPTZ
     )
   `
+  // Migration: thêm cột email sequence nếu bảng cũ chưa có
+  await sql`ALTER TABLE gift_leads ADD COLUMN IF NOT EXISTS email_sequence_status TEXT DEFAULT 'pending_email1'`
+  await sql`ALTER TABLE gift_leads ADD COLUMN IF NOT EXISTS next_email_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '1 day')`
+  await sql`ALTER TABLE gift_leads ADD COLUMN IF NOT EXISTS email_sequence_paused BOOLEAN DEFAULT FALSE`
+  await sql`ALTER TABLE gift_leads ADD COLUMN IF NOT EXISTS last_email_sent_at TIMESTAMPTZ`
   await sql`
     CREATE TABLE IF NOT EXISTS course_leads (
       id SERIAL PRIMARY KEY,
