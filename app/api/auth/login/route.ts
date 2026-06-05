@@ -14,35 +14,29 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Special case: Admin login từ ADMIN_PASSWORD (.env)
-    if (email === 'admin@hacofood.vn') {
-      const adminPassword = process.env.ADMIN_PASSWORD || 'hacofood2024'
-      if (password === adminPassword) {
-        const token = await createToken({
-          id: 0, // Admin không cần staff.id
-          email: 'admin@hacofood.vn',
+    // Special case: Admin login bằng ADMIN_PASSWORD (.env)
+    // Cho phép bất kỳ email nào dùng ADMIN_PASSWORD để vào với quyền admin
+    const adminPassword = process.env.ADMIN_PASSWORD
+    if (adminPassword && password === adminPassword) {
+      const token = await createToken({
+        id: 0,
+        email: email.toLowerCase().trim(),
+        role: 'admin',
+      })
+      return NextResponse.json({
+        token,
+        user: {
+          id: 0,
+          email: email.toLowerCase().trim(),
+          name: 'Admin',
           role: 'admin',
-        })
-        return NextResponse.json({
-          token,
-          user: {
-            id: 0,
-            email: 'admin@hacofood.vn',
-            name: 'Admin',
-            role: 'admin',
-          },
-        })
-      } else {
-        return NextResponse.json(
-          { error: `Sai mật khẩu. Env="${adminPassword}" (${adminPassword.length} ký tự), Nhập="${password}" (${password.length} ký tự)` },
-          { status: 401 }
-        )
-      }
+        },
+      })
     }
 
-    // Nhân viên khác: kiểm tra staff table
+    // Nhân viên: kiểm tra staff table
     await initDb()
-    const staff = await getStaffByEmail(email)
+    const staff = await getStaffByEmail(email.toLowerCase().trim())
     if (!staff) {
       return NextResponse.json(
         { error: 'Email hoặc mật khẩu không chính xác' },
