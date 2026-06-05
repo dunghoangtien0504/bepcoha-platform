@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
     // Special case: Admin login từ ADMIN_PASSWORD (.env)
     if (email === 'admin@hacofood.vn') {
       const adminPassword = process.env.ADMIN_PASSWORD || 'hacofood2024'
+      console.log('DEBUG: adminPassword từ env:', adminPassword)
+      console.log('DEBUG: password nhập vào:', password)
+      console.log('DEBUG: so sánh:', password === adminPassword)
       if (password === adminPassword) {
         const token = await createToken({
           id: 0, // Admin không cần staff.id
