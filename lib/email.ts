@@ -117,7 +117,15 @@ export async function sendGiftEmail(to: { name: string; email: string }) {
 
 export async function sendCourseConfirmEmail(to: { name: string; email: string; amount?: number }) {
   const courseGroupLink = process.env.COURSE_GROUP_LINK || '#'
-  const amountText = (to.amount ?? 299000).toLocaleString('vi-VN') + 'đ'
+  const amount = to.amount ?? 299000
+  const amountText = amount.toLocaleString('vi-VN') + 'đ'
+  // Ghi chú riêng cho khách nhận ưu đãi đặc biệt (giá dưới 299k, vd promo 199k từ Email cuối)
+  const promoNote = amount < 299000 ? `
+      <div style="background:#fef2f2;border:2px solid #dc2626;border-radius:10px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0;color:#991b1b;font-size:14px;line-height:1.7;">
+          🎉 <strong>Chúc mừng ${to.name}!</strong> Bạn đã nhận được <strong>ƯU ĐÃI ĐẶC BIỆT cuối cùng</strong> từ Cô Hạ với mức giá <strong>${amountText}</strong> (thay vì 299.000đ). Đây là phần thưởng cho những học viên đồng hành cùng Cô đến phút chót. Cảm ơn bạn đã tin tưởng! 💚
+        </p>
+      </div>` : ''
 
   return getResend().emails.send({
     from: FROM_EMAIL,
@@ -139,6 +147,7 @@ export async function sendCourseConfirmEmail(to: { name: string; email: string; 
       <p style="color:#4b5563;line-height:1.8;font-size:16px;">
         Cô Hạ rất vui khi bạn đã tham gia khóa học! Dưới đây là thông tin bước tiếp theo:
       </p>
+${promoNote}
 
       <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:24px;margin:24px 0;">
         <h3 style="color:#166534;margin-top:0;font-size:18px;">📚 Bước tiếp theo của bạn</h3>
