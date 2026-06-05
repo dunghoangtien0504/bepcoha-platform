@@ -72,7 +72,12 @@ function LeadForm({ ctaText, ctaColor, onSuccess }: {
     if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) { setError('Vui lòng điền đầy đủ 3 thông tin'); return }
     setStep('loading')
     try {
-      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      // Lấy mã khuyến mãi từ URL (?promo=199) khi đăng ký khóa học
+      const promo = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('promo')
+        : null
+      const payload = ctaColor === 'red' && promo ? { ...form, promo } : form
+      const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Lỗi')
       setStep('success'); onSuccess({ ...form, ...data })

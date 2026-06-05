@@ -29,9 +29,11 @@ export async function notifyCourseLead(data: {
   phone: string
   paymentRef: string
   status: 'pending' | 'paid'
+  amount?: number
 }) {
   const icon = data.status === 'paid' ? '✅' : '⏳'
   const statusText = data.status === 'paid' ? 'ĐÃ THANH TOÁN' : 'CHỜ THANH TOÁN'
+  const amountText = (data.amount ?? 299000).toLocaleString('vi-VN') + 'đ'
 
   const msg = `${icon} <b>KHÓA DƯA CÀ MUỐI – ${statusText}</b>
 
@@ -39,8 +41,28 @@ export async function notifyCourseLead(data: {
 📧 Email: ${data.email}
 📞 SĐT: ${data.phone}
 🔑 Mã giao dịch: <code>${data.paymentRef}</code>
-💰 Số tiền: 299.000đ
+💰 Số tiền: ${amountText}
 ⏰ Thời gian: ${new Date().toLocaleString('vi-VN')}`
+
+  await sendMessage(COURSE_GROUP_ID, msg)
+}
+
+// Cảnh báo khi khách chuyển KHÔNG ĐỦ tiền (vd test 10k) – gửi để admin xử lý tay
+export async function notifyPaymentMismatch(data: {
+  paymentRef: string
+  received: number
+  expected: number
+  content: string
+}) {
+  const msg = `⚠️ <b>CHUYỂN KHOẢN KHÔNG KHỚP – CẦN KIỂM TRA</b>
+
+🔑 Mã đơn: <code>${data.paymentRef}</code>
+💸 Nhận được: <b>${data.received.toLocaleString('vi-VN')}đ</b>
+🎯 Cần đủ: <b>${data.expected.toLocaleString('vi-VN')}đ</b>
+📝 Nội dung CK: ${data.content}
+⏰ ${new Date().toLocaleString('vi-VN')}
+
+❗ Đơn CHƯA được kích hoạt. Vui lòng kiểm tra & xử lý thủ công.`
 
   await sendMessage(COURSE_GROUP_ID, msg)
 }

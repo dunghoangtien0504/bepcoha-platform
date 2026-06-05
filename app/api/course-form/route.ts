@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     await initDb()
     const body = await req.json()
-    const { name, email, phone, giftLeadId } = body
+    const { name, email, phone, giftLeadId, promo } = body
 
     if (!name?.trim() || !email?.trim() || !phone?.trim()) {
       return NextResponse.json({ error: 'Vui lòng điền đầy đủ thông tin' }, { status: 400 })
@@ -17,13 +17,14 @@ export async function POST(req: NextRequest) {
     }
 
     const paymentRef = generatePaymentRef(phone.trim())
-    const amount = 299000
+    // Giá khuyến mãi 199k khi đến từ link ?promo=199 (Email 5), mặc định 299k
+    const amount = String(promo) === '199' ? 199000 : 299000
 
     await insertCourseLead({ name: name.trim(), email: email.trim(), phone: phone.trim(), paymentRef, amount })
 
     const qr = buildQRPayload(paymentRef, amount)
 
-    notifyCourseLead({ name: name.trim(), email: email.trim(), phone: phone.trim(), paymentRef, status: 'pending' })
+    notifyCourseLead({ name: name.trim(), email: email.trim(), phone: phone.trim(), paymentRef, status: 'pending', amount })
       .catch(console.error)
 
     // If this came from a gift lead, pause their email sequence

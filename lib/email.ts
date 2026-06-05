@@ -115,8 +115,9 @@ export async function sendGiftEmail(to: { name: string; email: string }) {
   })
 }
 
-export async function sendCourseConfirmEmail(to: { name: string; email: string }) {
+export async function sendCourseConfirmEmail(to: { name: string; email: string; amount?: number }) {
   const courseGroupLink = process.env.COURSE_GROUP_LINK || '#'
+  const amountText = (to.amount ?? 299000).toLocaleString('vi-VN') + 'đ'
 
   return getResend().emails.send({
     from: FROM_EMAIL,
@@ -164,7 +165,7 @@ export async function sendCourseConfirmEmail(to: { name: string; email: string }
           </tr>
           <tr>
             <td style="color:#6b7280;padding:6px 0;">Giá trị:</td>
-            <td style="color:#dc2626;font-weight:800;text-align:right;font-size:18px;">299.000đ</td>
+            <td style="color:#dc2626;font-weight:800;text-align:right;font-size:18px;">${amountText}</td>
           </tr>
         </table>
       </div>
@@ -859,7 +860,7 @@ export async function sendGiftSequenceEmail5(to: { name: string; email: string }
         <p style="margin:0 0 6px;color:#6b7280;font-size:13px;">Giá ưu đãi cuối – chỉ hôm nay</p>
         <p style="margin:0 0 4px;font-size:14px;color:#9ca3af;text-decoration:line-through;">299.000đ</p>
         <p style="margin:0 0 16px;font-size:34px;font-weight:900;color:#dc2626;">199.000đ</p>
-        <a href="https://khoaduacamuoi.hacofood.vn#khoa-hoc"
+        <a href="https://khoaduacamuoi.hacofood.vn/?promo=199#khoa-hoc"
            style="display:block;background:#dc2626;color:#fff;padding:16px 32px;border-radius:10px;text-decoration:none;font-weight:900;font-size:17px;box-shadow:0 4px 12px rgba(220,38,38,0.25);">
           🎓 Tôi muốn tham gia – 199.000đ
         </a>
