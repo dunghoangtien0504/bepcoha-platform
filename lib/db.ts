@@ -26,7 +26,11 @@ export async function initDb() {
       email TEXT NOT NULL,
       phone TEXT NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW(),
-      email_sent BOOLEAN DEFAULT FALSE
+      email_sent BOOLEAN DEFAULT FALSE,
+      email_sequence_status TEXT DEFAULT 'pending_email1',
+      next_email_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '1 day'),
+      email_sequence_paused BOOLEAN DEFAULT FALSE,
+      last_email_sent_at TIMESTAMPTZ
     )
   `
   await sql`
@@ -109,6 +113,51 @@ export async function getAllGiftLeads() {
   const sql = getDb()
   const rows = await sql`SELECT * FROM gift_leads ORDER BY created_at DESC`
   return rows as unknown as GiftLead[]
+}
+
+export async function getGiftLeadsPendingEmails() {
+  const sql = getDb()
+  const rows = await sql`
+    SELECT * FROM gift_leads
+    WHERE next_email_at <= NOW()
+      AND email_sequence_paused = FALSE
+      AND email_sequence_status NOT IN ('completed', 'converted')
+    ORDER BY next_email_at ASC
+  `
+  return rows as unknown as GiftLead[]
+}
+
+export async function updateGiftLeadSequence(
+  id: number,
+  status: string,
+  nextEmailAt?: Date
+) {
+  const sql = getDb()
+  if (nextEmailAt) {
+    await sql`
+      UPDATE gift_leads
+      SET email_sequence_status = ${status},
+          next_email_at = ${nextEmailAt},
+          last_email_sent_at = NOW()
+      WHERE id = ${id}
+    `
+  } else {
+    await sql`
+      UPDATE gift_leads
+      SET email_sequence_status = ${status},
+          last_email_sent_at = NOW()
+      WHERE id = ${id}
+    `
+  }
+}
+
+export async function pauseEmailSequence(id: number) {
+  const sql = getDb()
+  await sql`
+    UPDATE gift_leads
+    SET email_sequence_paused = TRUE, email_sequence_status = 'converted'
+    WHERE id = ${id}
+  `
 }
 
 // ── Course leads ─────────────────────────────────────────────────────────────
@@ -358,6 +407,8 @@ export async function updateCourseSettings(
 export interface GiftLead {
   id: number; name: string; email: string; phone: string
   created_at: string; email_sent: boolean
+  email_sequence_status: string; next_email_at: string; email_sequence_paused: boolean
+  last_email_sent_at: string | null
 }
 export interface CourseLead {
   id: number; name: string; email: string; phone: string

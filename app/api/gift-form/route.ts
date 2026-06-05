@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initDb, insertGiftLead, markEmailSent } from '@/lib/db'
+import { initDb, insertGiftLead, markEmailSent, updateGiftLeadSequence } from '@/lib/db'
 import { sendGiftEmail } from '@/lib/email'
 import { notifyGiftLead } from '@/lib/telegram'
 
@@ -30,7 +30,12 @@ export async function POST(req: NextRequest) {
         .catch(err => console.error('[gift-form] Telegram notify error:', err)),
     ])
 
-    return NextResponse.json({ success: true })
+    // Initialize email sequence status for nurture sequence
+    // Email 1 is already sent, so set status to pending_email2
+    const nextEmail2At = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) // +2 days
+    await updateGiftLeadSequence(id, 'pending_email2', nextEmail2At)
+
+    return NextResponse.json({ success: true, giftLeadId: id })
   } catch (err) {
     console.error('[gift-form]', err)
     return NextResponse.json({ error: 'Có lỗi xảy ra, vui lòng thử lại' }, { status: 500 })
