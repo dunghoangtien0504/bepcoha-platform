@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const payload: SepayWebhookPayload = await req.json()
 
     const content = payload.content || ''
-    const match = content.match(/HACO[A-Z0-9]+/i)
+    const match = content.match(/DUACA[A-Z0-9]+/i)
     if (!match) {
       return NextResponse.json({ success: true, message: 'Not our transaction' })
     }
