@@ -257,90 +257,163 @@ export async function sendGiftSequenceEmail1(to: { name: string; email: string }
 }
 
 export async function sendGiftSequenceEmail2(to: { name: string; email: string }) {
+  const communityLink = process.env.COMMUNITY_GROUP_LINK || 'https://www.facebook.com/groups/nauancungcoha'
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: [to.email],
-    subject: '5 sai lầm khiến dưa bị hỏng – Chỉ 1% người biết #3 👀',
+    subject: '5 sai lầm khiến dưa bị hỏng – và cách sửa ngay hôm nay 🔧',
     html: `
 <!DOCTYPE html>
 <html lang="vi">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f0fff0;font-family:'Segoe UI',Arial,sans-serif;">
   <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-    <div style="background:linear-gradient(135deg,#dc2626,#991b1b);padding:36px 32px;text-align:center;">
+
+    <div style="background:linear-gradient(135deg,#991b1b,#dc2626);padding:36px 32px;text-align:center;">
       <p style="font-size:40px;margin:0 0 8px;">⚠️</p>
-      <h1 style="color:#fff;margin:0;font-size:26px;font-weight:800;">5 Sai Lầm Khiến Dưa Bị Hỏng</h1>
-      <p style="margin:8px 0 0;font-size:14px;color:#fecaca;">Giải pháp đơn giản từ Cô Hạ</p>
+      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">5 Sai Lầm Khiến Dưa Bị Hỏng</h1>
+      <p style="margin:8px 0 0;font-size:14px;color:#fecaca;">Mỗi sai lầm có cách sửa cụ thể – đọc hết để không bao giờ mắc lại!</p>
     </div>
+
     <div style="padding:36px 32px;">
-      <h2 style="color:#dc2626;font-size:22px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#dc2626;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Hôm qua Cô Hạ nhận được tin nhắn từ chị T: <em>"Dưa của mình lúc nào cũng bị nhệu, mặn lợm, không biết sai chỗ nào!"</em>
+        Hôm qua Cô Hạ nhận tin nhắn từ chị T ở TP.HCM:
       </p>
-      <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Chị T đã mắc phải những sai lầm mà 95% người làm dưa cũng mắc. Hôm nay, Cô Hạ sẽ chia sẻ <strong>5 sai lầm</strong> này với bạn – để bạn KHÔNG bao giờ phải trải qua cảm giác vỡ mộng đó! 😅
-      </p>
-
-      <div style="background:#fff8f0;border-radius:10px;padding:24px;margin:24px 0;">
-        <h3 style="color:#dc2626;margin-top:0;font-size:16px;margin-bottom:16px;">❌ 5 SAI LẦM DƯỚI ĐÂY</h3>
-
-        <div style="background:#fff;border-left:4px solid #dc2626;padding:16px;margin-bottom:12px;border-radius:4px;">
-          <p style="margin:0;color:#1f2937;font-weight:700;color:#dc2626;">Sai lầm #1: Không chuẩn bị hóa chất đúng</p>
-          <p style="margin:8px 0 0;color:#4b5563;font-size:13px;">Dùng muối sai loại hoặc tỉ lệ sai = dưa mặn lợm</p>
-        </div>
-
-        <div style="background:#fff;border-left:4px solid #dc2626;padding:16px;margin-bottom:12px;border-radius:4px;">
-          <p style="margin:0;color:#1f2937;font-weight:700;color:#dc2626;">Sai lầm #2: Không rửa sạch dưa trước khi ngâm</p>
-          <p style="margin:8px 0 0;color:#4b5563;font-size:13px;">Bụi bẩn + vi khuẩn = dưa nhanh bị hỏng</p>
-        </div>
-
-        <div style="background:#fef2f2;border-left:4px solid #991b1b;padding:16px;margin-bottom:12px;border-radius:4px;position:relative;">
-          <span style="position:absolute;top:8px;right:12px;background:#dc2626;color:#fff;font-size:11px;font-weight:700;padding:4px 8px;border-radius:4px;">🔥 CHÌA KHÓA</span>
-          <p style="margin:0;color:#1f2937;font-weight:700;color:#dc2626;">Sai lầm #3: Để dưa ở nơi quá ẩm/quá nóng</p>
-          <p style="margin:8px 0 0;color:#4b5563;font-size:13px;">Chỉ một độ ẩm/nhiệt sai = dưa nhanh bị mốc, thối</p>
-        </div>
-
-        <div style="background:#fff;border-left:4px solid #dc2626;padding:16px;margin-bottom:12px;border-radius:4px;">
-          <p style="margin:0;color:#1f2937;font-weight:700;color:#dc2626;">Sai lầm #4: Không có lịch kiểm tra & lật dưa</p>
-          <p style="margin:8px 0 0;color:#4b5563;font-size:13px;">Ngâm xong quên kiểm tra = một phần bị hỏng, phần kia ngon</p>
-        </div>
-
-        <div style="background:#fff;border-left:4px solid #dc2626;padding:16px;margin-bottom:12px;border-radius:4px;">
-          <p style="margin:0;color:#1f2937;font-weight:700;color:#dc2626;">Sai lầm #5: Dùng bình, hũ không sạch 100%</p>
-          <p style="margin:8px 0 0;color:#4b5563;font-size:13px;">Bình bẩn = vi khuẩn xâm nhập ngay trong 24 giờ</p>
-        </div>
-      </div>
-
-      <div style="background:#f0fdf4;border:2px solid #006400;border-radius:10px;padding:20px 24px;margin:24px 0;">
-        <h3 style="color:#006400;margin-top:0;font-size:16px;">✨ Chị T SAU KHI SỬA</h3>
-        <div style="display:flex;gap:16px;margin:12px 0;">
-          <div style="flex:1;text-align:center;">
-            <p style="color:#6b7280;font-size:12px;margin:0;">TRƯỚC</p>
-            <p style="font-size:28px;color:#dc2626;margin:4px 0 0;">❌</p>
-          </div>
-          <div style="flex:1;text-align:center;">
-            <p style="color:#6b7280;font-size:12px;margin:0;">SAU</p>
-            <p style="font-size:28px;color:#16a34a;margin:4px 0 0;">✅</p>
-          </div>
-        </div>
-        <p style="color:#374151;line-height:1.6;margin:12px 0 0;font-size:14px;font-style:italic;">
-          "Dưa của tôi bây giờ luôn giòn rích, ngon cơm. Cô Hạ đã cứu mệnh tôi!" – Chị T, TPHCM
+      <div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:6px;padding:14px 18px;margin:16px 0;">
+        <p style="margin:0;color:#374151;font-size:14px;font-style:italic;line-height:1.7;">
+          "Cô ơi, dưa của con làm mấy lần rồi mà lần nào cũng bị nhệu, mặn lợm, chỉ để được 2–3 ngày là hỏng. Con không biết sai chỗ nào nữa!"
         </p>
       </div>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Sau khi Cô hỏi kỹ lại từng bước chị T làm, Cô tìm ra <strong>5 sai lầm</strong> mà hầu hết mọi người đều mắc phải. Hôm nay Cô chia sẻ hết với bạn – kèm cách sửa cụ thể luôn nhé!
+      </p>
+
+      <!-- SAI LẦM 1 -->
+      <div style="border:2px solid #dc2626;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#dc2626;padding:12px 20px;display:flex;align-items:center;gap:10px;">
+          <span style="color:#fff;font-size:18px;font-weight:900;">❌ #1</span>
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">Dùng muối iốt để làm dưa</p>
+        </div>
+        <div style="padding:16px 20px;">
+          <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.7;">
+            <strong>Tại sao hỏng?</strong> Muối iốt chứa chất kháng khuẩn – nó không chỉ diệt vi khuẩn có hại mà còn diệt luôn vi khuẩn lactic có lợi cần thiết để lên men. Kết quả: dưa không chua đúng cách, nhanh bị nhớt và thối.
+          </p>
+          <div style="background:#f0fdf4;border-radius:8px;padding:12px 16px;border-left:3px solid #16a34a;">
+            <p style="margin:0;color:#166534;font-size:14px;font-weight:700;">✅ Cách sửa:</p>
+            <p style="margin:6px 0 0;color:#374151;font-size:13px;line-height:1.7;">
+              Chỉ dùng <strong>muối hạt trắng thô thông thường</strong> (muối biển, muối hầm). Nhìn nhãn bao bì – nếu thấy chữ "iốt" thì không dùng. Mua muối hạt ở chợ hoặc siêu thị, giá rất rẻ.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAI LẦM 2 -->
+      <div style="border:2px solid #dc2626;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#dc2626;padding:12px 20px;display:flex;align-items:center;gap:10px;">
+          <span style="color:#fff;font-size:18px;font-weight:900;">❌ #2</span>
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">Không để ráo nước sau khi rửa rau</p>
+        </div>
+        <div style="padding:16px 20px;">
+          <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.7;">
+            <strong>Tại sao hỏng?</strong> Nước còn đọng trên rau làm loãng nước muối đã pha đúng tỉ lệ. Nồng độ muối giảm → vi khuẩn có hại sinh sôi nhanh hơn → dưa hỏng trong 1–2 ngày.
+          </p>
+          <div style="background:#f0fdf4;border-radius:8px;padding:12px 16px;border-left:3px solid #16a34a;">
+            <p style="margin:0;color:#166534;font-size:14px;font-weight:700;">✅ Cách sửa:</p>
+            <p style="margin:6px 0 0;color:#374151;font-size:13px;line-height:1.7;">
+              Sau khi rửa rau, <strong>để trên rổ thưa ít nhất 30 phút</strong> cho ráo hoàn toàn. Hoặc dùng khăn sạch thấm khô từng miếng rau trước khi cho vào hũ. Không vội vàng bước này!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAI LẦM 3 -->
+      <div style="border:2px solid #991b1b;border-radius:12px;overflow:hidden;margin:20px 0;position:relative;">
+        <div style="position:absolute;top:12px;right:12px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:4px 10px;border-radius:20px;z-index:1;">🔥 HAY MẮC NHẤT</div>
+        <div style="background:#991b1b;padding:12px 20px;display:flex;align-items:center;gap:10px;">
+          <span style="color:#fff;font-size:18px;font-weight:900;">❌ #3</span>
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">Để hũ dưa ở chỗ nóng hoặc có ánh nắng</p>
+        </div>
+        <div style="padding:16px 20px;">
+          <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.7;">
+            <strong>Tại sao hỏng?</strong> Nhiệt độ trên 30°C khiến vi khuẩn có hại nhân lên rất nhanh, đồng thời làm hỏng cấu trúc rau củ khiến dưa bị nhệu, mềm. Nhiều người hay để hũ dưa trên mặt bếp hoặc cạnh cửa sổ – đây là lỗi phổ biến nhất!
+          </p>
+          <div style="background:#f0fdf4;border-radius:8px;padding:12px 16px;border-left:3px solid #16a34a;">
+            <p style="margin:0;color:#166534;font-size:14px;font-weight:700;">✅ Cách sửa:</p>
+            <p style="margin:6px 0 0;color:#374151;font-size:13px;line-height:1.7;">
+              Để hũ dưa ở <strong>góc tối trong nhà, tránh xa bếp và cửa sổ</strong>. Lý tưởng nhất là ngăn dưới tủ bếp hoặc gầm cầu thang – nơi mát, tối và ít gió lùa. Nhiệt độ lý tưởng: 18–25°C.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAI LẦM 4 -->
+      <div style="border:2px solid #dc2626;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#dc2626;padding:12px 20px;display:flex;align-items:center;gap:10px;">
+          <span style="color:#fff;font-size:18px;font-weight:900;">❌ #4</span>
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">Để dưa nổi lên trên mặt nước muối</p>
+        </div>
+        <div style="padding:16px 20px;">
+          <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.7;">
+            <strong>Tại sao hỏng?</strong> Phần dưa nổi lên tiếp xúc với không khí sẽ bị mốc trắng sau 1–2 ngày. Nhiều người tưởng mốc là bình thường – nhưng không phải! Mốc trắng lan xuống làm hỏng cả hũ dưa.
+          </p>
+          <div style="background:#f0fdf4;border-radius:8px;padding:12px 16px;border-left:3px solid #16a34a;">
+            <p style="margin:0;color:#166534;font-size:14px;font-weight:700;">✅ Cách sửa:</p>
+            <p style="margin:6px 0 0;color:#374151;font-size:13px;line-height:1.7;">
+              Dùng <strong>túi zip nhỏ đổ đầy nước, buộc kín</strong> rồi nhét vào miệng hũ để ép dưa xuống chìm hoàn toàn. Hoặc dùng một miếng nhựa thực phẩm phủ kín mặt dưa. Kiểm tra mỗi ngày – nếu thấy dưa nổi lên thì ép xuống lại ngay.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAI LẦM 5 -->
+      <div style="border:2px solid #dc2626;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#dc2626;padding:12px 20px;display:flex;align-items:center;gap:10px;">
+          <span style="color:#fff;font-size:18px;font-weight:900;">❌ #5</span>
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">Đậy nắp quá kín trong khi dưa đang lên men</p>
+        </div>
+        <div style="padding:16px 20px;">
+          <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.7;">
+            <strong>Tại sao hỏng?</strong> Trong 3–5 ngày đầu lên men, vi khuẩn lactic tạo ra khí CO₂. Nếu đậy nắp quá kín, khí không thoát được → áp suất trong hũ tăng → nước muối trào ra ngoài, vi khuẩn có hại xâm nhập → dưa hỏng và hũ có thể nứt vỡ.
+          </p>
+          <div style="background:#f0fdf4;border-radius:8px;padding:12px 16px;border-left:3px solid #16a34a;">
+            <p style="margin:0;color:#166534;font-size:14px;font-weight:700;">✅ Cách sửa:</p>
+            <p style="margin:6px 0 0;color:#374151;font-size:13px;line-height:1.7;">
+              Trong <strong>3–5 ngày đầu lên men</strong>: đậy nắp nhẹ tay, không vặn chặt – để khí CO₂ thoát ra tự nhiên. Sau khi dưa đã chua đúng vị (ngày 4–5) mới đậy kín hoàn toàn để bảo quản lâu dài.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KẾT QUẢ CHỊ T -->
+      <div style="background:#f0fdf4;border:2px solid #16a34a;border-radius:10px;padding:20px 24px;margin:24px 0;">
+        <h3 style="color:#166534;margin-top:0;font-size:15px;">✨ Chị T sau khi sửa 5 sai lầm trên:</h3>
+        <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 12px;font-style:italic;">
+          "Cô ơi, con làm lại từ đầu theo đúng chỉ dẫn. Lần này dưa giòn rích, chua vừa, để được 2 tuần rồi mà vẫn ngon. Cảm ơn Cô Hạ nhiều lắm!" 🥰
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:12px;">— Chị T, TP.HCM</p>
+      </div>
+
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Bạn đang mắc sai lầm nào trong 5 cái trên không? Thử đối chiếu lại xem nhé! Có thắc mắc gì cứ vào nhóm hỏi Cô Hạ – Cô trả lời tất cả! 💚
+      </p>
 
       <div style="text-align:center;margin:24px 0;">
-        <a href="https://khoaduacamuoi.hacofood.vn/gift-email2" style="display:inline-block;background:#006400;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;margin-bottom:12px;">
-          📖 Xem hướng dẫn chi tiết
+        <a href="${communityLink}" style="display:inline-block;background:#006400;color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
+          💬 Hỏi Cô Hạ trong nhóm
         </a>
       </div>
 
-      <p style="color:#6b7280;font-size:13px;line-height:1.7;margin-top:20px;">
-        Câu hỏi? Hãy nhắn vào group – Cô Hạ sẵn sàng giải đáp! 🌸
+      <p style="color:#6b7280;font-size:13px;line-height:1.7;">
+        Cô Hạ còn có thêm điều hay muốn chia sẻ – hẹn gặp lại ở email tiếp theo! 🌸
       </p>
     </div>
+
     <div style="background:#f9fafb;padding:18px 32px;text-align:center;border-top:1px solid #e5e7eb;">
       <p style="color:#9ca3af;font-size:12px;margin:0;">
-        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp; <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a>
+        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp;
+        <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a><br>
+        Bạn nhận email này vì đã đăng ký nhận quà tại website của chúng tôi.
       </p>
     </div>
   </div>
@@ -354,77 +427,125 @@ export async function sendGiftSequenceEmail3(to: { name: string; email: string }
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: [to.email],
-    subject: 'Khóa học Dưa Cà Muối Chuyên Sâu – Chỉ 299.000đ (hôm nay!) 🎓',
+    subject: `${to.name} ơi – Cô Hạ muốn mời bạn vào một điều đặc biệt 🎓`,
     html: `
 <!DOCTYPE html>
 <html lang="vi">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#f0fff0;font-family:'Segoe UI',Arial,sans-serif;">
   <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-    <div style="background:linear-gradient(135deg,#16a34a,#166534);padding:36px 32px;text-align:center;">
+
+    <div style="background:linear-gradient(135deg,#166534,#16a34a);padding:36px 32px;text-align:center;">
       <p style="font-size:40px;margin:0 0 8px;">🎓</p>
-      <h1 style="color:#fff;margin:0;font-size:26px;font-weight:800;">Từ 5 Sai Lầm → 5 Bí Quyết Hoàn Hảo</h1>
-      <p style="margin:8px 0 0;font-size:14px;color:#dcfce7;">Khóa học Dưa Cà Muối Chuyên Sâu</p>
+      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">Khóa Học Dưa Cà Muối Chuyên Sâu</h1>
+      <p style="margin:8px 0 0;font-size:14px;color:#dcfce7;">Học một lần – Dùng cả đời</p>
     </div>
+
     <div style="padding:36px 32px;">
-      <h2 style="color:#006400;font-size:22px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Bạn đã xem 2 email từ Cô Hạ. Bây giờ, hãy cùng bước sang chương tiếp theo – <strong>học chuyên sâu và thành thạo kỹ thuật</strong> làm dưa hoàn hảo!
+        Mấy ngày qua Cô Hạ đã chia sẻ với bạn về những sai lầm khi làm dưa và cách bảo quản đúng. Cô hi vọng bạn đã thử và thấy có ích!
+      </p>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Hôm nay Cô muốn kể bạn nghe câu chuyện của <strong>chị Lan ở Bình Dương</strong>:
       </p>
 
-      <div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;padding:24px;margin:24px 0;text-align:center;">
-        <p style="color:#92400e;margin:0 0 8px;font-size:14px;">💰 GIÁ KHÓA HỌC</p>
-        <table style="width:100%;margin:12px 0;border-collapse:collapse;">
-          <tr>
-            <td style="color:#6b7280;text-align:center;padding:8px;font-size:13px;">
-              Giá gốc<br><del style="font-size:18px;color:#9ca3af;">1.095.000đ</del>
-            </td>
-            <td style="color:#dc2626;text-align:center;padding:8px;font-size:13px;">
-              Giá khóa<br><strong style="font-size:28px;">299.000đ</strong>
-            </td>
-            <td style="color:#16a34a;text-align:center;padding:8px;font-size:13px;">
-              Bạn tiết kiệm<br><strong style="font-size:20px;">796.000đ</strong>
-            </td>
-          </tr>
-        </table>
-        <p style="color:#92400e;margin:12px 0 0;font-size:13px;font-style:italic;">⏰ Giảm giá hôm nay – Giá sẽ tăng lên 399.000đ từ ngày mai</p>
+      <div style="background:#f0fdf4;border-left:4px solid #16a34a;border-radius:6px;padding:16px 20px;margin:20px 0;">
+        <p style="margin:0;color:#374151;font-size:14px;font-style:italic;line-height:1.8;">
+          "Mình làm dưa bán ở chợ được 2 năm rồi nhưng lúc nào cũng bán không được nhiều vì dưa hay bị nhệu, để không lâu. Sau khi học khóa của Cô Hạ, mình biết mình sai ở đâu, sửa lại hết. Bây giờ dưa giòn hơn, để được lâu hơn, khách mua xong hay quay lại. Doanh thu tăng gần gấp đôi chỉ sau 1 tháng."
+        </p>
+        <p style="margin:10px 0 0;color:#166534;font-size:13px;font-weight:700;">— Chị Lan, Bình Dương</p>
       </div>
 
-      <div style="background:#f0fdf4;border:2px solid #006400;border-radius:10px;padding:24px;margin:24px 0;">
-        <h3 style="color:#006400;margin-top:0;font-size:17px;">📚 Bạn sẽ nhận được</h3>
-        <ul style="color:#374151;line-height:1.8;margin:0;padding-left:20px;font-size:14px;">
-          <li><strong>5 video hướng dẫn chi tiết</strong> (từ cơ bản đến chuyên sâu)</li>
-          <li><strong>Công thức chuẩn 100%</strong> từ Cô Hạ – áp dụng ngay</li>
-          <li><strong>Group 149+ thành viên – Hỗ trợ 24/7</strong> từ Cô Hạ & team</li>
-          <li><strong>Tài liệu PDF</strong> tổng hợp bí quyết & các sai lầm cần tránh</li>
-          <li><strong>Access trọn đời</strong> – xem lại bất cứ lúc nào</li>
-        </ul>
-      </div>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Chị Lan không phải trường hợp đặc biệt. Đây là điều Cô Hạ chứng kiến mỗi ngày từ học viên của mình.
+      </p>
 
-      <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:20px 24px;margin:24px 0;">
-        <h3 style="color:#1e293b;margin-top:0;font-size:15px;">🌟 Kết quả từ học viên</h3>
-        <div style="background:#fff;border-radius:8px;padding:16px;border-left:4px solid #16a34a;">
-          <p style="margin:0 0 8px;color:#1e293b;font-weight:700;">Chị A, Bình Dương</p>
-          <p style="margin:0;color:#4b5563;font-size:13px;line-height:1.6;">
-            "Sau 3 tuần học khóa, dưa của tôi bán chạy hơn 40%. Thu nhập tăng 3 triệu/tháng. Tuyệt vời quá!" 😍
-          </p>
+      <!-- KHÓA HỌC DẠY GÌ -->
+      <div style="background:#f8fafc;border:2px solid #006400;border-radius:12px;overflow:hidden;margin:24px 0;">
+        <div style="background:#006400;padding:14px 20px;">
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">📚 Khóa học dạy bạn những gì?</p>
+        </div>
+        <div style="padding:20px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #e5e7eb;">
+            <span style="font-size:20px;flex-shrink:0;">🥒</span>
+            <div>
+              <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">Bài 1 – Dưa cải bẹ muối chua giòn</p>
+              <p style="margin:0;color:#6b7280;font-size:13px;">Công thức tỉ lệ chuẩn, cách chọn cải, xử lý & ủ đúng để dưa vàng ươm, giòn tan</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #e5e7eb;">
+            <span style="font-size:20px;flex-shrink:0;">🥕</span>
+            <div>
+              <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">Bài 2 – Dưa góp hỗn hợp (cà rốt, đu đủ, củ cải)</p>
+              <p style="margin:0;color:#6b7280;font-size:13px;">Cách cắt đẹp, tỉ lệ giấm-đường-muối hoàn hảo, màu sắc bắt mắt để bán được giá</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #e5e7eb;">
+            <span style="font-size:20px;flex-shrink:0;">🍆</span>
+            <div>
+              <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">Bài 3 – Cà muối mắm giòn 7 ngày</p>
+              <p style="margin:0;color:#6b7280;font-size:13px;">Công thức mắm ngâm độc quyền, cà giòn suốt 30 ngày, hương vị chuẩn miền Nam</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #e5e7eb;">
+            <span style="font-size:20px;flex-shrink:0;">🧅</span>
+            <div>
+              <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">Bài 4 – Sung muối & củ kiệu ngâm chua ngọt</p>
+              <p style="margin:0;color:#6b7280;font-size:13px;">Các loại đặc sản muối chua ít người biết làm – bán được giá cao, ít đối thủ cạnh tranh</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;">
+            <span style="font-size:20px;flex-shrink:0;">💼</span>
+            <div>
+              <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">Bài 5 – Kinh doanh dưa cà muối từ nhà</p>
+              <p style="margin:0;color:#6b7280;font-size:13px;">Cách đóng gói đẹp, định giá bán, tìm kênh phân phối và xây dựng khách hàng quen</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div style="text-align:center;margin:24px 0;">
-        <a href="https://khoaduacamuoi.hacofood.vn#khoa-hoc" style="display:inline-block;background:#16a34a;color:#fff;padding:16px 40px;border-radius:8px;text-decoration:none;font-weight:800;font-size:16px;margin-bottom:12px;border:3px solid #16a34a;">
-          ✅ Đăng ký khóa học – 299.000đ
-        </a>
-        <p style="color:#6b7280;font-size:12px;margin:12px 0 0;">Thanh toán an toàn – Được hỗ trợ 24/7 từ Cô Hạ</p>
+      <!-- GIÁ -->
+      <div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;padding:20px 24px;margin:24px 0;text-align:center;">
+        <p style="color:#92400e;margin:0 0 12px;font-size:13px;font-weight:700;">💰 ĐẦU TƯ CHO KHÓA HỌC</p>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+          <tr>
+            <td style="text-align:center;padding:8px;">
+              <p style="color:#9ca3af;font-size:12px;margin:0 0 4px;">Giá gốc</p>
+              <p style="color:#9ca3af;font-size:20px;margin:0;text-decoration:line-through;">1.095.000đ</p>
+            </td>
+            <td style="text-align:center;padding:8px;">
+              <p style="color:#92400e;font-size:12px;margin:0 0 4px;font-weight:700;">Giá ưu đãi</p>
+              <p style="color:#dc2626;font-size:32px;font-weight:900;margin:0;">299.000đ</p>
+            </td>
+            <td style="text-align:center;padding:8px;">
+              <p style="color:#166534;font-size:12px;margin:0 0 4px;">Tiết kiệm</p>
+              <p style="color:#16a34a;font-size:20px;font-weight:800;margin:0;">796.000đ</p>
+            </td>
+          </tr>
+        </table>
+        <p style="color:#92400e;margin:0;font-size:13px;font-style:italic;">⏰ Mức giá này chỉ dành cho bạn đọc email của Cô Hạ</p>
       </div>
 
-      <p style="color:#6b7280;font-size:13px;line-height:1.7;margin-top:20px;">
-        Bạn là một trong 149+ thành viên sẽ tham gia khóa học. Hãy quyết định hôm nay – để không tiếc nuối ngày mai! 🌸
+      <!-- CTA -->
+      <div style="text-align:center;margin:28px 0;">
+        <a href="https://khoaduacamuoi.hacofood.vn#khoa-hoc"
+           style="display:inline-block;background:#16a34a;color:#fff;padding:16px 40px;border-radius:10px;text-decoration:none;font-weight:900;font-size:17px;letter-spacing:0.3px;">
+          ✅ Tôi muốn tham gia – 299.000đ
+        </a>
+        <p style="color:#6b7280;font-size:12px;margin:12px 0 0;">Thanh toán an toàn qua chuyển khoản ngân hàng · Hỗ trợ 24/7</p>
+      </div>
+
+      <p style="color:#374151;line-height:1.8;font-size:14px;">
+        Nếu bạn còn đang phân vân – hãy nghĩ đến chị Lan. Chị ấy cũng từng không chắc. Nhưng 299.000đ đã giúp chị thay đổi cả nguồn thu nhập. Còn bạn thì sao? 🌸
       </p>
     </div>
+
     <div style="background:#f9fafb;padding:18px 32px;text-align:center;border-top:1px solid #e5e7eb;">
       <p style="color:#9ca3af;font-size:12px;margin:0;">
-        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp; <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a>
+        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp;
+        <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a><br>
+        Bạn nhận email này vì đã đăng ký nhận quà tại website của chúng tôi.
       </p>
     </div>
   </div>
@@ -644,94 +765,121 @@ export async function sendGiftSequenceEmail5(to: { name: string; email: string }
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: [to.email],
-    subject: '🔥 LAST CHANCE – 199.000đ (hết hôm nay!)',
+    subject: `Cô Hạ muốn nói thật với ${to.name} một điều – đọc trước 23h59 nhé 🙏`,
     html: `
 <!DOCTYPE html>
 <html lang="vi">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#fef2f2;font-family:'Segoe UI',Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
-    <div style="background:linear-gradient(135deg,#dc2626,#991b1b);padding:36px 32px;text-align:center;position:relative;overflow:hidden;">
-      <div style="position:absolute;top:0;left:0;right:0;bottom:0;opacity:0.1;background:repeating-linear-gradient(45deg,transparent,transparent 35px,rgba(255,255,255,.2) 35px,rgba(255,255,255,.2) 70px);"></div>
-      <p style="font-size:40px;margin:0 0 8px;position:relative;z-index:1;">🔥</p>
-      <h1 style="color:#fff;margin:0;font-size:28px;font-weight:900;position:relative;z-index:1;">LAST CHANCE!</h1>
-      <p style="margin:8px 0 0;font-size:14px;color:#fecaca;position:relative;z-index:1;">Giảm độc quyền chỉ hôm nay</p>
+<body style="margin:0;padding:0;background:#fff8f0;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+
+    <div style="background:linear-gradient(135deg,#991b1b,#dc2626);padding:36px 32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">🙏</p>
+      <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800;">Email cuối cùng từ Cô Hạ</h1>
+      <p style="margin:8px 0 0;font-size:14px;color:#fecaca;">Cô muốn nói thật với bạn</p>
     </div>
 
-    <div style="background:#fef2f2;padding:24px 32px;text-align:center;border-bottom:3px solid #dc2626;">
-      <p style="color:#4b5563;margin:0 0 12px;font-size:13px;">GIẢM GIÁ ĐỘC QUYỀN</p>
-      <div style="background:#fff;border-radius:12px;padding:20px;margin:0 auto;max-width:300px;">
-        <table style="width:100%;border-collapse:collapse;">
-          <tr>
-            <td style="text-align:center;padding:0 8px;">
-              <p style="color:#6b7280;font-size:12px;margin:0;">Giá gốc</p>
-              <p style="color:#9ca3af;font-size:18px;margin:4px 0;text-decoration:line-through;">299.000đ</p>
-            </td>
-            <td style="color:#d1d5db;padding:0;">→</td>
-            <td style="text-align:center;padding:0 8px;">
-              <p style="color:#dc2626;font-size:12px;margin:0;font-weight:700;">GIÁ HOT</p>
-              <p style="color:#dc2626;font-size:28px;margin:4px 0;font-weight:900;">199.000đ</p>
-            </td>
-          </tr>
-        </table>
-        <p style="color:#16a34a;font-size:13px;margin:12px 0 0;font-weight:700;">Tiết kiệm: 100.000đ (33%)</p>
-      </div>
+    <!-- GIÁ NỔI BẬT -->
+    <div style="background:#fef2f2;padding:20px 32px;text-align:center;border-bottom:3px solid #dc2626;">
+      <p style="color:#6b7280;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;">Ưu đãi cuối – chỉ hôm nay</p>
+      <p style="margin:0;font-size:14px;color:#9ca3af;text-decoration:line-through;">299.000đ</p>
+      <p style="margin:4px 0;font-size:36px;font-weight:900;color:#dc2626;">199.000đ</p>
+      <p style="margin:0;font-size:13px;color:#16a34a;font-weight:700;">Tiết kiệm 100.000đ · Hết lúc 23h59 hôm nay</p>
     </div>
 
     <div style="padding:36px 32px;">
-      <h2 style="color:#dc2626;font-size:22px;margin-top:0;">Xin chào ${to.name}! ⏰</h2>
+      <h2 style="color:#1f2937;font-size:19px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+
       <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Đây là email cuối cùng – và <strong>đây là mức giá cuối cùng</strong> Cô Hạ có thể cung cấp cho bạn.
+        Đây là email cuối cùng Cô Hạ gửi cho bạn trong chuỗi này. Và Cô muốn nói thật – không phải để bán hàng, mà vì Cô thật sự quan tâm.
       </p>
 
-      <div style="background:#fef08a;border:3px solid #dc2626;border-radius:12px;padding:20px 24px;margin:24px 0;text-align:center;">
-        <p style="color:#854d0e;margin:0 0 8px;font-size:13px;font-weight:700;text-transform:uppercase;">⏱️ COUNTDOWN</p>
-        <p style="color:#dc2626;font-size:24px;margin:0;font-weight:900;">HẾT LÚC 23H59 HÔM NAY!</p>
-        <p style="color:#854d0e;font-size:12px;margin:8px 0 0;">Sau thời gian này, mức giá 199k sẽ không còn</p>
-      </div>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Mấy ngày qua bạn đã nhận được từ Cô:
+      </p>
+      <ul style="color:#374151;font-size:14px;line-height:2;margin:0 0 16px;padding-left:20px;">
+        <li>Công thức làm dưa cà muối mắm giòn</li>
+        <li>5 sai lầm hay gặp và cách sửa cụ thể</li>
+        <li>Kỹ thuật bảo quản dưa 30 ngày không cần tủ lạnh</li>
+      </ul>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Những thứ đó đều miễn phí. Và <strong>nếu bạn chỉ cần làm dưa cho gia đình ăn</strong> – bạn hoàn toàn đã có đủ rồi, không cần mua thêm gì cả.
+      </p>
 
-      <div style="background:#fff3e0;border-left:4px solid #f59e0b;border-radius:8px;padding:20px 24px;margin:24px 0;">
-        <h3 style="color:#d97706;margin-top:0;font-size:16px;">⚡ Tại sao bạn nên quyết định NGAY?</h3>
-        <ul style="color:#374151;line-height:1.8;margin:0;padding-left:20px;font-size:14px;">
-          <li>Bạn đã xem 4 email – bạn đã sẵn sàng</li>
-          <li>149+ thành viên khác đang học – bạn sẽ bị lại phía sau</li>
-          <li>Giá 199k là <strong>ưu đãi duy nhất</strong> – sau hôm nay là 499.000đ</li>
-          <li>Mỗi ngày trì hoãn = một ngày mất cơ hội</li>
-        </ul>
-      </div>
-
-      <div style="background:#f0fdf4;border:2px solid #006400;border-radius:10px;padding:24px;margin:24px 0;">
-        <h3 style="color:#006400;margin-top:0;font-size:17px;text-align:center;">✅ KHÓA HỌC BẠN NHẬN</h3>
-        <ul style="color:#374151;line-height:1.8;margin:0;padding-left:20px;font-size:14px;">
-          <li>5 video hướng dẫn chi tiết (1.2GB dữ liệu)</li>
-          <li>Công thức chuẩn 100% từ Cô Hạ</li>
-          <li>Group 149+ thành viên – Hỗ trợ 24/7</li>
-          <li>Tài liệu PDF + Checklist 12 dấu hiệu</li>
-          <li>Access trọn đời – xem lại bất cứ lúc nào</li>
-        </ul>
-      </div>
-
-      <div style="text-align:center;margin:24px 0;">
-        <a href="https://khoaduacamuoi.hacofood.vn#khoa-hoc" style="display:block;background:#dc2626;color:#fff;padding:18px 40px;border-radius:10px;text-decoration:none;font-weight:900;font-size:18px;margin-bottom:12px;border:3px solid #991b1b;box-shadow:0 4px 12px rgba(220,38,38,0.3);">
-          🚀 ĐỀ NGAY – 199.000đ
-        </a>
-        <p style="color:#6b7280;font-size:12px;margin:12px 0 0;">Đơn hàng cuối cùng được áp giá 199k – hết hôm nay!</p>
-      </div>
-
-      <div style="background:#fee2e2;border-radius:8px;padding:16px 24px;margin:24px 0;text-align:center;">
-        <p style="color:#7f1d1d;margin:0;font-size:13px;font-style:italic;">
-          "Nếu bạn không hành động hôm nay, bạn sẽ phải trả 499.000đ cho cùng một khóa học. <strong>Tiếc nuối sẽ tìm đến bạn.</strong>"<br>
-          – Cô Hạ
+      <div style="background:#fff8f0;border-left:4px solid #f59e0b;border-radius:8px;padding:18px 20px;margin:24px 0;">
+        <p style="margin:0 0 8px;color:#92400e;font-weight:700;font-size:14px;">Nhưng nếu bạn muốn hơn thế...</p>
+        <p style="margin:0;color:#374151;font-size:14px;line-height:1.8;">
+          Muốn làm được nhiều loại dưa cà muối khác nhau. Muốn dưa ngon hơn, đẹp hơn, bán được. Muốn có người đồng hành và hỏi được Cô Hạ trực tiếp khi gặp vấn đề – thì khóa học này là dành cho bạn.
         </p>
       </div>
 
-      <p style="color:#6b7280;font-size:13px;line-height:1.7;margin-top:20px;">
-        Quyết định hôm nay – Thành công từ ngày mai! 🌸
+      <!-- CÂU HỎI THẬT -->
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Cô Hạ tự hỏi: <em>Điều gì đang khiến bạn chần chừ?</em>
+      </p>
+
+      <div style="background:#f8fafc;border-radius:10px;padding:20px 24px;margin:20px 0;">
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #e5e7eb;">
+          <span style="color:#dc2626;font-size:16px;flex-shrink:0;">❓</span>
+          <div>
+            <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">"Tôi chưa chắc mình sẽ dùng được"</p>
+            <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">→ Khóa học quay video chi tiết từng bước, xem lại bất cứ lúc nào, không giới hạn thời gian.</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #e5e7eb;">
+          <span style="color:#dc2626;font-size:16px;flex-shrink:0;">❓</span>
+          <div>
+            <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">"Tôi không có nhiều tiền"</p>
+            <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">→ 199.000đ bằng 2 ly cà phê mỗi tháng. Nếu bán được thêm 1 hũ dưa/tuần, bạn thu hồi vốn trong 2 tuần.</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;">
+          <span style="color:#dc2626;font-size:16px;flex-shrink:0;">❓</span>
+          <div>
+            <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">"Tôi không có thời gian"</p>
+            <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">→ Mỗi video chỉ 10–15 phút. Xem lúc rảnh, tua lại chỗ chưa hiểu. Không cần học liên tục.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- NHẮC LẠI KHÓA HỌC -->
+      <div style="background:#f0fdf4;border:2px solid #006400;border-radius:10px;padding:20px 24px;margin:24px 0;">
+        <p style="margin:0 0 12px;color:#166534;font-weight:800;font-size:15px;">✅ Bạn nhận được khi tham gia:</p>
+        <ul style="margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:2;">
+          <li>5 bài học video chi tiết: dưa cải, dưa góp, cà muối mắm, sung muối, củ kiệu</li>
+          <li>Công thức PDF chuẩn của Cô Hạ – in ra làm tài liệu luôn</li>
+          <li>Vào group học viên – hỏi Cô Hạ trực tiếp bất cứ lúc nào</li>
+          <li>Học xong biết làm, biết bán – không lý thuyết suông</li>
+          <li>Xem lại trọn đời – không mất đi sau khi học xong</li>
+        </ul>
+      </div>
+
+      <!-- GIÁ VÀ CTA -->
+      <div style="background:#fef2f2;border:3px solid #dc2626;border-radius:12px;padding:24px;margin:24px 0;text-align:center;">
+        <p style="margin:0 0 6px;color:#6b7280;font-size:13px;">Giá ưu đãi cuối – chỉ hôm nay</p>
+        <p style="margin:0 0 4px;font-size:14px;color:#9ca3af;text-decoration:line-through;">299.000đ</p>
+        <p style="margin:0 0 16px;font-size:34px;font-weight:900;color:#dc2626;">199.000đ</p>
+        <a href="https://khoaduacamuoi.hacofood.vn#khoa-hoc"
+           style="display:block;background:#dc2626;color:#fff;padding:16px 32px;border-radius:10px;text-decoration:none;font-weight:900;font-size:17px;box-shadow:0 4px 12px rgba(220,38,38,0.25);">
+          🎓 Tôi muốn tham gia – 199.000đ
+        </a>
+        <p style="color:#6b7280;font-size:12px;margin:12px 0 0;">Hết lúc 23h59 hôm nay · Thanh toán chuyển khoản an toàn</p>
+      </div>
+
+      <p style="color:#374151;line-height:1.8;font-size:14px;">
+        Dù bạn có tham gia hay không – Cô Hạ cũng cảm ơn bạn đã đọc đến email cuối này. Cô chúc bạn làm được những hũ dưa thật ngon, thật giòn cho gia đình! 💚
+      </p>
+      <p style="color:#374151;line-height:1.8;font-size:14px;">
+        Thân mến,<br>
+        <strong>Cô Hạ – Bếp Cô Hạ / HaCo Food</strong> 🌸
       </p>
     </div>
+
     <div style="background:#f9fafb;padding:18px 32px;text-align:center;border-top:1px solid #e5e7eb;">
       <p style="color:#9ca3af;font-size:12px;margin:0;">
-        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp; <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a>
+        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp;
+        <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a><br>
+        Bạn nhận email này vì đã đăng ký nhận quà tại website của chúng tôi.
       </p>
     </div>
   </div>
