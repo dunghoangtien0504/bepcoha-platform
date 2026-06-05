@@ -13,12 +13,12 @@ async function sendMessage(chatId: string, text: string) {
 }
 
 export async function notifyGiftLead(data: { name: string; email: string; phone: string }) {
-  const msg = `🎁 <b>HỌC VIÊN NHẬN QUÀ MỚI</b>
+  const msg = `🟢 <b>HỌC VIÊN NHẬN QUÀ MỚI</b>
 
-👤 Tên: <b>${data.name}</b>
-📧 Email: ${data.email}
-📞 SĐT: ${data.phone}
-⏰ Thời gian: ${new Date().toLocaleString('vi-VN')}`
+• Tên: <b>${data.name}</b>
+• Email: ${data.email}
+• SĐT: ${data.phone}
+• Thời gian: ${new Date().toLocaleString('vi-VN')}`
 
   await sendMessage(GIFT_GROUP_ID, msg)
 }
@@ -39,12 +39,12 @@ export async function notifyCourseLead(data: {
 
   const msg = `${square} <b>KHÓA DƯA CÀ MUỐI – ${statusText}</b> ${square}
 
-👤 Tên: <b>${data.name}</b>
-📧 Email: ${data.email}
-📞 SĐT: ${data.phone}
-🔑 Mã giao dịch: <code>${data.paymentRef}</code>
-💰 Số tiền: <b>${amountText}</b>
-⏰ Thời gian: ${new Date().toLocaleString('vi-VN')}`
+• Tên: <b>${data.name}</b>
+• Email: ${data.email}
+• SĐT: ${data.phone}
+• Mã giao dịch: <code>${data.paymentRef}</code>
+• Số tiền: <b>${amountText}</b>
+• Thời gian: ${new Date().toLocaleString('vi-VN')}`
 
   await sendMessage(COURSE_GROUP_ID, msg)
 }
@@ -58,13 +58,13 @@ export async function notifyPaymentMismatch(data: {
 }) {
   const msg = `🔴 <b>CHUYỂN KHOẢN KHÔNG KHỚP – CẦN KIỂM TRA</b> 🔴
 
-🔑 Mã đơn: <code>${data.paymentRef}</code>
-💸 Nhận được: <b>${data.received.toLocaleString('vi-VN')}đ</b>
-🎯 Cần đủ: <b>${data.expected.toLocaleString('vi-VN')}đ</b>
-📝 Nội dung CK: ${data.content}
-⏰ ${new Date().toLocaleString('vi-VN')}
+• Mã đơn: <code>${data.paymentRef}</code>
+• Nhận được: <b>${data.received.toLocaleString('vi-VN')}đ</b>
+• Cần đủ: <b>${data.expected.toLocaleString('vi-VN')}đ</b>
+• Nội dung CK: ${data.content}
+• Thời gian: ${new Date().toLocaleString('vi-VN')}
 
-❗️ <b>Đơn CHƯA được kích hoạt.</b> Vui lòng kiểm tra & xử lý thủ công.`
+<b>Đơn CHƯA được kích hoạt.</b> Vui lòng kiểm tra & xử lý thủ công.`
 
   await sendMessage(COURSE_GROUP_ID, msg)
 }
