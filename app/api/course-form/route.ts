@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const paymentRef = generatePaymentRef(phone.trim())
     const amount = 299000
 
-    await insertCourseLead({ name: name.trim(), email: email.trim(), phone: phone.trim(), paymentRef })
+    await insertCourseLead({ name: name.trim(), email: email.trim(), phone: phone.trim(), paymentRef, amount })
 
     const qr = buildQRPayload(paymentRef, amount)
 

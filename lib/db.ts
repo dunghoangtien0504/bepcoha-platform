@@ -53,6 +53,8 @@ export async function initDb() {
       telegram_sent BOOLEAN DEFAULT FALSE
     )
   `
+  // Migration: sửa default amount cũ (138000) thành 299000
+  await sql`ALTER TABLE course_leads ALTER COLUMN amount SET DEFAULT 299000`
   await sql`
     CREATE TABLE IF NOT EXISTS staff (
       id SERIAL PRIMARY KEY,
@@ -167,14 +169,15 @@ export async function pauseEmailSequence(id: number) {
 
 // ── Course leads ─────────────────────────────────────────────────────────────
 export async function insertCourseLead(data: {
-  name: string; email: string; phone: string; paymentRef: string
+  name: string; email: string; phone: string; paymentRef: string; amount?: number
 }) {
   const sql = getDb()
+  const amount = data.amount ?? 299000
   const rows = await sql`
-    INSERT INTO course_leads (name, email, phone, payment_ref)
-    VALUES (${data.name}, ${data.email}, ${data.phone}, ${data.paymentRef})
+    INSERT INTO course_leads (name, email, phone, payment_ref, amount)
+    VALUES (${data.name}, ${data.email}, ${data.phone}, ${data.paymentRef}, ${amount})
     ON CONFLICT (payment_ref) DO UPDATE
-      SET name = EXCLUDED.name, email = EXCLUDED.email, phone = EXCLUDED.phone
+      SET name = EXCLUDED.name, email = EXCLUDED.email, phone = EXCLUDED.phone, amount = EXCLUDED.amount
     RETURNING id
   `
   return rows[0].id as number

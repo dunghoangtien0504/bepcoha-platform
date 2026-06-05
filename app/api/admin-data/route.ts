@@ -27,7 +27,9 @@ export async function GET(req: NextRequest) {
       totalGiftLeads: giftLeads.length,
       totalCourseLeads: courseLeads.length,
       paidLeads: courseLeads.filter((l) => l.payment_status === 'paid').length,
-      revenue: courseLeads.filter((l) => l.payment_status === 'paid').length * 299000,
+      revenue: courseLeads
+        .filter((l) => l.payment_status === 'paid')
+        .reduce((sum, l) => sum + (l.amount || 0), 0),
     },
   })
 }
