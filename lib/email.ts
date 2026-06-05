@@ -449,77 +449,180 @@ export async function sendGiftSequenceEmail4(to: { name: string; email: string }
 
     <div style="background:linear-gradient(135deg,#003200,#006400);padding:36px 32px;text-align:center;">
       <p style="font-size:40px;margin:0 0 8px;">🥒</p>
-      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">Giữ Dưa Ngon 30 Ngày</h1>
-      <p style="margin:8px 0 0;font-size:14px;color:#dcfce7;">Không cần tủ lạnh – Bí quyết lên men đúng cách từ Cô Hạ</p>
+      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">Giữ Dưa Ngon 30 Ngày – Không Cần Tủ Lạnh</h1>
+      <p style="margin:8px 0 0;font-size:14px;color:#dcfce7;">Hướng dẫn từng bước – ai cũng làm được!</p>
     </div>
 
     <div style="padding:36px 32px;">
       <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Hôm nay Cô Hạ muốn chia sẻ với bạn một bí quyết mà nhiều người làm dưa lâu năm vẫn chưa biết:
-      </p>
-      <p style="color:#006400;font-weight:700;font-size:16px;line-height:1.8;">
-        👉 Dưa cà muối bảo quản được 30 ngày ở nhiệt độ phòng mà vẫn giòn ngon – hoàn toàn không cần tủ lạnh!
+        Cô Hạ hay nhận được câu hỏi: <em>"Làm dưa xong để được bao lâu? Có cần bỏ tủ lạnh không?"</em>
       </p>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Bí quyết nằm ở kỹ thuật lên men đúng cách. Cô sẽ chia sẻ <strong>4 nguyên tắc vàng</strong> dưới đây:
+        Câu trả lời là: <strong style="color:#006400;">Dưa cà muối đúng cách có thể để 30 ngày ở nhiệt độ phòng mà vẫn giòn, ngon, an toàn.</strong> Hôm nay Cô sẽ hướng dẫn chi tiết từng bước để bạn tự làm được ngay!
       </p>
 
-      <!-- NGUYÊN TẮC 1 -->
-      <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:18px 20px;margin:16px 0;">
-        <p style="margin:0 0 6px;color:#006400;font-weight:800;font-size:15px;">① Tỉ lệ muối là tất cả</p>
-        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
-          Dùng <strong>3–4% muối so với trọng lượng rau củ</strong>. Ít hơn → dưa chua nhanh, dễ hỏng. Nhiều hơn → ức chế vi khuẩn có lợi, dưa không lên men được.
-          <br><span style="color:#6b7280;font-size:13px;">Ví dụ: 1kg dưa cần 30–40g muối hạt (không phải muối iốt).</span>
-        </p>
+      <!-- BƯỚC 1 -->
+      <div style="border:2px solid #006400;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#006400;padding:12px 20px;">
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">🧂 BƯỚC 1 – Pha nước muối đúng tỉ lệ</p>
+        </div>
+        <div style="padding:16px 20px;background:#f0fff0;">
+          <p style="margin:0 0 10px;color:#374151;font-size:14px;line-height:1.7;">
+            Đây là bước quan trọng nhất. Dùng <strong>muối hạt trắng thông thường</strong> – KHÔNG dùng muối iốt vì iốt sẽ giết chết vi khuẩn có lợi.
+          </p>
+          <div style="background:#fff;border-radius:8px;padding:14px 16px;margin-top:10px;">
+            <p style="margin:0 0 8px;color:#006400;font-weight:700;font-size:13px;">📐 Công thức tỉ lệ chuẩn:</p>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <tr style="background:#dcfce7;">
+                <td style="padding:8px 12px;font-weight:700;color:#166534;border-radius:4px 0 0 0;">Lượng rau củ</td>
+                <td style="padding:8px 12px;font-weight:700;color:#166534;">Muối cần dùng</td>
+                <td style="padding:8px 12px;font-weight:700;color:#166534;border-radius:0 4px 0 0;">Nước lọc</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e5e7eb;">
+                <td style="padding:8px 12px;color:#374151;">500g</td>
+                <td style="padding:8px 12px;color:#374151;">15–20g (~1 muỗng canh)</td>
+                <td style="padding:8px 12px;color:#374151;">500ml</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e5e7eb;">
+                <td style="padding:8px 12px;color:#374151;">1kg</td>
+                <td style="padding:8px 12px;color:#374151;"><strong>30–40g (~2 muỗng canh)</strong></td>
+                <td style="padding:8px 12px;color:#374151;">1 lít</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 12px;color:#374151;">2kg</td>
+                <td style="padding:8px 12px;color:#374151;">60–80g (~4 muỗng canh)</td>
+                <td style="padding:8px 12px;color:#374151;">2 lít</td>
+              </tr>
+            </table>
+          </div>
+          <p style="margin:10px 0 0;color:#6b7280;font-size:13px;line-height:1.6;">
+            ⚠️ <strong>Ít muối hơn</strong> → dưa chua nhanh, dễ bị nhớt, hỏng trong 3–5 ngày.<br>
+            ⚠️ <strong>Nhiều muối hơn</strong> → dưa mặn lợm, không lên men được, cứng và không ngon.
+          </p>
+        </div>
       </div>
 
-      <!-- NGUYÊN TẮC 2 -->
-      <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:18px 20px;margin:16px 0;">
-        <p style="margin:0 0 6px;color:#006400;font-weight:800;font-size:15px;">② Ngăn không khí tiếp xúc với dưa</p>
-        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
-          Vi khuẩn có hại cần oxy để sống. Muốn dưa lâu ngày, phải <strong>dìm dưa chìm hoàn toàn dưới nước muối</strong> – không để phần nào nổi lên. Dùng đá hoặc túi nước đặt lên trên để ép xuống.
-        </p>
+      <!-- BƯỚC 2 -->
+      <div style="border:2px solid #006400;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#006400;padding:12px 20px;">
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">🫙 BƯỚC 2 – Chuẩn bị hũ đúng cách</p>
+        </div>
+        <div style="padding:16px 20px;background:#f0fff0;">
+          <p style="margin:0 0 10px;color:#374151;font-size:14px;line-height:1.7;">
+            Chọn <strong>hũ thủy tinh hoặc sành sứ</strong> – tuyệt đối không dùng hũ kim loại vì acid trong dưa sẽ ăn mòn kim loại, làm dưa đổi màu và có mùi lạ.
+          </p>
+          <p style="margin:0 0 6px;color:#006400;font-weight:700;font-size:13px;">Cách khử trùng hũ (bắt buộc!):</p>
+          <ol style="margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:2;">
+            <li>Rửa hũ bằng nước rửa chén, tráng sạch</li>
+            <li>Đổ nước sôi vào hũ, đậy nắp, lắc đều 30 giây</li>
+            <li>Đổ nước sôi ra, úp ngược hũ lên khăn sạch cho ráo</li>
+            <li>Để nguội hoàn toàn trước khi cho dưa vào</li>
+          </ol>
+        </div>
       </div>
 
-      <!-- NGUYÊN TẮC 3 -->
-      <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:18px 20px;margin:16px 0;">
-        <p style="margin:0 0 6px;color:#006400;font-weight:800;font-size:15px;">③ Nhiệt độ lên men lý tưởng: 18–22°C</p>
-        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
-          Quá nóng (>30°C) → vi khuẩn có hại thắng thế → dưa hỏng nhanh.<br>
-          Quá lạnh (<15°C) → lên men chậm, dưa nhạt vị.<br>
-          <strong>Để nơi thoáng mát, tránh ánh nắng trực tiếp</strong> là đủ trong điều kiện Việt Nam.
-        </p>
+      <!-- BƯỚC 3 -->
+      <div style="border:2px solid #006400;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#006400;padding:12px 20px;">
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">🥢 BƯỚC 3 – Xếp dưa và dìm chìm hoàn toàn</p>
+        </div>
+        <div style="padding:16px 20px;background:#f0fff0;">
+          <p style="margin:0 0 10px;color:#374151;font-size:14px;line-height:1.7;">
+            Đây là bí quyết cốt lõi: <strong>dưa phải chìm 100% dưới mặt nước muối</strong>. Vi khuẩn có hại cần oxy để sống – nếu phần dưa nào nổi lên tiếp xúc với không khí, phần đó sẽ bị mốc trước.
+          </p>
+          <p style="margin:0 0 6px;color:#006400;font-weight:700;font-size:13px;">Cách dìm dưa:</p>
+          <ol style="margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:2;">
+            <li>Xếp dưa vào hũ, nén chặt tay</li>
+            <li>Đổ nước muối vào ngập hơn dưa 2–3cm</li>
+            <li>Lấy <strong>túi zip nhỏ đổ đầy nước</strong>, buộc kín rồi đặt lên trên mặt dưa để ép xuống</li>
+            <li>Đậy nắp hũ – không đậy quá chặt để khí CO₂ thoát ra khi lên men</li>
+          </ol>
+          <p style="margin:10px 0 0;color:#6b7280;font-size:13px;font-style:italic;">
+            💡 Mẹo: Không có túi zip? Dùng lá chuối gấp lại hoặc một miếng nhựa thực phẩm ép xuống cũng được!
+          </p>
+        </div>
       </div>
 
-      <!-- NGUYÊN TẮC 4 -->
-      <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:18px 20px;margin:16px 0;">
-        <p style="margin:0 0 6px;color:#006400;font-weight:800;font-size:15px;">④ Hũ thủy tinh sạch – không dùng kim loại</p>
-        <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">
-          Acid lactic sinh ra trong quá trình lên men sẽ phản ứng với kim loại → dưa bị đổi màu, mùi lạ. Dùng <strong>hũ thủy tinh hoặc sành sứ</strong>, rửa sạch bằng nước sôi trước khi dùng.
-        </p>
+      <!-- BƯỚC 4 -->
+      <div style="border:2px solid #006400;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#006400;padding:12px 20px;">
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">🌡️ BƯỚC 4 – Để đúng chỗ và kiểm tra mỗi ngày</p>
+        </div>
+        <div style="padding:16px 20px;background:#f0fff0;">
+          <p style="margin:0 0 10px;color:#374151;font-size:14px;line-height:1.7;">
+            <strong>Đặt hũ ở nơi thoáng mát, không có ánh nắng trực tiếp.</strong> Góc bếp tối, ngăn dưới tủ bếp, hoặc góc phòng đều ổn.
+          </p>
+          <p style="margin:0 0 6px;color:#006400;font-weight:700;font-size:13px;">Lịch kiểm tra:</p>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr style="background:#dcfce7;">
+              <td style="padding:8px 12px;font-weight:700;color:#166534;">Ngày</td>
+              <td style="padding:8px 12px;font-weight:700;color:#166534;">Dấu hiệu bình thường</td>
+            </tr>
+            <tr style="border-bottom:1px solid #e5e7eb;">
+              <td style="padding:8px 12px;color:#374151;font-weight:600;">Ngày 1</td>
+              <td style="padding:8px 12px;color:#374151;">Nước còn trong, dưa còn giòn</td>
+            </tr>
+            <tr style="border-bottom:1px solid #e5e7eb;">
+              <td style="padding:8px 12px;color:#374151;font-weight:600;">Ngày 2</td>
+              <td style="padding:8px 12px;color:#374151;">Nước hơi đục nhẹ – bình thường! Đây là vi khuẩn có lợi hoạt động</td>
+            </tr>
+            <tr style="border-bottom:1px solid #e5e7eb;">
+              <td style="padding:8px 12px;color:#374151;font-weight:600;">Ngày 3</td>
+              <td style="padding:8px 12px;color:#374151;">Nước đục, dưa bắt đầu chua nhẹ, bọt khí nhỏ xuất hiện</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px;color:#374151;font-weight:600;">Ngày 4–5</td>
+              <td style="padding:8px 12px;color:#374151;">Dưa chua vừa, giòn → <strong>ăn được rồi!</strong></td>
+            </tr>
+          </table>
+        </div>
       </div>
 
-      <!-- BONUS TIP -->
-      <div style="background:#fff8f0;border:2px solid #f59e0b;border-radius:10px;padding:20px 24px;margin:24px 0;">
-        <h3 style="color:#d97706;margin-top:0;font-size:15px;">💡 Mẹo nhỏ từ Cô Hạ</h3>
-        <p style="color:#374151;font-size:14px;line-height:1.7;margin:0;">
-          Sau khi dưa đã chua đúng vị (khoảng 2–3 ngày ở nhiệt độ phòng), <strong>đậy kín và chuyển vào chỗ mát hơn</strong> hoặc tủ lạnh để giữ nguyên vị. Lúc này dưa có thể để được thêm 3–4 tuần mà không lo bị chua thêm hay hỏng.
-        </p>
+      <!-- BƯỚC 5 -->
+      <div style="border:2px solid #006400;border-radius:12px;overflow:hidden;margin:20px 0;">
+        <div style="background:#006400;padding:12px 20px;">
+          <p style="margin:0;color:#fff;font-weight:800;font-size:15px;">❄️ BƯỚC 5 – Bảo quản sau khi dưa đã chín</p>
+        </div>
+        <div style="padding:16px 20px;background:#f0fff0;">
+          <p style="margin:0 0 10px;color:#374151;font-size:14px;line-height:1.7;">
+            Khi dưa đã chua đúng vị (ngày 4–5), làm ngay 2 việc này để giữ được thêm 3–4 tuần:
+          </p>
+          <ol style="margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:2;">
+            <li><strong>Đậy nắp hũ thật kín</strong> – lúc này không cần thoát khí nữa</li>
+            <li><strong>Chuyển hũ sang nơi mát hơn</strong> – ngăn mát tủ lạnh hoặc chỗ tối trong nhà dưới 20°C</li>
+          </ol>
+          <div style="background:#fff;border-radius:8px;padding:12px 16px;margin-top:12px;border-left:3px solid #f59e0b;">
+            <p style="margin:0;color:#374151;font-size:13px;line-height:1.7;">
+              🌡️ <strong>Không có tủ lạnh?</strong> Bọc kín hũ bằng vải tối màu, để nơi không có gió lùa. Mùa hè dưa sẽ hết sau 2 tuần, mùa mát có thể để đến 30 ngày.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- DẤU HIỆU HỎNG -->
+      <div style="background:#fef2f2;border:2px solid #dc2626;border-radius:10px;padding:20px 24px;margin:20px 0;">
+        <h3 style="color:#dc2626;margin-top:0;font-size:15px;">🚨 Dấu hiệu dưa bị hỏng – bỏ ngay đừng ăn!</h3>
+        <ul style="margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:2;">
+          <li>Nước chuyển màu hồng, xanh hoặc đen</li>
+          <li>Có mùi thối, mùi khó chịu (khác với mùi chua bình thường)</li>
+          <li>Xuất hiện mốc xanh/đen trên mặt nước</li>
+          <li>Dưa trở nên nhớt, nhũn hoàn toàn</li>
+        </ul>
       </div>
 
       <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Bạn thử áp dụng xem sao nhé! Có kết quả gì – dù thành công hay còn thắc mắc – cứ vào nhóm chia sẻ với Cô Hạ nhé! 💚
+        Bạn thử làm theo từng bước trên xem sao nhé! Nếu có thắc mắc bước nào – cứ vào nhóm hỏi Cô Hạ, Cô luôn ở đây! 💚
       </p>
 
       <div style="text-align:center;margin:24px 0;">
         <a href="${communityLink}" style="display:inline-block;background:#006400;color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
-          💬 Chia sẻ kết quả lên nhóm
+          💬 Hỏi Cô Hạ trong nhóm
         </a>
       </div>
 
-      <p style="color:#6b7280;font-size:13px;line-height:1.7;margin-top:20px;">
-        Cô Hạ còn nhiều bí quyết hay hơn nữa – hẹn bạn ở email tiếp theo! 🌸
+      <p style="color:#6b7280;font-size:13px;line-height:1.7;">
+        Cô Hạ còn có một điều muốn nói với bạn – hẹn gặp lại ở email tiếp theo nhé! 🌸
       </p>
     </div>
 
