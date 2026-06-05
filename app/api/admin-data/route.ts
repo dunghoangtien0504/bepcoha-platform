@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initDb, getAllGiftLeads, getAllCourseLeads } from '@/lib/db'
-
-function checkAuth(req: NextRequest): boolean {
-  const adminPassword = process.env.ADMIN_PASSWORD || 'hacofood2024'
-  return req.headers.get('x-admin-password') === adminPassword
-}
+import { verifyAuthHeader } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Ưu tiên JWT auth
+  const authHeader = req.headers.get('Authorization')
+  const user = await verifyAuthHeader(authHeader)
+
+  // Fallback: check x-admin-password header (legacy)
+  if (!user) {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'hacofood2026'
+    const headerPassword = req.headers.get('x-admin-password')
+    if (headerPassword !== adminPassword) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
   }
+
   await initDb()
   const giftLeads = await getAllGiftLeads()
   const courseLeads = await getAllCourseLeads()

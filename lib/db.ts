@@ -85,7 +85,7 @@ export async function initDb() {
   `
   // Insert default course settings if not exists
   const settings = await sql`SELECT COUNT(*) as count FROM course_settings`
-  if (settings[0].count === 0) {
+  if (parseInt(settings[0].count) === 0) {
     await sql`
       INSERT INTO course_settings (course_name, course_price, discount_price)
       VALUES ('Khóa học Dưa Cà Muối', 1095000, 299000)

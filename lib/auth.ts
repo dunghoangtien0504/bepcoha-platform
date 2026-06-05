@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcrypt'
+import * as bcrypt from 'bcryptjs'
 import { jwtVerify, SignJWT } from 'jose'
 
 const JWT_SECRET = new TextEncoder().encode(

@@ -59,7 +59,7 @@ export default function AdminPage() {
   const fetchAdminData = useCallback(async (t: string) => {
     try {
       const res = await fetch('/api/admin-data', {
-        headers: { 'x-admin-password': process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'hacofood2024' },
+        headers: { 'Authorization': `Bearer ${t}` },
       })
       if (!res.ok) throw new Error('Sai mật khẩu')
       const json = await res.json()
