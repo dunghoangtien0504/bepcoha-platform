@@ -6,7 +6,9 @@ import { SepayWebhookPayload } from '@/lib/sepay'
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = req.headers.get('Authorization')?.replace('Bearer ', '') || ''
+    // SePay gửi header: "Authorization: Apikey YOUR_KEY"
+    const authHeader = req.headers.get('Authorization') || ''
+    const apiKey = authHeader.replace(/^Apikey\s+/i, '').trim()
     const expectedKey = process.env.SEPAY_API_KEY || ''
     if (expectedKey && apiKey !== expectedKey) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
