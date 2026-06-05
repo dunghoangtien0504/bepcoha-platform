@@ -188,10 +188,13 @@ export async function sendCourseConfirmEmail(to: { name: string; email: string }
 // ── Email Sequence Functions ────────────────────────────────────────────────
 
 export async function sendGiftSequenceEmail1(to: { name: string; email: string }) {
+  const communityLink = process.env.COMMUNITY_GROUP_LINK || 'https://www.facebook.com/groups/nauancungcoha'
+  const driveLink = process.env.DRIVE_LINK_GIFT || '#'
+
   return getResend().emails.send({
     from: FROM_EMAIL,
     to: [to.email],
-    subject: 'Cô Hạ vừa gửi quà cho bạn – Mở ngay! 🎁',
+    subject: `${to.name} ơi, bạn đã xem video chưa? 🎬`,
     html: `
 <!DOCTYPE html>
 <html lang="vi">
@@ -200,52 +203,49 @@ export async function sendGiftSequenceEmail1(to: { name: string; email: string }
   <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
     <div style="background:linear-gradient(135deg,#003200,#006400);padding:36px 32px;text-align:center;">
       <p style="font-size:40px;margin:0 0 8px;">👩‍🍳</p>
-      <h1 style="color:#fff;margin:0;font-size:26px;font-weight:800;">Cô Hạ Đã Gửi Quà Cho Bạn!</h1>
-      <p style="margin:8px 0 0;font-size:14px;color:#dcfce7;">Khóa học Dưa Cà Muối Chuyên Sâu</p>
+      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">Bạn đã xem video quà tặng chưa?</h1>
+      <p style="margin:8px 0 0;font-size:14px;color:#dcfce7;">Cô Hạ đang chờ nghe kết quả của bạn!</p>
     </div>
     <div style="padding:36px 32px;">
-      <h2 style="color:#006400;font-size:22px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
-        Quà tặng đặc biệt từ Cô Hạ đã được chuẩn bị riêng cho bạn. Đây là video hướng dẫn <strong>5 bí quyết dưa không bị nhớt</strong> – giải pháp hoàn hảo cho những ai yêu thích ăn dưa muối!
+        Hôm qua Cô Hạ đã gửi cho bạn video hướng dẫn làm <strong>Cà Muối Mắm Giòn</strong> – không biết bạn đã có dịp xem chưa?
+      </p>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Cô hỏi thật nhé: <strong>Bạn đã thử làm chưa? Kết quả ra sao?</strong> 😄
       </p>
 
       <div style="background:#f0fff0;border-left:4px solid #006400;border-radius:8px;padding:20px 24px;margin:24px 0;">
-        <h3 style="color:#006400;margin-top:0;font-size:17px;">📹 Video quà tặng của bạn</h3>
-        <p style="margin:0 0 12px;color:#374151;font-size:14px;">
-          <strong>5 Bí Quyết Dưa Không Bị Nhớt</strong><br>
-          <span style="color:#6b7280;font-size:13px;">Chi tiết từng bước, dễ làm theo – Thời lượng: 8 phút</span>
+        <h3 style="color:#006400;margin-top:0;font-size:16px;">📹 Xem lại video nếu chưa kịp xem</h3>
+        <p style="margin:0 0 14px;color:#6b7280;font-size:14px;">
+          Công thức chi tiết từng bước – chỉ cần 15 phút là có ngay hũ dưa ngon!
         </p>
-        <a href="https://khoaduacamuoi.hacofood.vn/gift-email1" style="display:inline-block;background:#006400;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
-          📥 Xem video ngay
+        <a href="${driveLink}" style="display:inline-block;background:#006400;color:#fff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px;">
+          ▶️ Xem video ngay
         </a>
       </div>
 
       <div style="background:#fff8f0;border-left:4px solid #f59e0b;border-radius:8px;padding:20px 24px;margin:24px 0;">
-        <h3 style="color:#d97706;margin-top:0;font-size:16px;">🌟 Tại sao bạn nên xem?</h3>
-        <ul style="color:#374151;line-height:1.8;margin:0;padding-left:20px;font-size:14px;">
-          <li>Dưa luôn giòn rích, không bị nhệu</li>
-          <li>Không cần công thức phức tạp – dễ làm tại nhà</li>
-          <li>Áp dụng được ngay cho gia đình bạn</li>
-        </ul>
-      </div>
-
-      <div style="background:#f0f9ff;border:2px solid #0ea5e9;border-radius:10px;padding:20px 24px;margin:24px 0;text-align:center;">
-        <h3 style="color:#0369a1;margin-top:0;font-size:16px;">👥 Tham gia cộng đồng Cô Hạ</h3>
-        <p style="color:#374151;margin:0 0 12px;font-size:14px;">
-          149+ thành viên đang cùng học & chia sẻ kinh nghiệm nấu ăn
+        <h3 style="color:#d97706;margin-top:0;font-size:16px;">🏆 Đã làm thử rồi? Chia sẻ thành quả nhé!</h3>
+        <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 12px;">
+          Nếu bạn đã thử làm và có hũ dưa thành phẩm – đừng ngại đăng ảnh lên nhóm cộng đồng nhé! Cô Hạ và mọi người rất muốn xem kết quả của bạn. 🥒✨
         </p>
-        <a href="https://www.facebook.com/groups/nauancungcoha" style="display:inline-block;background:#0ea5e9;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
-          👨‍👩‍👧‍👦 Vào Group Miễn Phí
+        <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">
+          Nhiều bạn trong nhóm cũng đang học – vừa được động viên, vừa được Cô góp ý trực tiếp!
+        </p>
+        <a href="${communityLink}" style="display:inline-block;background:#f59e0b;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">
+          📸 Đăng thành quả lên nhóm
         </a>
       </div>
 
-      <p style="color:#6b7280;font-size:13px;line-height:1.7;margin-top:20px;">
-        Cô Hạ sẵn sàng giúp bạn bất cứ lúc nào – chỉ cần nhắn vào group nhé! 🌸
+      <p style="color:#374151;line-height:1.8;font-size:14px;">
+        Dù chưa làm hay đã làm – cứ vào nhóm hỏi Cô Hạ nhé, Cô luôn ở đây để hỗ trợ bạn! 💚
       </p>
     </div>
     <div style="background:#f9fafb;padding:18px 32px;text-align:center;border-top:1px solid #e5e7eb;">
       <p style="color:#9ca3af;font-size:12px;margin:0;">
-        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp; <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a><br>
+        © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp;
+        <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a><br>
         Bạn nhận email này vì đã đăng ký nhận quà tại website của chúng tôi.
       </p>
     </div>
