@@ -4,7 +4,6 @@ import { verifyPassword, createToken } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   try {
-    await initDb()
     const body = await req.json()
     const { email, password } = body
 
@@ -15,6 +14,34 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Special case: Admin login từ ADMIN_PASSWORD (.env)
+    if (email === 'admin@hacofood.vn') {
+      const adminPassword = process.env.ADMIN_PASSWORD || 'hacofood2024'
+      if (password === adminPassword) {
+        const token = await createToken({
+          id: 0, // Admin không cần staff.id
+          email: 'admin@hacofood.vn',
+          role: 'admin',
+        })
+        return NextResponse.json({
+          token,
+          user: {
+            id: 0,
+            email: 'admin@hacofood.vn',
+            name: 'Admin',
+            role: 'admin',
+          },
+        })
+      } else {
+        return NextResponse.json(
+          { error: 'Email hoặc mật khẩu không chính xác' },
+          { status: 401 }
+        )
+      }
+    }
+
+    // Nhân viên khác: kiểm tra staff table
+    await initDb()
     const staff = await getStaffByEmail(email)
     if (!staff) {
       return NextResponse.json(
