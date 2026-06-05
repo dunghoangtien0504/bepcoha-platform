@@ -30,10 +30,9 @@ export async function POST(req: NextRequest) {
         .catch(err => console.error('[gift-form] Telegram notify error:', err)),
     ])
 
-    // Initialize email sequence status for nurture sequence
-    // Email 1 is already sent, so set status to pending_email2
-    const nextEmail2At = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) // +2 days
-    await updateGiftLeadSequence(id, 'pending_email2', nextEmail2At)
+    // Khởi tạo chuỗi email nurture - Email 1 gửi sau 1 ngày
+    const nextEmail1At = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000) // +1 ngày
+    await updateGiftLeadSequence(id, 'pending_email1', nextEmail1At)
 
     return NextResponse.json({ success: true, giftLeadId: id })
   } catch (err) {
