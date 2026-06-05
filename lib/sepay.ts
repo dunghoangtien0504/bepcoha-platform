@@ -19,7 +19,7 @@ export interface SepayWebhookPayload {
 export function generatePaymentRef(phone: string): string {
   const ts = Date.now().toString().slice(-6)
   const phonePart = phone.replace(/\D/g, '').slice(-4)
-  return `DUACA${phonePart}${ts}` // DUACA = Dưa Cà (khóa học này)
+  return `DH${phonePart}${ts}` // DH = Dưa (Hạ) - prefix cấu hình trong SePay
 }
 
 export function buildQRPayload(ref: string, amount: number): SepayQRPayload {
