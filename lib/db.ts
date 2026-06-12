@@ -5,7 +5,7 @@ const connectionString = process.env.DATABASE_URL || ''
 
 let _sql: ReturnType<typeof postgres> | null = null
 
-function getDb() {
+export function getDb() {
   if (!_sql) {
     _sql = postgres(connectionString, {
       ssl: { rejectUnauthorized: false },
