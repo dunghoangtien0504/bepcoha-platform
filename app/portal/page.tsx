@@ -2,6 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
+interface AiOrder {
+  id: number
+  poscake_order_id: string | null
+  customer_name: string
+  customer_phone: string
+  customer_address: string | null
+  items: Array<{ variation_id: string; product_name: string; quantity: number }>
+  confidence: number | null
+  status: 'created' | 'failed' | 'pending'
+  source: string
+  note: string | null
+  created_at: string
+}
+
 interface Lead {
   id: number
   name: string
@@ -79,6 +93,7 @@ function LoginScreen({ onLogin }: { onLogin: (pw: string) => void }) {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+  const [tab, setTab] = useState<'leads' | 'ai-orders'>('leads')
   const [leads, setLeads] = useState<Lead[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -122,6 +137,17 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
               <p className="text-green-300 text-xs">Admin Portal · hacofood.vn</p>
             </div>
           </div>
+          {/* Tab switcher */}
+          <div className="flex items-center gap-1 bg-white/20 rounded-xl p-1">
+            <button onClick={() => setTab('leads')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${tab === 'leads' ? 'bg-white text-[#1B5E20]' : 'text-white/80 hover:text-white'}`}>
+              📊 Học viên
+            </button>
+            <button onClick={() => setTab('ai-orders')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${tab === 'ai-orders' ? 'bg-white text-[#1B5E20]' : 'text-white/80 hover:text-white'}`}>
+              🤖 AI Đơn hàng
+            </button>
+          </div>
           <div className="flex items-center gap-3">
             <button onClick={fetchLeads}
               className="bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors">
@@ -137,7 +163,15 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
       <div className="max-w-7xl mx-auto px-4 py-6">
 
-        {/* Stats */}
+        {/* AI Orders Tab */}
+        {tab === 'ai-orders' && (
+          <AiOrdersTab token={token} />
+        )}
+
+        {/* Leads Tab */}
+        {tab === 'leads' && <>
+
+      {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             {[
@@ -286,6 +320,166 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         <p className="text-center text-gray-400 text-xs mt-4">
           Dữ liệu tự động làm mới khi đổi bộ lọc · Click tên/email/SĐT để liên hệ
         </p>
+        </>}
+      </div>
+    </div>
+  )
+}
+
+// ── AI Orders Tab ─────────────────────────────────────────────────────────────
+function AiOrdersTab({ token }: { token: string }) {
+  const [orders, setOrders] = useState<AiOrder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true)
+    const res = await fetch('/api/portal/ai-orders', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setOrders(data.orders)
+    }
+    setLoading(false)
+  }, [token])
+
+  useEffect(() => { fetchOrders() }, [fetchOrders])
+
+  const filtered = orders.filter(o => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return o.customer_name.toLowerCase().includes(q) ||
+      o.customer_phone.includes(q) ||
+      (o.customer_address || '').toLowerCase().includes(q) ||
+      (o.poscake_order_id || '').includes(q)
+  })
+
+  const stats = {
+    total: orders.length,
+    created: orders.filter(o => o.status === 'created').length,
+    failed: orders.filter(o => o.status === 'failed').length,
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Mini stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Tổng đơn AI', value: stats.total, icon: '🤖', color: 'blue' },
+          { label: 'Thành công', value: stats.created, icon: '✅', color: 'green' },
+          { label: 'Thất bại', value: stats.failed, icon: '❌', color: 'red' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-xs font-medium">{s.label}</p>
+                <p className={`font-black text-2xl mt-1 ${
+                  s.color === 'green' ? 'text-green-600' :
+                  s.color === 'red' ? 'text-red-500' : 'text-blue-600'
+                }`}>{s.value}</p>
+              </div>
+              <span className="text-2xl">{s.icon}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Webhook URL hint */}
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+        <p className="font-bold mb-1">📡 Webhook URL để cấu hình trong Pancake CRM:</p>
+        <code className="bg-white px-3 py-1 rounded-lg text-xs font-mono break-all">
+          https://hacofood.vn/api/webhook/pancake-ai
+        </code>
+        <p className="text-xs mt-2 text-amber-600">Pancake CRM → Tiện ích → Webhook-API → Thêm URL trên</p>
+      </div>
+
+      {/* Search + Refresh */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="🔍 Tìm tên, SĐT, địa chỉ, mã đơn..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:border-[#43A047] focus:outline-none"
+          />
+          <button onClick={fetchOrders}
+            className="bg-[#2E7D32] hover:bg-[#1B5E20] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            🔄 Tải lại
+          </button>
+        </div>
+      </div>
+
+      {/* Orders table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-gray-400">
+            <div className="text-center"><div className="text-3xl mb-2 animate-pulse">🤖</div><p>Đang tải đơn hàng AI...</p></div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex items-center justify-center py-16 text-gray-400">
+            <div className="text-center">
+              <div className="text-3xl mb-2">📭</div>
+              <p>Chưa có đơn hàng từ AI Agent</p>
+              <p className="text-xs mt-1">Cấu hình webhook Pancake ở trên để bắt đầu</p>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  {['#', 'Mã Poscake', 'Khách hàng', 'SĐT', 'Địa chỉ', 'Sản phẩm', 'Kênh', 'Độ chính xác', 'Trạng thái', 'Thời gian'].map(h => (
+                    <th key={h} className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filtered.map((o, i) => (
+                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-3 py-3 text-gray-400 text-xs">{i + 1}</td>
+                    <td className="px-3 py-3">
+                      {o.poscake_order_id
+                        ? <code className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded font-mono">{o.poscake_order_id}</code>
+                        : <span className="text-gray-300 text-xs">—</span>}
+                    </td>
+                    <td className="px-3 py-3 font-semibold text-gray-800 whitespace-nowrap">{o.customer_name}</td>
+                    <td className="px-3 py-3 text-gray-600 whitespace-nowrap">
+                      <a href={`tel:${o.customer_phone}`} className="hover:text-[#2E7D32]">{o.customer_phone}</a>
+                    </td>
+                    <td className="px-3 py-3 text-gray-500 text-xs max-w-[180px] truncate" title={o.customer_address || ''}>{o.customer_address || '—'}</td>
+                    <td className="px-3 py-3 text-xs text-gray-700 whitespace-nowrap">
+                      {o.items?.map((item, idx) => (
+                        <span key={idx} className="inline-block bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded mr-1">
+                          {item.product_name} ×{item.quantity}
+                        </span>
+                      ))}
+                    </td>
+                    <td className="px-3 py-3 text-xs text-gray-400 whitespace-nowrap">{o.source}</td>
+                    <td className="px-3 py-3 text-xs">
+                      {o.confidence != null
+                        ? <span className={`font-bold ${o.confidence >= 0.85 ? 'text-green-600' : o.confidence >= 0.7 ? 'text-amber-600' : 'text-red-500'}`}>
+                            {Math.round(o.confidence * 100)}%
+                          </span>
+                        : '—'}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
+                        o.status === 'created' ? 'bg-green-100 text-green-700' :
+                        o.status === 'failed' ? 'bg-red-100 text-red-600' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {o.status === 'created' ? '✅ Đã tạo' : o.status === 'failed' ? '❌ Lỗi' : '⏳ Chờ'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-gray-400 text-xs whitespace-nowrap">{fmtDate(o.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

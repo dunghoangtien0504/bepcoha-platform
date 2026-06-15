@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     }
 
     const paymentRef = generatePaymentRef(phone.trim())
-    // Giá khuyến mãi 199k khi đến từ link ?promo=199 (Email 5), mặc định 299k
-    const amount = String(promo) === '199' ? 199000 : 299000
+    // Giá khuyến mãi 239k khi đến từ link ?promo=239 (Email 5), mặc định 299k
+    const amount = String(promo) === '239' ? 239000 : 299000
 
     await insertCourseLead({ name: name.trim(), email: email.trim(), phone: phone.trim(), paymentRef, amount })
 

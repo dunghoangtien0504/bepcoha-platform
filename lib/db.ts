@@ -81,6 +81,23 @@ export async function initDb() {
     )
   `
   await sql`
+    CREATE TABLE IF NOT EXISTS ai_orders (
+      id SERIAL PRIMARY KEY,
+      poscake_order_id TEXT,
+      customer_name TEXT NOT NULL,
+      customer_phone TEXT NOT NULL,
+      customer_address TEXT,
+      items JSONB NOT NULL DEFAULT '[]',
+      raw_conversation TEXT,
+      confidence REAL,
+      status TEXT NOT NULL DEFAULT 'created',
+      source TEXT DEFAULT 'meta_ai',
+      note TEXT,
+      poscake_response JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await sql`
     CREATE TABLE IF NOT EXISTS course_settings (
       id SERIAL PRIMARY KEY,
       course_name TEXT DEFAULT 'Khóa học Dưa Cà Muối',
@@ -368,6 +385,72 @@ export async function getAuditLogsByFilters(
   return rows as unknown as AuditLogWithStaff[]
 }
 
+// ── AI Orders ────────────────────────────────────────────────────────────────
+export async function initAiOrdersTable() {
+  const sql = getDb()
+  await sql`
+    CREATE TABLE IF NOT EXISTS ai_orders (
+      id SERIAL PRIMARY KEY,
+      poscake_order_id TEXT,
+      customer_name TEXT NOT NULL,
+      customer_phone TEXT NOT NULL,
+      customer_address TEXT,
+      items JSONB NOT NULL DEFAULT '[]',
+      raw_conversation TEXT,
+      confidence REAL,
+      status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'failed', 'pending')),
+      source TEXT DEFAULT 'meta_ai',
+      note TEXT,
+      poscake_response JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+}
+
+export async function insertAiOrder(data: {
+  poscakeOrderId?: string
+  customerName: string
+  customerPhone: string
+  customerAddress?: string
+  items: Array<{ variation_id: string; product_name: string; quantity: number }>
+  rawConversation?: string
+  confidence?: number
+  status: 'created' | 'failed' | 'pending'
+  source?: string
+  note?: string
+  poscakeResponse?: Record<string, unknown>
+}) {
+  const sql = getDb()
+  const rows = await sql`
+    INSERT INTO ai_orders (
+      poscake_order_id, customer_name, customer_phone, customer_address,
+      items, raw_conversation, confidence, status, source, note, poscake_response
+    ) VALUES (
+      ${data.poscakeOrderId || null},
+      ${data.customerName},
+      ${data.customerPhone},
+      ${data.customerAddress || null},
+      ${JSON.stringify(data.items)},
+      ${data.rawConversation || null},
+      ${data.confidence || null},
+      ${data.status},
+      ${data.source || 'meta_ai'},
+      ${data.note || null},
+      ${data.poscakeResponse ? JSON.stringify(data.poscakeResponse) : null}
+    )
+    RETURNING id
+  `
+  return rows[0].id as number
+}
+
+export async function getAllAiOrders(limit = 100) {
+  const sql = getDb()
+  const rows = await sql`
+    SELECT * FROM ai_orders ORDER BY created_at DESC LIMIT ${limit}
+  `
+  return rows as unknown as AiOrder[]
+}
+
 // ── Course Settings ───────────────────────────────────────────────────────────
 export async function getCourseSettings() {
   const sql = getDb()
@@ -442,4 +525,19 @@ export interface AuditLogWithStaff extends AuditLog {
 export interface CourseSettings {
   id: number; course_name: string; course_price: number; discount_price: number
   course_description: string | null; updated_at: string
+}
+export interface AiOrder {
+  id: number
+  poscake_order_id: string | null
+  customer_name: string
+  customer_phone: string
+  customer_address: string | null
+  items: Array<{ variation_id: string; product_name: string; quantity: number }>
+  raw_conversation: string | null
+  confidence: number | null
+  status: 'created' | 'failed' | 'pending'
+  source: string
+  note: string | null
+  poscake_response: Record<string, unknown> | null
+  created_at: string
 }

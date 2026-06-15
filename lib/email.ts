@@ -119,7 +119,7 @@ export async function sendCourseConfirmEmail(to: { name: string; email: string; 
   const courseGroupLink = process.env.COURSE_GROUP_LINK || '#'
   const amount = to.amount ?? 299000
   const amountText = amount.toLocaleString('vi-VN') + 'đ'
-  // Ghi chú riêng cho khách nhận ưu đãi đặc biệt (giá dưới 299k, vd promo 199k từ Email cuối)
+  // Ghi chú riêng cho khách nhận ưu đãi đặc biệt (giá dưới 299k, vd promo 239k từ Email cuối)
   const promoNote = amount < 299000 ? `
       <div style="background:#fef2f2;border:2px solid #dc2626;border-radius:10px;padding:16px 20px;margin:0 0 24px;">
         <p style="margin:0;color:#991b1b;font-size:14px;line-height:1.7;">
@@ -158,6 +158,35 @@ ${promoNote}
         </ol>
         <a href="${courseGroupLink}" style="display:inline-block;background:#16a34a;color:#fff;padding:16px 32px;border-radius:10px;text-decoration:none;font-weight:800;font-size:18px;margin-top:16px;width:100%;text-align:center;box-sizing:border-box;">
           👥 Vào Group Học Viên Ngay
+        </a>
+      </div>
+
+      <!-- BONUS: 3 GIA QUA TANG PDF -->
+      <div style="background:#fff7ed;border:2px dashed #e07b39;border-radius:12px;padding:24px;margin:24px 0;">
+        <h3 style="color:#c05621;margin-top:0;font-size:17px;">🎁 Quà tặng đặc biệt – TẢI NGAY</h3>
+        <p style="color:#4b5563;font-size:14px;line-height:1.7;margin:0 0 14px;">
+          Cô Hạ tặng kèm <strong>Bộ 3 Tài Liệu Đặc Biệt</strong> (trị giá <strong>297.000đ</strong>) để bạn bắt đầu ngay hôm nay:
+        </p>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+          <tr>
+            <td style="padding:6px 0 6px 4px;color:#374151;font-size:13.5px;line-height:1.6;">
+              <span style="color:#e07b39;font-weight:700;">①</span> Bảng Tỷ Lệ Nước Ngâm Chuẩn Vị 5 Món
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0 6px 4px;color:#374151;font-size:13.5px;line-height:1.6;">
+              <span style="color:#e07b39;font-weight:700;">②</span> Checklist 12 Dấu Hiệu Chọn Nguyên Liệu Tươi
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0 6px 4px;color:#374151;font-size:13.5px;line-height:1.6;">
+              <span style="color:#e07b39;font-weight:700;">③</span> Bí Quyết Bảo Quản Giữ Dưa Giòn 30 Ngày
+            </td>
+          </tr>
+        </table>
+        <a href="https://khoaduacamuoi.hacofood.vn/Qua-Tang-Khoa-Dua-Ca-Muoi-CoHa.pdf"
+          style="display:inline-block;background:#e07b39;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:800;font-size:15px;width:100%;text-align:center;box-sizing:border-box;">
+          📥 Tải Bộ Tài Liệu (PDF) – Miễn phí
         </a>
       </div>
 
@@ -793,8 +822,8 @@ export async function sendGiftSequenceEmail5(to: { name: string; email: string }
     <div style="background:#fef2f2;padding:20px 32px;text-align:center;border-bottom:3px solid #dc2626;">
       <p style="color:#6b7280;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;">Ưu đãi cuối – chỉ hôm nay</p>
       <p style="margin:0;font-size:14px;color:#9ca3af;text-decoration:line-through;">299.000đ</p>
-      <p style="margin:4px 0;font-size:36px;font-weight:900;color:#dc2626;">199.000đ</p>
-      <p style="margin:0;font-size:13px;color:#16a34a;font-weight:700;">Tiết kiệm 100.000đ · Hết lúc 23h59 hôm nay</p>
+      <p style="margin:4px 0;font-size:36px;font-weight:900;color:#dc2626;">239.000đ</p>
+      <p style="margin:0;font-size:13px;color:#16a34a;font-weight:700;">Tiết kiệm 60.000đ · Hết lúc 23h59 hôm nay</p>
     </div>
 
     <div style="padding:36px 32px;">
@@ -840,7 +869,7 @@ export async function sendGiftSequenceEmail5(to: { name: string; email: string }
           <span style="color:#dc2626;font-size:16px;flex-shrink:0;">❓</span>
           <div>
             <p style="margin:0 0 4px;color:#1f2937;font-weight:700;font-size:14px;">"Tôi không có nhiều tiền"</p>
-            <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">→ 199.000đ bằng 2 ly cà phê mỗi tháng. Nếu bán được thêm 1 hũ dưa/tuần, bạn thu hồi vốn trong 2 tuần.</p>
+            <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">→ 239.000đ bằng 2–3 ly cà phê. Nếu bán được thêm 1 hũ dưa/tuần, bạn thu hồi vốn trong 2 tuần.</p>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;">
@@ -868,10 +897,10 @@ export async function sendGiftSequenceEmail5(to: { name: string; email: string }
       <div style="background:#fef2f2;border:3px solid #dc2626;border-radius:12px;padding:24px;margin:24px 0;text-align:center;">
         <p style="margin:0 0 6px;color:#6b7280;font-size:13px;">Giá ưu đãi cuối – chỉ hôm nay</p>
         <p style="margin:0 0 4px;font-size:14px;color:#9ca3af;text-decoration:line-through;">299.000đ</p>
-        <p style="margin:0 0 16px;font-size:34px;font-weight:900;color:#dc2626;">199.000đ</p>
-        <a href="https://khoaduacamuoi.hacofood.vn/?promo=199#khoa-hoc"
+        <p style="margin:0 0 16px;font-size:34px;font-weight:900;color:#dc2626;">239.000đ</p>
+        <a href="https://khoaduacamuoi.hacofood.vn/?promo=239#khoa-hoc"
            style="display:block;background:#dc2626;color:#fff;padding:16px 32px;border-radius:10px;text-decoration:none;font-weight:900;font-size:17px;box-shadow:0 4px 12px rgba(220,38,38,0.25);">
-          🎓 Tôi muốn tham gia – 199.000đ
+          🎓 Tôi muốn tham gia – 239.000đ
         </a>
         <p style="color:#6b7280;font-size:12px;margin:12px 0 0;">Hết lúc 23h59 hôm nay · Thanh toán chuyển khoản an toàn</p>
       </div>

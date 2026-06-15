@@ -1,6 +1,7 @@
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const GIFT_GROUP_ID = process.env.TELEGRAM_GIFT_GROUP_ID || ''
 const COURSE_GROUP_ID = process.env.TELEGRAM_COURSE_GROUP_ID || ''
+const ORDER_GROUP_ID = process.env.TELEGRAM_ORDER_GROUP_ID || COURSE_GROUP_ID
 
 async function sendMessage(chatId: string, text: string) {
   if (!BOT_TOKEN || !chatId) return
@@ -47,6 +48,30 @@ export async function notifyCourseLead(data: {
 • Thời gian: ${new Date().toLocaleString('vi-VN')}`
 
   await sendMessage(COURSE_GROUP_ID, msg)
+}
+
+export async function notifyOrder(data: {
+  name: string
+  phone: string
+  email: string
+  address: string
+  product: string
+  quantity: number
+  totalPrice: number
+  note?: string
+}) {
+  const msg = `🛒 <b>ĐƠN HÀNG SỐT TRỘN NỘM MỚI</b>
+
+• Tên: <b>${data.name}</b>
+• SĐT: <b>${data.phone}</b>
+• Email: ${data.email}
+• Địa chỉ: ${data.address}
+• Sản phẩm: <b>${data.product}</b>
+• Số lượng: <b>${data.quantity}</b>
+• Tổng tiền: <b>${data.totalPrice.toLocaleString('vi-VN')}đ</b>${data.note ? `\n• Ghi chú: ${data.note}` : ''}
+• Thời gian: ${new Date().toLocaleString('vi-VN')}`
+
+  await sendMessage(ORDER_GROUP_ID, msg)
 }
 
 // Cảnh báo khi khách chuyển KHÔNG ĐỦ tiền (vd test 10k) – gửi để admin xử lý tay
