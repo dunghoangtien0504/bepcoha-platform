@@ -385,9 +385,96 @@ export async function getAuditLogsByFilters(
   return rows as unknown as AuditLogWithStaff[]
 }
 
+// ── Conversations ─────────────────────────────────────────────────────────────
+export async function insertConversation(data: {
+  pancakeConversationId?: string
+  customerName: string
+  customerPhone?: string
+  customerAvatar?: string
+  platform?: string
+  pageName?: string
+  messages: ConversationMessage[]
+  aiSummary?: string
+  hasOrder?: boolean
+  aiOrderId?: number
+}) {
+  const sql = getDb()
+  const rows = await sql`
+    INSERT INTO conversations (
+      pancake_conversation_id, customer_name, customer_phone, customer_avatar,
+      platform, page_name, messages, ai_summary, has_order, ai_order_id
+    ) VALUES (
+      ${data.pancakeConversationId || null},
+      ${data.customerName},
+      ${data.customerPhone || ''},
+      ${data.customerAvatar || null},
+      ${data.platform || 'facebook'},
+      ${data.pageName || ''},
+      ${JSON.stringify(data.messages)},
+      ${data.aiSummary || null},
+      ${data.hasOrder || false},
+      ${data.aiOrderId || null}
+    )
+    RETURNING id
+  `
+  return rows[0].id as number
+}
+
+export async function updateConversationEvaluation(id: number, data: {
+  score?: number
+  label?: string
+  note?: string
+}) {
+  const sql = getDb()
+  await sql`
+    UPDATE conversations SET
+      evaluation_score = ${data.score ?? null},
+      evaluation_label = ${data.label ?? null},
+      evaluation_note  = ${data.note ?? null},
+      evaluated_at     = NOW(),
+      updated_at       = NOW()
+    WHERE id = ${id}
+  `
+}
+
+export async function getAllConversations(limit = 200) {
+  const sql = getDb()
+  const rows = await sql`
+    SELECT * FROM conversations ORDER BY created_at DESC LIMIT ${limit}
+  `
+  return rows as unknown as Conversation[]
+}
+
+export async function getConversationById(id: number) {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM conversations WHERE id = ${id}`
+  return rows[0] as Conversation | undefined
+}
+
 // ── AI Orders ────────────────────────────────────────────────────────────────
 export async function initAiOrdersTable() {
   const sql = getDb()
+  await sql`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id SERIAL PRIMARY KEY,
+      pancake_conversation_id TEXT,
+      customer_name TEXT NOT NULL DEFAULT '',
+      customer_phone TEXT DEFAULT '',
+      customer_avatar TEXT,
+      platform TEXT DEFAULT 'facebook',
+      page_name TEXT DEFAULT '',
+      messages JSONB NOT NULL DEFAULT '[]',
+      ai_summary TEXT,
+      evaluation_score INTEGER CHECK (evaluation_score BETWEEN 1 AND 5),
+      evaluation_label TEXT,
+      evaluation_note TEXT,
+      evaluated_at TIMESTAMPTZ,
+      has_order BOOLEAN DEFAULT FALSE,
+      ai_order_id INTEGER,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
   await sql`
     CREATE TABLE IF NOT EXISTS ai_orders (
       id SERIAL PRIMARY KEY,
@@ -525,6 +612,33 @@ export interface AuditLogWithStaff extends AuditLog {
 export interface CourseSettings {
   id: number; course_name: string; course_price: number; discount_price: number
   course_description: string | null; updated_at: string
+}
+export interface ConversationMessage {
+  id?: string
+  from_customer: boolean
+  sender_name?: string
+  content: string
+  timestamp?: string
+  type?: string
+}
+export interface Conversation {
+  id: number
+  pancake_conversation_id: string | null
+  customer_name: string
+  customer_phone: string
+  customer_avatar: string | null
+  platform: string
+  page_name: string
+  messages: ConversationMessage[]
+  ai_summary: string | null
+  evaluation_score: number | null
+  evaluation_label: string | null
+  evaluation_note: string | null
+  evaluated_at: string | null
+  has_order: boolean
+  ai_order_id: number | null
+  created_at: string
+  updated_at: string
 }
 export interface AiOrder {
   id: number

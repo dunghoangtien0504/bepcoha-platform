@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { initDb, insertAiOrder } from '@/lib/db'
+import { initDb, insertAiOrder, insertConversation } from '@/lib/db'
 import { createPancakeOrder } from '@/lib/pancake'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -72,8 +72,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'skipped', reason: 'no messages' })
   }
 
-  const conversationText = formatMessages(messages as Array<{ from_customer?: boolean; message?: string; content?: string }>)
+  const typedMessages = (messages as Array<{ from_customer?: boolean; message?: string; content?: string }>)
+  const conversationText = formatMessages(typedMessages)
   const customerName = (customer.name as string) || ''
+
+  // Lưu hội thoại vào DB ngay để hiển thị trong tab Hội thoại
+  const convMessages = typedMessages.map((m, i) => ({
+    id: `msg_${i}`,
+    from_customer: !!m.from_customer,
+    content: m.message || m.content || '',
+  }))
+  const conversationId = await insertConversation({
+    pancakeConversationId: (conversation.id as string) || undefined,
+    customerName,
+    customerPhone: (customer.phone as string) || '',
+    platform: 'facebook',
+    pageName,
+    messages: convMessages,
+  })
 
   // Gọi Claude phân tích hội thoại
   let extraction: Record<string, unknown>
@@ -152,7 +168,7 @@ export async function POST(req: NextRequest) {
   const poscakeOrderId = (poscakeResult?.data as Record<string, unknown>)?.id as string ||
     poscakeResult?.id as string || undefined
 
-  await insertAiOrder({
+  const aiOrderDbId = await insertAiOrder({
     poscakeOrderId,
     customerName: extraction.customer_name as string || customerName,
     customerPhone: extraction.customer_phone as string || '',
@@ -165,6 +181,16 @@ export async function POST(req: NextRequest) {
     note: extraction.note as string || '',
     poscakeResponse: poscakeResult as Record<string, unknown>,
   })
+
+  // Cập nhật conversation: gắn đơn hàng + đánh dấu has_order
+  const sql = (await import('@/lib/db')).getDb()
+  await sql`
+    UPDATE conversations SET
+      has_order = ${orderStatus === 'created'},
+      ai_order_id = ${aiOrderDbId},
+      updated_at = NOW()
+    WHERE id = ${conversationId}
+  `
 
   return NextResponse.json({
     status: orderStatus,

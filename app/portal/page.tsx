@@ -2,6 +2,32 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
+interface ConversationMessage {
+  id?: string
+  from_customer: boolean
+  sender_name?: string
+  content: string
+  timestamp?: string
+}
+
+interface Conversation {
+  id: number
+  pancake_conversation_id: string | null
+  customer_name: string
+  customer_phone: string
+  platform: string
+  page_name: string
+  messages: ConversationMessage[]
+  ai_summary: string | null
+  evaluation_score: number | null
+  evaluation_label: string | null
+  evaluation_note: string | null
+  evaluated_at: string | null
+  has_order: boolean
+  ai_order_id: number | null
+  created_at: string
+}
+
 interface AiOrder {
   id: number
   poscake_order_id: string | null
@@ -93,7 +119,7 @@ function LoginScreen({ onLogin }: { onLogin: (pw: string) => void }) {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const [tab, setTab] = useState<'leads' | 'ai-orders'>('leads')
+  const [tab, setTab] = useState<'leads' | 'ai-orders' | 'conversations'>('leads')
   const [leads, setLeads] = useState<Lead[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -147,6 +173,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
               className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${tab === 'ai-orders' ? 'bg-white text-[#1B5E20]' : 'text-white/80 hover:text-white'}`}>
               🤖 AI Đơn hàng
             </button>
+            <button onClick={() => setTab('conversations')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${tab === 'conversations' ? 'bg-white text-[#1B5E20]' : 'text-white/80 hover:text-white'}`}>
+              💬 Hội thoại
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={fetchLeads}
@@ -164,9 +194,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       <div className="max-w-7xl mx-auto px-4 py-6">
 
         {/* AI Orders Tab */}
-        {tab === 'ai-orders' && (
-          <AiOrdersTab token={token} />
-        )}
+        {tab === 'ai-orders' && <AiOrdersTab token={token} />}
+
+        {/* Conversations Tab */}
+        {tab === 'conversations' && <ConversationsTab token={token} />}
 
         {/* Leads Tab */}
         {tab === 'leads' && <>
@@ -321,6 +352,317 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           Dữ liệu tự động làm mới khi đổi bộ lọc · Click tên/email/SĐT để liên hệ
         </p>
         </>}
+      </div>
+    </div>
+  )
+}
+
+// ── Conversations Tab ─────────────────────────────────────────────────────────
+const EVAL_LABELS = [
+  { key: 'order',    label: 'Đặt hàng',       color: 'bg-green-100 text-green-700 border-green-300' },
+  { key: 'inquiry',  label: 'Hỏi thông tin',   color: 'bg-blue-100 text-blue-700 border-blue-300' },
+  { key: 'no_buy',   label: 'Không mua',        color: 'bg-amber-100 text-amber-700 border-amber-300' },
+  { key: 'ai_wrong', label: 'AI sai',           color: 'bg-red-100 text-red-600 border-red-300' },
+  { key: 'need_staff',label: 'Cần NV hỗ trợ',  color: 'bg-purple-100 text-purple-700 border-purple-300' },
+]
+
+function labelStyle(key: string | null) {
+  const found = EVAL_LABELS.find(l => l.key === key)
+  return found ? found.color : 'bg-gray-100 text-gray-500 border-gray-200'
+}
+function labelText(key: string | null) {
+  return EVAL_LABELS.find(l => l.key === key)?.label ?? 'Chưa đánh giá'
+}
+
+function ConversationsTab({ token }: { token: string }) {
+  const [convs, setConvs] = useState<Conversation[]>([])
+  const [selected, setSelected] = useState<Conversation | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<'all' | 'unevaluated' | 'order' | 'no_buy'>('all')
+  const [search, setSearch] = useState('')
+  const [score, setScore] = useState(0)
+  const [label, setLabel] = useState('')
+  const [note, setNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [summarizing, setSummarizing] = useState(false)
+
+  const fetchConvs = useCallback(async () => {
+    setLoading(true)
+    const res = await fetch('/api/portal/conversations', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (res.ok) { const d = await res.json(); setConvs(d.conversations) }
+    setLoading(false)
+  }, [token])
+
+  useEffect(() => { fetchConvs() }, [fetchConvs])
+
+  const selectConv = (c: Conversation) => {
+    setSelected(c)
+    setScore(c.evaluation_score ?? 0)
+    setLabel(c.evaluation_label ?? '')
+    setNote(c.evaluation_note ?? '')
+  }
+
+  const saveEval = async () => {
+    if (!selected) return
+    setSaving(true)
+    await fetch(`/api/portal/conversations/${selected.id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score, label, note }),
+    })
+    setSaving(false)
+    setSelected(prev => prev ? { ...prev, evaluation_score: score, evaluation_label: label, evaluation_note: note } : null)
+    setConvs(prev => prev.map(c => c.id === selected.id ? { ...c, evaluation_score: score, evaluation_label: label, evaluation_note: note } : c))
+  }
+
+  const summarize = async () => {
+    if (!selected) return
+    setSummarizing(true)
+    const res = await fetch(`/api/portal/conversations/${selected.id}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (res.ok) {
+      const d = await res.json()
+      setSelected(prev => prev ? { ...prev, ai_summary: d.summary } : null)
+      setConvs(prev => prev.map(c => c.id === selected.id ? { ...c, ai_summary: d.summary } : c))
+    }
+    setSummarizing(false)
+  }
+
+  const filtered = convs.filter(c => {
+    if (filter === 'unevaluated' && c.evaluation_label) return false
+    if (filter === 'order' && c.evaluation_label !== 'order') return false
+    if (filter === 'no_buy' && c.evaluation_label !== 'no_buy') return false
+    if (search) {
+      const q = search.toLowerCase()
+      return c.customer_name.toLowerCase().includes(q) || c.customer_phone.includes(q) || c.page_name.toLowerCase().includes(q)
+    }
+    return true
+  })
+
+  const stats = {
+    total: convs.length,
+    evaluated: convs.filter(c => c.evaluation_label).length,
+    orders: convs.filter(c => c.has_order).length,
+    avgScore: convs.filter(c => c.evaluation_score).length
+      ? (convs.filter(c => c.evaluation_score).reduce((a, c) => a + (c.evaluation_score || 0), 0) / convs.filter(c => c.evaluation_score).length).toFixed(1)
+      : '—',
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: 'Tổng hội thoại', value: stats.total, color: 'text-blue-600' },
+          { label: 'Đã đánh giá', value: stats.evaluated, color: 'text-green-600' },
+          { label: 'Có đặt hàng', value: stats.orders, color: 'text-orange-600' },
+          { label: 'Điểm AI trung bình', value: `${stats.avgScore}★`, color: 'text-amber-600' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <p className="text-gray-500 text-xs font-medium">{s.label}</p>
+            <p className={`font-black text-2xl mt-1 ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Main panel: list + detail */}
+      <div className="grid grid-cols-[280px_1fr_240px] gap-3" style={{ minHeight: '520px' }}>
+
+        {/* LEFT: Conversation list */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+          <div className="p-3 border-b border-gray-100 space-y-2">
+            <input
+              placeholder="Tìm tên, SĐT..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#43A047]"
+            />
+            <div className="flex gap-1 flex-wrap">
+              {[
+                { k: 'all', label: 'Tất cả' },
+                { k: 'unevaluated', label: 'Chưa đánh giá' },
+                { k: 'order', label: 'Đặt hàng' },
+                { k: 'no_buy', label: 'Không mua' },
+              ].map(f => (
+                <button key={f.k} onClick={() => setFilter(f.k as typeof filter)}
+                  className={`text-xs px-2 py-1 rounded-lg border transition-all ${filter === f.k ? 'bg-[#1B5E20] text-white border-[#1B5E20]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="overflow-y-auto flex-1">
+            {loading ? (
+              <div className="flex items-center justify-center py-12 text-gray-400 text-sm">Đang tải...</div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-sm gap-2">
+                <span className="text-3xl">💬</span>
+                <span>Chưa có hội thoại</span>
+              </div>
+            ) : filtered.map(c => (
+              <button key={c.id} onClick={() => selectConv(c)} className={`w-full text-left p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${selected?.id === c.id ? 'bg-green-50 border-l-2 border-l-[#2E7D32]' : ''}`}>
+                <div className="flex justify-between items-start mb-1">
+                  <span className="font-medium text-sm text-gray-800 truncate pr-2">{c.customer_name || 'Khách ẩn danh'}</span>
+                  <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div className="text-xs text-gray-500 truncate mb-1.5">
+                  {c.messages.slice(-1)[0]?.content || '(không có tin nhắn)'}
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  {c.evaluation_label
+                    ? <span className={`text-xs px-2 py-0.5 rounded-full border ${labelStyle(c.evaluation_label)}`}>{labelText(c.evaluation_label)}</span>
+                    : <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 border border-gray-200">Chưa đánh giá</span>
+                  }
+                  {c.has_order && <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">✓ Có đơn</span>}
+                  {c.evaluation_score ? <span className="text-xs text-amber-500">{'★'.repeat(c.evaluation_score)}</span> : null}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* CENTER: Chat view */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+          {!selected ? (
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
+              <span className="text-5xl">💬</span>
+              <p className="text-sm">Chọn hội thoại để xem</p>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-xs font-bold text-green-800">
+                    {(selected.customer_name || 'K').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{selected.customer_name || 'Khách ẩn danh'}</p>
+                    <p className="text-xs text-gray-400">{selected.page_name} · {fmtDate(selected.created_at)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {selected.has_order && <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">✓ Có đơn #{selected.ai_order_id}</span>}
+                  <button onClick={summarize} disabled={summarizing}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+                    {summarizing ? 'Đang tóm tắt...' : '✨ Tóm tắt AI'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {selected.messages.map((msg, i) => (
+                  <div key={i} className={`flex gap-2 items-end ${!msg.from_customer ? 'flex-row-reverse' : ''}`}>
+                    <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${msg.from_customer ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                      {msg.from_customer ? 'KH' : 'AI'}
+                    </div>
+                    <div className={`max-w-[75%] ${!msg.from_customer ? 'items-end' : 'items-start'} flex flex-col`}>
+                      <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.from_customer
+                        ? 'bg-[#1B5E20] text-white rounded-bl-sm'
+                        : 'bg-gray-100 text-gray-800 rounded-br-sm'}`}>
+                        {msg.content}
+                      </div>
+                      {msg.timestamp && <span className="text-xs text-gray-400 mt-0.5 px-1">{msg.timestamp}</span>}
+                    </div>
+                  </div>
+                ))}
+
+                {/* AI Summary */}
+                {selected.ai_summary && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-2">
+                    <p className="text-xs font-semibold text-blue-700 mb-1">✨ Tóm tắt AI</p>
+                    <p className="text-xs text-blue-800 leading-relaxed">{selected.ai_summary}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* RIGHT: Evaluation panel */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+          <div className="p-3 border-b border-gray-100 font-medium text-sm text-gray-700">
+            📋 Đánh giá hội thoại
+          </div>
+          {!selected ? (
+            <div className="flex items-center justify-center flex-1 text-sm text-gray-400 p-4 text-center">
+              Chọn 1 hội thoại để đánh giá
+            </div>
+          ) : (
+            <div className="p-4 space-y-4 overflow-y-auto flex-1">
+              {/* Stars */}
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-2">Chất lượng AI</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <button key={s} onClick={() => setScore(s)}
+                      className={`text-2xl transition-colors ${s <= score ? 'text-amber-400' : 'text-gray-200'}`}>
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Labels */}
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-2">Kết quả hội thoại</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {EVAL_LABELS.map(l => (
+                    <button key={l.key} onClick={() => setLabel(label === l.key ? '' : l.key)}
+                      className={`text-xs px-2.5 py-1.5 rounded-lg border transition-all ${label === l.key ? l.color : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Note */}
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-2">Ghi chú</p>
+                <textarea
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  rows={3}
+                  placeholder="Nhận xét về hội thoại này..."
+                  className="w-full text-xs border border-gray-200 rounded-xl p-2.5 focus:outline-none focus:border-[#43A047] resize-none text-gray-800"
+                />
+              </div>
+
+              {/* Thông tin đơn liên kết */}
+              {selected.has_order && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-xs">
+                  <p className="font-medium text-green-700 mb-1">✓ Đơn hàng liên kết</p>
+                  <p className="text-green-600">AI Order #{selected.ai_order_id}</p>
+                </div>
+              )}
+
+              {/* Tỷ lệ thống kê */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-gray-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-green-600">
+                    {convs.length ? Math.round(convs.filter(c => c.has_order).length / convs.length * 100) : 0}%
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">Tỷ lệ chốt</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-black text-amber-500">{stats.avgScore}★</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Điểm TB</p>
+                </div>
+              </div>
+
+              <button onClick={saveEval} disabled={saving || (!score && !label && !note)}
+                className="w-full py-2.5 bg-[#2E7D32] hover:bg-[#1B5E20] text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50">
+                {saving ? 'Đang lưu...' : '💾 Lưu đánh giá'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
