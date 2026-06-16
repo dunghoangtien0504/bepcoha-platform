@@ -424,17 +424,51 @@ function ConversationsTab({ token }: { token: string }) {
   const [batchRunning, setBatchRunning] = useState(false)
   const [batchProgress, setBatchProgress] = useState({ done: 0, total: 0 })
   const [showReport, setShowReport] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
+  // attemptedRef tránh lặp vô hạn khi 1 hội thoại phân tích lỗi; runningRef chống chạy chồng.
+  const attemptedRef = useRef<Set<string>>(new Set())
+  const runningRef = useRef(false)
 
-  const fetchConvs = useCallback(async () => {
-    setLoading(true)
+  const fetchConvs = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     const res = await fetch('/api/portal/conversations', {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (res.ok) { const d = await res.json(); setConvs(d.conversations) }
-    setLoading(false)
+    if (res.ok) {
+      const d = await res.json()
+      // Giữ nguyên các trường phân tích đang có nếu server chưa trả (tránh nhấp nháy khi polling)
+      setConvs(prev => {
+        const prevMap = new Map(prev.map(c => [c.id, c]))
+        return (d.conversations as Conversation[]).map(nc => {
+          const old = prevMap.get(nc.id)
+          if (old && !nc.analyzed_at && old.analyzed_at) {
+            return { ...nc, ...{
+              ai_summary: old.ai_summary, customer_needs: old.customer_needs,
+              sales_name: old.sales_name, sales_evaluation: old.sales_evaluation,
+              ai_score: old.ai_score, needs_attention: old.needs_attention,
+              issue: old.issue, tags: old.tags, evaluation_label: old.evaluation_label,
+              analyzed_at: old.analyzed_at, messages: old.messages, messages_loaded: old.messages_loaded,
+            } }
+          }
+          return old ? { ...nc, messages: old.messages, messages_loaded: old.messages_loaded } : nc
+        })
+      })
+      setLastRefresh(new Date())
+    }
+    if (!silent) setLoading(false)
   }, [token])
 
   useEffect(() => { fetchConvs() }, [fetchConvs])
+
+  // Polling: tự động làm mới danh sách mỗi 45s khi bật
+  useEffect(() => {
+    if (!autoRefresh) return
+    const id = setInterval(() => {
+      if (!runningRef.current) fetchConvs(true)
+    }, 45000)
+    return () => clearInterval(id)
+  }, [autoRefresh, fetchConvs])
 
   // Gọi AI phân tích nhu cầu khách + đánh giá phiên trả lời sales (khai báo trước, dùng ở dưới)
   const analyze = useCallback(async (c: Conversation) => {
@@ -475,12 +509,16 @@ function ConversationsTab({ token }: { token: string }) {
 
   // Phân tích hàng loạt. force=true: phân tích lại cả những cái đã phân tích.
   const analyzeAll = useCallback(async (force = false) => {
-    const pending = force ? convs.slice() : convs.filter(c => !c.analyzed_at)
+    if (runningRef.current) return
+    if (force) attemptedRef.current.clear()
+    const pending = force ? convs.slice() : convs.filter(c => !c.analyzed_at && !attemptedRef.current.has(c.id))
     if (!pending.length) return
+    runningRef.current = true
     setBatchRunning(true)
     setBatchProgress({ done: 0, total: pending.length })
     for (let i = 0; i < pending.length; i++) {
       const c = pending[i]
+      attemptedRef.current.add(c.id)
       try {
         const res = await fetch(`/api/portal/conversations/${c.id}`, {
           method: 'POST',
@@ -510,13 +548,12 @@ function ConversationsTab({ token }: { token: string }) {
       setBatchProgress({ done: i + 1, total: pending.length })
     }
     setBatchRunning(false)
+    runningRef.current = false
   }, [convs, token])
 
-  // Tự động phân tích toàn bộ ngay khi tải xong (chỉ chạy 1 lần / lần vào tab)
-  const autoRan = useRef(false)
+  // Tự động phân tích hội thoại MỚI (gồm cả khi polling mang về tin mới)
   useEffect(() => {
-    if (!loading && !autoRan.current && convs.some(c => !c.analyzed_at)) {
-      autoRan.current = true
+    if (!loading && convs.some(c => !c.analyzed_at && !attemptedRef.current.has(c.id))) {
       analyzeAll()
     }
   }, [loading, convs, analyzeAll])
@@ -659,6 +696,19 @@ function ConversationsTab({ token }: { token: string }) {
             <div className="h-full bg-purple-500 transition-all" style={{ width: `${batchProgress.total ? Math.round(batchProgress.done / batchProgress.total * 100) : 0}%` }} />
           </div>
         )}
+
+        {/* Tự động làm mới */}
+        <button onClick={() => setAutoRefresh(v => !v)}
+          className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl border transition-colors ${autoRefresh ? 'bg-green-50 border-green-300 text-green-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+          <span className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+          {autoRefresh ? 'Tự làm mới: BẬT' : 'Tự làm mới: TẮT'}
+        </button>
+        {lastRefresh && (
+          <span className="text-xs text-gray-400">
+            Cập nhật {lastRefresh.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+        )}
+
         <button onClick={() => setShowReport(v => !v)}
           className="text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors ml-auto">
           📊 Báo cáo tổng quan {stats.attention > 0 && <span className="text-red-500">({stats.attention} ⚠️)</span>}
