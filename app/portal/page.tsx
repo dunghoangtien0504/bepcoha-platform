@@ -60,6 +60,7 @@ interface Stats {
   paid: number
   pending: number
   revenue: number
+  pendingRevenue: number
 }
 
 function fmt(n: number) { return n.toLocaleString('vi-VN') + 'đ' }
@@ -225,12 +226,13 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
       {/* Stats */}
         {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
             {[
               { label: 'Tổng đăng ký', value: stats.total, color: 'blue', icon: '👥' },
               { label: 'Đã thanh toán', value: stats.paid, color: 'green', icon: '✅' },
               { label: 'Chờ thanh toán', value: stats.pending, color: 'amber', icon: '⏳' },
-              { label: 'Tổng doanh thu', value: fmt(stats.revenue), color: 'purple', icon: '💰', isText: true },
+              { label: 'Doanh thu đã TT', value: fmt(stats.revenue), color: 'purple', icon: '💰', isText: true },
+              { label: 'Doanh thu chưa TT', value: fmt(stats.pendingRevenue), color: 'red', icon: '⏰', isText: true },
             ].map(s => (
               <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                 <div className="flex items-start justify-between">
@@ -239,8 +241,9 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                     <p className={`font-black text-2xl mt-1 ${
                       s.color === 'green' ? 'text-green-600' :
                       s.color === 'blue' ? 'text-blue-600' :
-                      s.color === 'amber' ? 'text-amber-600' : 'text-purple-600'
-                    }`}>{'isText' in s && s.isText ? s.value : s.value}</p>
+                      s.color === 'amber' ? 'text-amber-600' :
+                      s.color === 'red' ? 'text-red-500' : 'text-purple-600'
+                    }`}>{s.value}</p>
                   </div>
                   <span className="text-2xl">{s.icon}</span>
                 </div>

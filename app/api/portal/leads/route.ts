@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
     paid: allRows.filter(r => r.payment_status === 'paid').length,
     pending: allRows.filter(r => r.payment_status !== 'paid').length,
     revenue: allRows.filter(r => r.payment_status === 'paid').reduce((sum, r) => sum + (Number(r.amount) || 0), 0),
+    pendingRevenue: allRows.filter(r => r.payment_status !== 'paid').reduce((sum, r) => sum + (Number(r.amount) || 0), 0),
   }
 
   return NextResponse.json({ leads, stats })
