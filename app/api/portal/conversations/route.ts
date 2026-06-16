@@ -59,22 +59,20 @@ export async function GET(req: NextRequest) {
       const data = await res.json()
       const convList = data?.conversations || data?.data || []
 
-      // Debug: dump raw conversation + raw messages của hội thoại đầu để soi field tên NV
-      if (debug && debugRaw.length === 0) {
-        const first = convList[0]
-        let msgSample: unknown = 'no conversation'
-        if (first) {
-          const fid = String(first.id || first.conversation_id || '')
-          const cid = String(first.customer_id || first.customers?.[0]?.id || '')
-          try {
-            const mRes = await fetch(`${PANCAKE_PAGE_API}/pages/${page.pageId}/conversations/${fid}/messages?page_access_token=${page.token}&customer_id=${cid}`)
-            const mData = await mRes.json()
-            msgSample = (mData?.messages || mData?.data || []).slice(0, 4)
-          } catch (e) {
-            msgSample = { error: String(e) }
-          }
+      // Debug: liệt kê danh sách nhân viên (users) của page
+      if (debug) {
+        let users: unknown = 'n/a'
+        try {
+          const uRes = await fetch(`${PANCAKE_PAGE_API}/pages/${page.pageId}/users?page_access_token=${page.token}`)
+          const uData = await uRes.json()
+          const list = uData?.users || uData?.data || uData
+          users = Array.isArray(list)
+            ? list.map((u: Record<string, unknown>) => ({ id: u.id, name: u.name || u.fb_name || u.admin_name }))
+            : { status: uRes.status, body: uData }
+        } catch (e) {
+          users = { error: String(e) }
         }
-        debugRaw.push({ page: page.name, conversation_sample: first ?? data, messages_sample: msgSample })
+        debugRaw.push({ page: page.name, users })
       }
 
       for (const conv of convList) {
