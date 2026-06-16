@@ -57,9 +57,25 @@ export async function GET(req: NextRequest) {
         continue
       }
       const data = await res.json()
-      if (debug) debugRaw.push({ page: page.name, sample: (data?.conversations || data?.data || [])[0] ?? data })
-
       const convList = data?.conversations || data?.data || []
+
+      // Debug: dump raw conversation + raw messages của hội thoại đầu để soi field tên NV
+      if (debug && debugRaw.length === 0) {
+        const first = convList[0]
+        let msgSample: unknown = 'no conversation'
+        if (first) {
+          const fid = String(first.id || first.conversation_id || '')
+          const cid = String(first.customer_id || first.customers?.[0]?.id || '')
+          try {
+            const mRes = await fetch(`${PANCAKE_PAGE_API}/pages/${page.pageId}/conversations/${fid}/messages?page_access_token=${page.token}&customer_id=${cid}`)
+            const mData = await mRes.json()
+            msgSample = (mData?.messages || mData?.data || []).slice(0, 4)
+          } catch (e) {
+            msgSample = { error: String(e) }
+          }
+        }
+        debugRaw.push({ page: page.name, conversation_sample: first ?? data, messages_sample: msgSample })
+      }
 
       for (const conv of convList) {
         const convId = String(conv.id || conv.conversation_id || '')
