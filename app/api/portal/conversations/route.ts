@@ -43,9 +43,9 @@ export async function GET(req: NextRequest) {
   const conversations: unknown[] = []
   const debugRaw: unknown[] = []
 
-  // Pancake bắt buộc `since` & `until` (Unix timestamp giây). Lấy 60 ngày gần nhất.
+  // Pancake bắt buộc `since` & `until` (Unix timestamp giây), khoảng phải < 1 tháng.
   const until = Math.floor(Date.now() / 1000)
-  const since = until - 60 * 24 * 60 * 60
+  const since = until - 29 * 24 * 60 * 60
 
   for (const page of pages) {
     try {
