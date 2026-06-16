@@ -11,21 +11,20 @@ interface ConversationMessage {
 }
 
 interface Conversation {
-  id: number
-  pancake_conversation_id: string | null
+  id: string  // pancake_conversation_id
   customer_name: string
   customer_phone: string
   platform: string
   page_name: string
+  last_message_preview: string
+  last_message_at: string
   messages: ConversationMessage[]
+  messages_loaded: boolean
   ai_summary: string | null
   evaluation_score: number | null
   evaluation_label: string | null
   evaluation_note: string | null
   evaluated_at: string | null
-  has_order: boolean
-  ai_order_id: number | null
-  created_at: string
 }
 
 interface AiOrder {
@@ -402,6 +401,7 @@ function ConversationsTab({ token }: { token: string }) {
   const [convs, setConvs] = useState<Conversation[]>([])
   const [selected, setSelected] = useState<Conversation | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingMsgs, setLoadingMsgs] = useState(false)
   const [filter, setFilter] = useState<'all' | 'unevaluated' | 'order' | 'no_buy'>('all')
   const [search, setSearch] = useState('')
   const [score, setScore] = useState(0)
@@ -421,11 +421,40 @@ function ConversationsTab({ token }: { token: string }) {
 
   useEffect(() => { fetchConvs() }, [fetchConvs])
 
-  const selectConv = (c: Conversation) => {
+  const selectConv = async (c: Conversation) => {
     setSelected(c)
     setScore(c.evaluation_score ?? 0)
     setLabel(c.evaluation_label ?? '')
     setNote(c.evaluation_note ?? '')
+
+    // Lazy load messages nếu chưa có
+    if (!c.messages_loaded) {
+      setLoadingMsgs(true)
+      try {
+        const res = await fetch(`/api/portal/conversations/${c.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const d = await res.json()
+          const updated: Conversation = {
+            ...c,
+            messages: d.messages || [],
+            messages_loaded: true,
+            ai_summary: d.ai_summary ?? c.ai_summary,
+            evaluation_score: d.evaluation_score ?? c.evaluation_score,
+            evaluation_label: d.evaluation_label ?? c.evaluation_label,
+            evaluation_note: d.evaluation_note ?? c.evaluation_note,
+          }
+          setSelected(updated)
+          setScore(updated.evaluation_score ?? 0)
+          setLabel(updated.evaluation_label ?? '')
+          setNote(updated.evaluation_note ?? '')
+          setConvs(prev => prev.map(x => x.id === c.id ? updated : x))
+        }
+      } finally {
+        setLoadingMsgs(false)
+      }
+    }
   }
 
   const saveEval = async () => {
@@ -434,7 +463,7 @@ function ConversationsTab({ token }: { token: string }) {
     await fetch(`/api/portal/conversations/${selected.id}`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ score, label, note }),
+      body: JSON.stringify({ score, label, note, customer_name: selected.customer_name, page_name: selected.page_name }),
     })
     setSaving(false)
     setSelected(prev => prev ? { ...prev, evaluation_score: score, evaluation_label: label, evaluation_note: note } : null)
@@ -446,7 +475,8 @@ function ConversationsTab({ token }: { token: string }) {
     setSummarizing(true)
     const res = await fetch(`/api/portal/conversations/${selected.id}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_name: selected.customer_name, page_name: selected.page_name }),
     })
     if (res.ok) {
       const d = await res.json()
@@ -467,12 +497,13 @@ function ConversationsTab({ token }: { token: string }) {
     return true
   })
 
+  const withScore = convs.filter(c => c.evaluation_score)
   const stats = {
     total: convs.length,
     evaluated: convs.filter(c => c.evaluation_label).length,
-    orders: convs.filter(c => c.has_order).length,
-    avgScore: convs.filter(c => c.evaluation_score).length
-      ? (convs.filter(c => c.evaluation_score).reduce((a, c) => a + (c.evaluation_score || 0), 0) / convs.filter(c => c.evaluation_score).length).toFixed(1)
+    summarized: convs.filter(c => c.ai_summary).length,
+    avgScore: withScore.length
+      ? (withScore.reduce((a, c) => a + (c.evaluation_score || 0), 0) / withScore.length).toFixed(1)
       : '—',
   }
 
@@ -483,8 +514,8 @@ function ConversationsTab({ token }: { token: string }) {
         {[
           { label: 'Tổng hội thoại', value: stats.total, color: 'text-blue-600' },
           { label: 'Đã đánh giá', value: stats.evaluated, color: 'text-green-600' },
-          { label: 'Có đặt hàng', value: stats.orders, color: 'text-orange-600' },
-          { label: 'Điểm AI trung bình', value: `${stats.avgScore}★`, color: 'text-amber-600' },
+          { label: 'Đã tóm tắt AI', value: stats.summarized, color: 'text-purple-600' },
+          { label: 'Điểm TB', value: `${stats.avgScore}★`, color: 'text-amber-600' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <p className="text-gray-500 text-xs font-medium">{s.label}</p>
@@ -532,17 +563,18 @@ function ConversationsTab({ token }: { token: string }) {
               <button key={c.id} onClick={() => selectConv(c)} className={`w-full text-left p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${selected?.id === c.id ? 'bg-green-50 border-l-2 border-l-[#2E7D32]' : ''}`}>
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-medium text-sm text-gray-800 truncate pr-2">{c.customer_name || 'Khách ẩn danh'}</span>
-                  <span className="text-xs text-gray-400 whitespace-nowrap">{new Date(c.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-xs text-gray-400 whitespace-nowrap">{c.page_name}</span>
                 </div>
                 <div className="text-xs text-gray-500 truncate mb-1.5">
-                  {c.messages.slice(-1)[0]?.content || '(không có tin nhắn)'}
+                  {c.ai_summary
+                    ? <span className="text-purple-600 font-medium">✨ {c.ai_summary.slice(0, 60)}…</span>
+                    : c.last_message_preview || '(chưa có tin nhắn)'}
                 </div>
                 <div className="flex gap-1.5 flex-wrap">
                   {c.evaluation_label
                     ? <span className={`text-xs px-2 py-0.5 rounded-full border ${labelStyle(c.evaluation_label)}`}>{labelText(c.evaluation_label)}</span>
                     : <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 border border-gray-200">Chưa đánh giá</span>
                   }
-                  {c.has_order && <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">✓ Có đơn</span>}
                   {c.evaluation_score ? <span className="text-xs text-amber-500">{'★'.repeat(c.evaluation_score)}</span> : null}
                 </div>
               </button>
@@ -567,12 +599,11 @@ function ConversationsTab({ token }: { token: string }) {
                   </div>
                   <div>
                     <p className="font-medium text-sm">{selected.customer_name || 'Khách ẩn danh'}</p>
-                    <p className="text-xs text-gray-400">{selected.page_name} · {fmtDate(selected.created_at)}</p>
+                    <p className="text-xs text-gray-400">{selected.page_name} · {selected.customer_phone || ''}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {selected.has_order && <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">✓ Có đơn #{selected.ai_order_id}</span>}
-                  <button onClick={summarize} disabled={summarizing}
+                  <button onClick={summarize} disabled={summarizing || loadingMsgs}
                     className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
                     {summarizing ? 'Đang tóm tắt...' : '✨ Tóm tắt AI'}
                   </button>
@@ -581,7 +612,16 @@ function ConversationsTab({ token }: { token: string }) {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {selected.messages.map((msg, i) => (
+                {loadingMsgs ? (
+                  <div className="flex items-center justify-center py-12 text-gray-400 text-sm gap-2">
+                    <div className="animate-spin text-xl">⏳</div> Đang tải tin nhắn...
+                  </div>
+                ) : selected.messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-sm gap-2">
+                    <span className="text-3xl">💬</span>
+                    <span>Chưa có tin nhắn</span>
+                  </div>
+                ) : selected.messages.map((msg, i) => (
                   <div key={i} className={`flex gap-2 items-end ${!msg.from_customer ? 'flex-row-reverse' : ''}`}>
                     <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${msg.from_customer ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
                       {msg.from_customer ? 'KH' : 'AI'}
@@ -599,9 +639,9 @@ function ConversationsTab({ token }: { token: string }) {
 
                 {/* AI Summary */}
                 {selected.ai_summary && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-2">
-                    <p className="text-xs font-semibold text-blue-700 mb-1">✨ Tóm tắt AI</p>
-                    <p className="text-xs text-blue-800 leading-relaxed">{selected.ai_summary}</p>
+                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 mt-2">
+                    <p className="text-xs font-semibold text-purple-700 mb-1">✨ Tóm tắt nhu cầu khách</p>
+                    <p className="text-xs text-purple-900 leading-relaxed">{selected.ai_summary}</p>
                   </div>
                 )}
               </div>
@@ -658,19 +698,11 @@ function ConversationsTab({ token }: { token: string }) {
                 />
               </div>
 
-              {/* Thông tin đơn liên kết */}
-              {selected.has_order && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-xs">
-                  <p className="font-medium text-green-700 mb-1">✓ Đơn hàng liên kết</p>
-                  <p className="text-green-600">AI Order #{selected.ai_order_id}</p>
-                </div>
-              )}
-
               {/* Tỷ lệ thống kê */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-gray-50 rounded-xl p-3 text-center">
                   <p className="text-lg font-black text-green-600">
-                    {convs.length ? Math.round(convs.filter(c => c.has_order).length / convs.length * 100) : 0}%
+                    {convs.length ? Math.round(convs.filter(c => c.evaluation_label === 'order').length / convs.length * 100) : 0}%
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">Tỷ lệ chốt</p>
                 </div>

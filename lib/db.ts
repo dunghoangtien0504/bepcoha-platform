@@ -133,6 +133,21 @@ export async function initDb() {
     ON conversations (pancake_conversation_id)
     WHERE pancake_conversation_id IS NOT NULL
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS conversation_evaluations (
+      id SERIAL PRIMARY KEY,
+      pancake_conversation_id TEXT NOT NULL UNIQUE,
+      customer_name TEXT,
+      page_name TEXT,
+      ai_summary TEXT,
+      evaluation_score INTEGER CHECK (evaluation_score BETWEEN 1 AND 5),
+      evaluation_label TEXT,
+      evaluation_note TEXT,
+      evaluated_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
   // Insert default course settings if not exists
   const settings = await sql`SELECT COUNT(*) as count FROM course_settings`
   if (parseInt(settings[0].count) === 0) {
@@ -477,6 +492,68 @@ export async function getConversationById(id: number) {
   return rows[0] as Conversation | undefined
 }
 
+// ── Conversation Evaluations (live-fetch mode) ────────────────────────────────
+export async function saveConversationSummary(pancakeId: string, summary: string, customerName?: string, pageName?: string) {
+  const sql = getDb()
+  await sql`
+    INSERT INTO conversation_evaluations (pancake_conversation_id, customer_name, page_name, ai_summary)
+    VALUES (${pancakeId}, ${customerName ?? null}, ${pageName ?? null}, ${summary})
+    ON CONFLICT (pancake_conversation_id) DO UPDATE SET
+      ai_summary = ${summary},
+      customer_name = COALESCE(${customerName ?? null}, conversation_evaluations.customer_name),
+      page_name = COALESCE(${pageName ?? null}, conversation_evaluations.page_name),
+      updated_at = NOW()
+  `
+}
+
+export async function saveConversationEvaluation(pancakeId: string, data: {
+  score?: number | null
+  label?: string | null
+  note?: string | null
+  customerName?: string
+  pageName?: string
+}) {
+  const sql = getDb()
+  await sql`
+    INSERT INTO conversation_evaluations (
+      pancake_conversation_id, customer_name, page_name,
+      evaluation_score, evaluation_label, evaluation_note, evaluated_at
+    ) VALUES (
+      ${pancakeId},
+      ${data.customerName ?? null},
+      ${data.pageName ?? null},
+      ${data.score ?? null},
+      ${data.label ?? null},
+      ${data.note ?? null},
+      NOW()
+    )
+    ON CONFLICT (pancake_conversation_id) DO UPDATE SET
+      customer_name    = COALESCE(${data.customerName ?? null}, conversation_evaluations.customer_name),
+      page_name        = COALESCE(${data.pageName ?? null}, conversation_evaluations.page_name),
+      evaluation_score = ${data.score ?? null},
+      evaluation_label = ${data.label ?? null},
+      evaluation_note  = ${data.note ?? null},
+      evaluated_at     = NOW(),
+      updated_at       = NOW()
+  `
+}
+
+export async function getAllConversationEvaluations() {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM conversation_evaluations`
+  const map: Record<string, ConversationEvaluation> = {}
+  for (const row of rows) {
+    map[String(row.pancake_conversation_id)] = row as ConversationEvaluation
+  }
+  return map
+}
+
+export async function getConversationEvaluation(pancakeId: string) {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM conversation_evaluations WHERE pancake_conversation_id = ${pancakeId}`
+  return rows[0] as ConversationEvaluation | undefined
+}
+
 // ── AI Orders ────────────────────────────────────────────────────────────────
 export async function initAiOrdersTable() {
   const sql = getDb()
@@ -663,6 +740,19 @@ export interface Conversation {
   evaluated_at: string | null
   has_order: boolean
   ai_order_id: number | null
+  created_at: string
+  updated_at: string
+}
+export interface ConversationEvaluation {
+  id: number
+  pancake_conversation_id: string
+  customer_name: string | null
+  page_name: string | null
+  ai_summary: string | null
+  evaluation_score: number | null
+  evaluation_label: string | null
+  evaluation_note: string | null
+  evaluated_at: string | null
   created_at: string
   updated_at: string
 }

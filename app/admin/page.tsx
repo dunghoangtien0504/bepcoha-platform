@@ -42,6 +42,7 @@ export default function AdminPage() {
   // UI state
   const [tab, setTab] = useState<Tab>('course')
   const [search, setSearch] = useState('')
+  const [dataLoading, setDataLoading] = useState(false)
 
   // Staff form
   const [newStaffForm, setNewStaffForm] = useState({ name: '', email: '', password: '', role: 'staff' })
@@ -57,15 +58,27 @@ export default function AdminPage() {
   const [auditTable, setAuditTable] = useState('')
 
   const fetchAdminData = useCallback(async (t: string) => {
+    setDataLoading(true)
     try {
       const res = await fetch('/api/admin-data', {
         headers: { 'Authorization': `Bearer ${t}` },
       })
-      if (!res.ok) throw new Error('Sai mật khẩu')
+      if (res.status === 401) {
+        // Token hết hạn → tự logout, yêu cầu đăng nhập lại
+        localStorage.removeItem('admin_token')
+        setAuthed(false)
+        setToken('')
+        setData(null)
+        setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.')
+        return
+      }
+      if (!res.ok) throw new Error('Lỗi tải dữ liệu')
       const json = await res.json()
       setData(json)
     } catch (e: unknown) {
       console.error('Error fetching admin data:', e)
+    } finally {
+      setDataLoading(false)
     }
   }, [])
 
@@ -446,7 +459,9 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredCourse.length === 0 ? (
+                  {dataLoading ? (
+                    <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">⏳ Đang tải dữ liệu...</td></tr>
+                  ) : filteredCourse.length === 0 ? (
                     <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Chưa có dữ liệu</td></tr>
                   ) : filteredCourse.map((lead) => (
                     <tr key={lead.id} className="hover:bg-gray-50">
@@ -483,7 +498,9 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredGift.length === 0 ? (
+                  {dataLoading ? (
+                    <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">⏳ Đang tải dữ liệu...</td></tr>
+                  ) : filteredGift.length === 0 ? (
                     <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Chưa có dữ liệu</td></tr>
                   ) : filteredGift.map((lead) => (
                     <tr key={lead.id} className="hover:bg-gray-50">
