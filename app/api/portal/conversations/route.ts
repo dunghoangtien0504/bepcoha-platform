@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initDb, getAllConversationEvaluations } from '@/lib/db'
-import { getPancakePages, PANCAKE_PAGE_API } from '@/lib/pancake'
+import { getPancakePages, PANCAKE_PAGE_API, PANCAKE_USER_API } from '@/lib/pancake'
 
 function checkAuth(req: NextRequest) {
+  const adminPw = process.env.ADMIN_PASSWORD || 'hacofood2024'
   const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
-  return token === (process.env.ADMIN_PASSWORD || 'hacofood2024')
+  if (token === adminPw) return true
+  // Cho phép xác thực qua query param ?secret= để mở debug bằng trình duyệt
+  const secret = req.nextUrl.searchParams.get('secret') || ''
+  return secret === adminPw
 }
 
 export async function GET(req: NextRequest) {
@@ -17,9 +21,22 @@ export async function GET(req: NextRequest) {
 
   const pages = await getPancakePages()
   if (!pages.length) {
+    // Khi debug: gọi thẳng /pages để xem Pancake trả về gì
+    let pagesRaw: unknown = 'PANCAKE_USER_TOKEN chưa được set'
+    const userToken = process.env.PANCAKE_USER_TOKEN || process.env.PANCAKE_ACCESS_TOKEN
+    if (debug && userToken) {
+      try {
+        const r = await fetch(`${PANCAKE_USER_API}/pages?access_token=${userToken}`)
+        pagesRaw = { status: r.status, body: await r.json().catch(() => r.text()) }
+      } catch (e) {
+        pagesRaw = { error: String(e) }
+      }
+    }
     return NextResponse.json({
       conversations: [],
-      warning: 'Chưa cấu hình PANCAKE_USER_TOKEN (hoặc PANCAKE_PAGE_ID + PANCAKE_PAGE_TOKEN)',
+      warning: 'Không lấy được page nào. Kiểm tra PANCAKE_USER_TOKEN.',
+      has_user_token: !!userToken,
+      ...(debug ? { pages_raw: pagesRaw } : {}),
     })
   }
 
