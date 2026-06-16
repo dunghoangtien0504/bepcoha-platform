@@ -11,7 +11,9 @@ interface ConversationMessage {
 }
 
 interface Conversation {
-  id: string  // pancake_conversation_id
+  id: string  // pancake conversation_id
+  page_id: string
+  customer_id: string
   customer_name: string
   customer_phone: string
   platform: string
@@ -409,6 +411,7 @@ function ConversationsTab({ token }: { token: string }) {
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [summarizing, setSummarizing] = useState(false)
+  const [msgWarning, setMsgWarning] = useState('')
 
   const fetchConvs = useCallback(async () => {
     setLoading(true)
@@ -426,16 +429,19 @@ function ConversationsTab({ token }: { token: string }) {
     setScore(c.evaluation_score ?? 0)
     setLabel(c.evaluation_label ?? '')
     setNote(c.evaluation_note ?? '')
+    setMsgWarning('')
 
     // Lazy load messages nếu chưa có
     if (!c.messages_loaded) {
       setLoadingMsgs(true)
       try {
-        const res = await fetch(`/api/portal/conversations/${c.id}`, {
+        const qs = new URLSearchParams({ page_id: c.page_id, customer_id: c.customer_id })
+        const res = await fetch(`/api/portal/conversations/${c.id}?${qs.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (res.ok) {
           const d = await res.json()
+          if (d.warning) setMsgWarning(d.warning)
           const updated: Conversation = {
             ...c,
             messages: d.messages || [],
@@ -476,7 +482,12 @@ function ConversationsTab({ token }: { token: string }) {
     const res = await fetch(`/api/portal/conversations/${selected.id}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customer_name: selected.customer_name, page_name: selected.page_name }),
+      body: JSON.stringify({
+        customer_name: selected.customer_name,
+        page_name: selected.page_name,
+        page_id: selected.page_id,
+        customer_id: selected.customer_id,
+      }),
     })
     if (res.ok) {
       const d = await res.json()
@@ -620,6 +631,7 @@ function ConversationsTab({ token }: { token: string }) {
                   <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-sm gap-2">
                     <span className="text-3xl">💬</span>
                     <span>Chưa có tin nhắn</span>
+                    {msgWarning && <span className="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg max-w-xs text-center">⚠️ {msgWarning}</span>}
                   </div>
                 ) : selected.messages.map((msg, i) => (
                   <div key={i} className={`flex gap-2 items-end ${!msg.from_customer ? 'flex-row-reverse' : ''}`}>
