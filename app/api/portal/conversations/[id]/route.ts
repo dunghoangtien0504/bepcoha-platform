@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { initDb, saveConversationEvaluation, saveConversationSummary, getConversationEvaluation } from '@/lib/db'
 
 const PANCAKE_API = 'https://pages.fm/api/public_api/v1'
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 function checkAuth(req: NextRequest) {
   const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
@@ -100,6 +100,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const token = getFirstToken()
   if (!token) return NextResponse.json({ error: 'Chưa cấu hình PANCAKE_PAGE_TOKEN' }, { status: 500 })
 
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: 'Chưa cấu hình GEMINI_API_KEY' }, { status: 500 })
+  }
+
   // Fetch messages
   let messages: Array<{ from_customer: boolean; content: string }> = []
   try {
@@ -125,16 +129,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .map(m => `${m.from_customer ? 'Khách' : 'AI/NV'}: ${m.content}`)
     .join('\n')
 
-  const msg = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 250,
-    messages: [{
-      role: 'user',
-      content: `Tóm tắt nhu cầu của khách trong hội thoại này trong 2-3 câu ngắn gọn bằng tiếng Việt. Nêu rõ: khách cần gì, đang ở giai đoạn nào (hỏi thông tin / đang cân nhắc / đã quyết định mua / không mua), và điểm cần chú ý. Không dùng markdown.\n\n${text}`,
-    }],
-  })
-
-  const summary = (msg.content[0] as { text: string }).text.trim()
+  const model = genai.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  const result = await model.generateContent(
+    `Tóm tắt nhu cầu của khách trong hội thoại này trong 2-3 câu ngắn gọn bằng tiếng Việt. Nêu rõ: khách cần gì, đang ở giai đoạn nào (hỏi thông tin / đang cân nhắc / đã quyết định mua / không mua), và điểm cần chú ý. Không dùng markdown.\n\n${text}`
+  )
+  const summary = result.response.text().trim()
   await saveConversationSummary(pancakeId, summary, customerName, pageName)
 
   return NextResponse.json({ summary })
