@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface ConversationMessage {
   id?: string
@@ -29,6 +29,7 @@ interface Conversation {
   ai_score: number | null
   needs_attention: boolean | null
   issue: string | null
+  tags: string[] | null
   analyzed_at: string | null
   evaluation_score: number | null
   evaluation_label: string | null
@@ -435,7 +436,7 @@ function ConversationsTab({ token }: { token: string }) {
 
   useEffect(() => { fetchConvs() }, [fetchConvs])
 
-  // Gọi AI phân tích nhu cầu khách + đánh giá phiên trả lời sales
+  // Gọi AI phân tích nhu cầu khách + đánh giá phiên trả lời sales (khai báo trước, dùng ở dưới)
   const analyze = useCallback(async (c: Conversation) => {
     setAnalyzing(true)
     try {
@@ -459,6 +460,7 @@ function ConversationsTab({ token }: { token: string }) {
           ai_score: d.ai_score ?? null,
           needs_attention: d.needs_attention ?? false,
           issue: d.issue || null,
+          tags: d.tags ?? [],
           evaluation_label: d.outcome ?? null,
           analyzed_at: new Date().toISOString(),
         }
@@ -498,6 +500,7 @@ function ConversationsTab({ token }: { token: string }) {
             ai_score: d.ai_score ?? null,
             needs_attention: d.needs_attention ?? false,
             issue: d.issue || null,
+            tags: d.tags ?? [],
             evaluation_label: d.outcome ?? null,
             analyzed_at: new Date().toISOString(),
           }
@@ -508,6 +511,15 @@ function ConversationsTab({ token }: { token: string }) {
     }
     setBatchRunning(false)
   }, [convs, token])
+
+  // Tự động phân tích toàn bộ ngay khi tải xong (chỉ chạy 1 lần / lần vào tab)
+  const autoRan = useRef(false)
+  useEffect(() => {
+    if (!loading && !autoRan.current && convs.some(c => !c.analyzed_at)) {
+      autoRan.current = true
+      analyzeAll()
+    }
+  }, [loading, convs, analyzeAll])
 
   const selectConv = async (c: Conversation) => {
     setSelected(c)
@@ -540,6 +552,7 @@ function ConversationsTab({ token }: { token: string }) {
             ai_score: d.ai_score ?? c.ai_score,
             needs_attention: d.needs_attention ?? c.needs_attention,
             issue: d.issue ?? c.issue,
+            tags: d.tags ?? c.tags,
             analyzed_at: d.analyzed_at ?? c.analyzed_at,
             evaluation_score: d.evaluation_score ?? c.evaluation_score,
             evaluation_label: d.evaluation_label ?? c.evaluation_label,
@@ -609,7 +622,7 @@ function ConversationsTab({ token }: { token: string }) {
           { label: 'Tổng hội thoại', value: stats.total, color: 'text-blue-600' },
           { label: 'Đã phân tích AI', value: stats.analyzed, color: 'text-purple-600' },
           { label: 'Điểm sales TB', value: `${stats.avgScore}★`, color: 'text-amber-600' },
-          { label: 'Cần CEO xử lý', value: stats.attention, color: stats.attention ? 'text-red-600' : 'text-gray-400', alert: true },
+          { label: 'Cần xử lý', value: stats.attention, color: stats.attention ? 'text-red-600' : 'text-gray-400', alert: true },
         ].map(s => (
           <button key={s.label} type="button"
             onClick={() => s.alert && stats.attention ? (setFilter('attention'), setShowReport(true)) : undefined}
@@ -646,7 +659,7 @@ function ConversationsTab({ token }: { token: string }) {
             <div><p className="text-2xl font-black text-blue-600">{stats.total}</p><p className="text-xs text-gray-500">Hội thoại</p></div>
             <div><p className="text-2xl font-black text-purple-600">{stats.analyzed}</p><p className="text-xs text-gray-500">Đã phân tích</p></div>
             <div><p className="text-2xl font-black text-amber-500">{stats.avgScore}★</p><p className="text-xs text-gray-500">Điểm sales TB</p></div>
-            <div><p className={`text-2xl font-black ${stats.attention ? 'text-red-600' : 'text-green-600'}`}>{stats.attention}</p><p className="text-xs text-gray-500">Cần CEO xử lý</p></div>
+            <div><p className={`text-2xl font-black ${stats.attention ? 'text-red-600' : 'text-green-600'}`}>{stats.attention}</p><p className="text-xs text-gray-500">Cần xử lý</p></div>
           </div>
 
           <div>
@@ -734,6 +747,13 @@ function ConversationsTab({ token }: { token: string }) {
                     : null}
                   {c.sales_name && <span className="text-xs text-gray-400 truncate">· {c.sales_name}</span>}
                 </div>
+                {c.tags && c.tags.length > 0 && (
+                  <div className="flex gap-1 flex-wrap mt-1">
+                    {c.tags.map((t, i) => (
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 border border-indigo-100">{t}</span>
+                    ))}
+                  </div>
+                )}
               </button>
             ))}
           </div>
@@ -783,11 +803,20 @@ function ConversationsTab({ token }: { token: string }) {
                       <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">⚠️ {msgWarning}</div>
                     )}
 
-                    {/* Cảnh báo vấn đề hệ trọng cần CEO */}
+                    {/* Cảnh báo vấn đề hệ trọng */}
                     {selected.needs_attention && selected.issue && (
                       <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3">
-                        <p className="text-xs font-bold text-red-700 mb-1">🚨 Vấn đề cần CEO can thiệp</p>
+                        <p className="text-xs font-bold text-red-700 mb-1">🚨 Vấn đề cần xử lý</p>
                         <p className="text-sm text-red-800 leading-relaxed">{selected.issue}</p>
+                      </div>
+                    )}
+
+                    {/* Tags theo vấn đề */}
+                    {selected.tags && selected.tags.length > 0 && (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {selected.tags.map((t, i) => (
+                          <span key={i} className="text-xs px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium">🏷️ {t}</span>
+                        ))}
                       </div>
                     )}
 

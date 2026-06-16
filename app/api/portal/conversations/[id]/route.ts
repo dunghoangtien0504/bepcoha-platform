@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { initDb, saveConversationEvaluation, saveConversationAnalysis, getConversationEvaluation } from '@/lib/db'
-import { getPancakePageById, PANCAKE_PAGE_API, cleanPancakeText } from '@/lib/pancake'
+import { getPancakePageById, PANCAKE_PAGE_API, cleanPancakeText, parseTags } from '@/lib/pancake'
 
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
@@ -74,6 +74,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     ai_score: eval_?.ai_score ?? null,
     needs_attention: eval_?.needs_attention ?? false,
     issue: eval_?.issue ?? null,
+    tags: parseTags(eval_?.tags),
     analyzed_at: eval_?.analyzed_at ?? null,
     evaluation_score: eval_?.evaluation_score ?? null,
     evaluation_label: eval_?.evaluation_label ?? null,
@@ -112,6 +113,7 @@ interface AiAnalysis {
   evaluation: string
   needs_attention: boolean
   issue: string
+  tags: string[]
 }
 
 function parseAiJson(raw: string): AiAnalysis | null {
@@ -121,6 +123,9 @@ function parseAiJson(raw: string): AiAnalysis | null {
     const end = cleaned.lastIndexOf('}')
     if (start === -1 || end === -1) return null
     const obj = JSON.parse(cleaned.slice(start, end + 1))
+    const tags = Array.isArray(obj.tags)
+      ? obj.tags.map((t: unknown) => String(t).trim()).filter(Boolean).slice(0, 4)
+      : []
     return {
       customer_needs: String(obj.customer_needs || ''),
       sales_name: String(obj.sales_name || ''),
@@ -129,6 +134,7 @@ function parseAiJson(raw: string): AiAnalysis | null {
       evaluation: String(obj.evaluation || ''),
       needs_attention: obj.needs_attention === true || obj.needs_attention === 'true',
       issue: String(obj.issue || ''),
+      tags,
     }
   } catch {
     return null
@@ -172,8 +178,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   "score": <số nguyên 1-5: chấm chất lượng phiên trả lời của sales — 5 là xuất sắc>,
   "outcome": "<một trong: order (đã/đang chốt đơn), inquiry (mới hỏi thông tin), no_buy (không mua), need_staff (cần nhân viên hỗ trợ thêm), ai_wrong (bot trả lời sai/lạc đề)>",
   "evaluation": "Nhận xét phiên trả lời của sales trong 1-2 câu: làm tốt gì, thiếu sót gì (vd: chưa hỏi SĐT, chưa chốt đơn, trả lời chậm, đúng/sai nhu cầu)",
-  "needs_attention": <true nếu có vấn đề HỆ TRỌNG cần CEO can thiệp ngay: khách bức xúc/phàn nàn/dọa bỏ, NV trả lời sai gây hiểu lầm, khách hỏi nhưng bị bỏ lơ chưa ai trả lời, mất khách tiềm năng rõ ràng, sự cố đơn hàng/giao hàng. Ngược lại false>,
-  "issue": "Nếu needs_attention=true: mô tả ngắn gọn vấn đề hệ trọng cần xử lý. Nếu false: để chuỗi rỗng"
+  "needs_attention": <true nếu có vấn đề HỆ TRỌNG cần xử lý ngay: khách bức xúc/phàn nàn/dọa bỏ, NV trả lời sai gây hiểu lầm, khách hỏi nhưng bị bỏ lơ chưa ai trả lời, mất khách tiềm năng rõ ràng, sự cố đơn hàng/giao hàng. Ngược lại false>,
+  "issue": "Nếu needs_attention=true: mô tả ngắn gọn vấn đề hệ trọng cần xử lý. Nếu false: để chuỗi rỗng",
+  "tags": ["1-4 tag NGẮN (2-4 từ) tiếng Việt phân loại vấn đề/chủ đề hội thoại, vd: 'Hỏi giá', 'Sốt trộn nộm', 'Chốt đơn', 'Phí ship', 'Phàn nàn giao hàng', 'Hỏi công thức', 'Khách quay lại'"]
 }
 
 Hội thoại:
@@ -199,6 +206,7 @@ ${text}`
     summary,
     needsAttention: analysis.needs_attention,
     issue: analysis.needs_attention ? (analysis.issue || null) : null,
+    tags: analysis.tags,
     customerName,
     pageName,
   })
@@ -212,5 +220,6 @@ ${text}`
     ai_summary: summary,
     needs_attention: analysis.needs_attention,
     issue: analysis.needs_attention ? analysis.issue : '',
+    tags: analysis.tags,
   })
 }

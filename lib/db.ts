@@ -161,6 +161,7 @@ export async function initDb() {
   await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS analyzed_at TIMESTAMPTZ`
   await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS needs_attention BOOLEAN DEFAULT FALSE`
   await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS issue TEXT`
+  await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS tags TEXT`
   // Insert default course settings if not exists
   const settings = await sql`SELECT COUNT(*) as count FROM course_settings`
   if (parseInt(settings[0].count) === 0) {
@@ -515,15 +516,17 @@ export async function saveConversationAnalysis(pancakeId: string, data: {
   summary: string
   needsAttention: boolean
   issue: string | null
+  tags: string[]
   customerName?: string
   pageName?: string
 }) {
   const sql = getDb()
+  const tagsJson = JSON.stringify(data.tags || [])
   await sql`
     INSERT INTO conversation_evaluations (
       pancake_conversation_id, customer_name, page_name,
       ai_summary, customer_needs, sales_name, sales_evaluation, ai_score, evaluation_label,
-      needs_attention, issue, analyzed_at
+      needs_attention, issue, tags, analyzed_at
     ) VALUES (
       ${pancakeId},
       ${data.customerName ?? null},
@@ -536,6 +539,7 @@ export async function saveConversationAnalysis(pancakeId: string, data: {
       ${data.label},
       ${data.needsAttention},
       ${data.issue},
+      ${tagsJson},
       NOW()
     )
     ON CONFLICT (pancake_conversation_id) DO UPDATE SET
@@ -547,6 +551,7 @@ export async function saveConversationAnalysis(pancakeId: string, data: {
       evaluation_label = COALESCE(conversation_evaluations.evaluation_label, ${data.label}),
       needs_attention  = ${data.needsAttention},
       issue            = ${data.issue},
+      tags             = ${tagsJson},
       customer_name    = COALESCE(${data.customerName ?? null}, conversation_evaluations.customer_name),
       page_name        = COALESCE(${data.pageName ?? null}, conversation_evaluations.page_name),
       analyzed_at      = NOW(),
@@ -803,6 +808,7 @@ export interface ConversationEvaluation {
   ai_score: number | null
   needs_attention: boolean | null
   issue: string | null
+  tags: string | null
   evaluation_score: number | null
   evaluation_label: string | null
   evaluation_note: string | null

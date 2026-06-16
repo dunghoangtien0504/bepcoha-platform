@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initDb, getAllConversationEvaluations } from '@/lib/db'
-import { getPancakePages, PANCAKE_PAGE_API, PANCAKE_USER_API, cleanPancakeText } from '@/lib/pancake'
+import { getPancakePages, PANCAKE_PAGE_API, PANCAKE_USER_API, cleanPancakeText, parseTags } from '@/lib/pancake'
 
 function checkAuth(req: NextRequest) {
   const adminPw = process.env.ADMIN_PASSWORD || 'hacofood2024'
@@ -122,6 +122,7 @@ export async function GET(req: NextRequest) {
           ai_score: eval_?.ai_score ?? null,
           needs_attention: eval_?.needs_attention ?? false,
           issue: eval_?.issue ?? null,
+          tags: parseTags(eval_?.tags),
           analyzed_at: eval_?.analyzed_at ?? null,
           evaluation_score: eval_?.evaluation_score ?? null,
           evaluation_label: eval_?.evaluation_label ?? null,

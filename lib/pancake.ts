@@ -65,6 +65,12 @@ export async function getPancakePageById(pageId: string): Promise<PancakePage | 
   return pages.find(p => p.pageId === pageId)
 }
 
+/** Parse cột tags (JSON text) → mảng string. */
+export function parseTags(raw: string | null | undefined): string[] {
+  if (!raw) return []
+  try { const a = JSON.parse(raw); return Array.isArray(a) ? a.map(String) : [] } catch { return [] }
+}
+
 /** Làm sạch nội dung tin nhắn Pancake (HTML → text thuần). */
 export function cleanPancakeText(raw: string): string {
   if (!raw) return ''
