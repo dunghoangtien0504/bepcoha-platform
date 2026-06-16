@@ -473,9 +473,9 @@ function ConversationsTab({ token }: { token: string }) {
     }
   }, [token])
 
-  // Phân tích hàng loạt tất cả hội thoại chưa phân tích
-  const analyzeAll = useCallback(async () => {
-    const pending = convs.filter(c => !c.analyzed_at)
+  // Phân tích hàng loạt. force=true: phân tích lại cả những cái đã phân tích.
+  const analyzeAll = useCallback(async (force = false) => {
+    const pending = force ? convs.slice() : convs.filter(c => !c.analyzed_at)
     if (!pending.length) return
     setBatchRunning(true)
     setBatchProgress({ done: 0, total: pending.length })
@@ -635,11 +635,11 @@ function ConversationsTab({ token }: { token: string }) {
 
       {/* Thanh công cụ: phân tích tất cả + báo cáo */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-wrap items-center gap-3">
-        <button onClick={analyzeAll} disabled={batchRunning || !pendingCount}
+        <button onClick={() => analyzeAll(pendingCount === 0)} disabled={batchRunning || !convs.length}
           className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-50">
           {batchRunning
             ? `Đang phân tích ${batchProgress.done}/${batchProgress.total}...`
-            : pendingCount ? `🤖 Phân tích tất cả (${pendingCount})` : '✓ Đã phân tích hết'}
+            : pendingCount ? `🤖 Phân tích tất cả (${pendingCount})` : '🔄 Phân tích lại tất cả'}
         </button>
         {batchRunning && (
           <div className="flex-1 min-w-[120px] h-2 bg-gray-100 rounded-full overflow-hidden">

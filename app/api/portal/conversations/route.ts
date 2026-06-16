@@ -99,7 +99,12 @@ export async function GET(req: NextRequest) {
         )
 
         const cust = conv.customers?.[0] || conv.customer || conv.from || {}
-        const phone = cust.phone || cust.phone_number || conv.recent_phone_numbers?.[0] || ''
+        const phoneRaw = cust.phone ?? cust.phone_number ?? conv.recent_phone_numbers?.[0]
+        const phone = typeof phoneRaw === 'string'
+          ? phoneRaw
+          : (phoneRaw && typeof phoneRaw === 'object'
+              ? String((phoneRaw as Record<string, unknown>).phone_number || (phoneRaw as Record<string, unknown>).phone || '')
+              : '')
 
         const eval_ = evaluations[convId]
 

@@ -39,16 +39,17 @@ async function fetchMessages(pageId: string, convId: string, customerId: string)
   const rawMsgs = data?.messages || data?.data || []
   const parsed: ParsedMessage[] = rawMsgs.map((m: Record<string, unknown>, i: number) => {
     const from = (m.from as Record<string, unknown>) || {}
-    const fromId = String(from.id || '')
-    const isFromCustomer = customerId
-      ? fromId === customerId
-      : !!(m.from_customer ?? m.is_from_customer ?? !(m.is_from_page ?? from.admin_id))
+    // Tin từ Page/NV có admin_id; tin từ khách thì không.
+    const isFromPage = !!from.admin_id
+    const senderName = isFromPage
+      ? String(from.admin_name || from.name || '')   // admin_name = tên NV thật (Botcake / Bùi Thu Thảo...)
+      : String(from.name || '')
     return {
       id: `msg_${i}`,
-      from_customer: isFromCustomer,
+      from_customer: !isFromPage,
       content: cleanPancakeText(String(m.message || m.content || m.text || '')),
       timestamp: String(m.inserted_at || m.created_at || m.timestamp || ''),
-      sender_name: String(from.name || m.sender_name || ''),
+      sender_name: senderName,
     }
   })
   // Bỏ tin rỗng (vd <div></div> sau khi làm sạch)
@@ -174,7 +175,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const prompt = `Bạn là chuyên gia QA chăm sóc khách hàng. Phân tích đoạn hội thoại bán hàng qua tin nhắn dưới đây và trả về JSON THUẦN (không markdown, không giải thích thêm) đúng cấu trúc:
 {
   "customer_needs": "Phân tích nhu cầu của khách trong 1-2 câu: khách muốn gì, đang ở giai đoạn nào (hỏi thông tin / cân nhắc / quyết định mua / không mua)",
-  "sales_name": "Tên nhân viên/sales đã trả lời khách (lấy từ tên người gửi NV). Nếu chỉ là tin tự động/chatbot thì ghi 'Tự động (Botcake)'",
+  "sales_name": "Tên nhân viên THẬT đã trả lời khách — lấy CHÍNH XÁC từ tên trong nhãn 'NV (Tên)' của các dòng NV. Nếu có nhiều người, chọn người trả lời chính/nhiều nhất. Nếu CHỈ có 'Botcake' (tin tự động) thì ghi 'Tự động (Botcake)'. TUYỆT ĐỐI không ghi tên Page 'Cô Hạ Dạy Nấu Ăn'",
   "score": <số nguyên 1-5: chấm chất lượng phiên trả lời của sales — 5 là xuất sắc>,
   "outcome": "<một trong: order (đã/đang chốt đơn), inquiry (mới hỏi thông tin), no_buy (không mua), need_staff (cần nhân viên hỗ trợ thêm), ai_wrong (bot trả lời sai/lạc đề)>",
   "evaluation": "Nhận xét phiên trả lời của sales trong 1-2 câu: làm tốt gì, thiếu sót gì (vd: chưa hỏi SĐT, chưa chốt đơn, trả lời chậm, đúng/sai nhu cầu)",
