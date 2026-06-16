@@ -107,6 +107,32 @@ export async function initDb() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id SERIAL PRIMARY KEY,
+      pancake_conversation_id TEXT,
+      customer_name TEXT NOT NULL DEFAULT '',
+      customer_phone TEXT DEFAULT '',
+      customer_avatar TEXT,
+      platform TEXT DEFAULT 'facebook',
+      page_name TEXT DEFAULT '',
+      messages JSONB NOT NULL DEFAULT '[]',
+      ai_summary TEXT,
+      evaluation_score INTEGER CHECK (evaluation_score BETWEEN 1 AND 5),
+      evaluation_label TEXT,
+      evaluation_note TEXT,
+      evaluated_at TIMESTAMPTZ,
+      has_order BOOLEAN DEFAULT FALSE,
+      ai_order_id INTEGER,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS conversations_pancake_id_unique
+    ON conversations (pancake_conversation_id)
+    WHERE pancake_conversation_id IS NOT NULL
+  `
   // Insert default course settings if not exists
   const settings = await sql`SELECT COUNT(*) as count FROM course_settings`
   if (parseInt(settings[0].count) === 0) {
