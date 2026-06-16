@@ -69,6 +69,10 @@ export async function GET(req: NextRequest) {
         const convType = String(conv.type || '').toUpperCase()
         if (convType === 'COMMENT' || convType === 'RATING') continue
 
+        // Bỏ hội thoại chỉ có tin tự động [Botcake] (khách chưa phản hồi)
+        const rawSnippet = String(conv.snippet || conv.last_message?.message || conv.last_message || '')
+        if (/\[botcake\]/i.test(rawSnippet)) continue
+
         // customer_id cần cho việc lấy messages
         const customerId = String(
           conv.customer_id ||
@@ -100,6 +104,8 @@ export async function GET(req: NextRequest) {
           sales_name: eval_?.sales_name ?? null,
           sales_evaluation: eval_?.sales_evaluation ?? null,
           ai_score: eval_?.ai_score ?? null,
+          needs_attention: eval_?.needs_attention ?? false,
+          issue: eval_?.issue ?? null,
           analyzed_at: eval_?.analyzed_at ?? null,
           evaluation_score: eval_?.evaluation_score ?? null,
           evaluation_label: eval_?.evaluation_label ?? null,

@@ -72,6 +72,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     sales_name: eval_?.sales_name ?? null,
     sales_evaluation: eval_?.sales_evaluation ?? null,
     ai_score: eval_?.ai_score ?? null,
+    needs_attention: eval_?.needs_attention ?? false,
+    issue: eval_?.issue ?? null,
     analyzed_at: eval_?.analyzed_at ?? null,
     evaluation_score: eval_?.evaluation_score ?? null,
     evaluation_label: eval_?.evaluation_label ?? null,
@@ -108,6 +110,8 @@ interface AiAnalysis {
   score: number | null
   outcome: string
   evaluation: string
+  needs_attention: boolean
+  issue: string
 }
 
 function parseAiJson(raw: string): AiAnalysis | null {
@@ -123,6 +127,8 @@ function parseAiJson(raw: string): AiAnalysis | null {
       score: typeof obj.score === 'number' ? obj.score : (parseInt(obj.score) || null),
       outcome: String(obj.outcome || ''),
       evaluation: String(obj.evaluation || ''),
+      needs_attention: obj.needs_attention === true || obj.needs_attention === 'true',
+      issue: String(obj.issue || ''),
     }
   } catch {
     return null
@@ -165,7 +171,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   "sales_name": "Tên nhân viên/sales đã trả lời khách (lấy từ tên người gửi NV). Nếu chỉ là tin tự động/chatbot thì ghi 'Tự động (Botcake)'",
   "score": <số nguyên 1-5: chấm chất lượng phiên trả lời của sales — 5 là xuất sắc>,
   "outcome": "<một trong: order (đã/đang chốt đơn), inquiry (mới hỏi thông tin), no_buy (không mua), need_staff (cần nhân viên hỗ trợ thêm), ai_wrong (bot trả lời sai/lạc đề)>",
-  "evaluation": "Nhận xét phiên trả lời của sales trong 1-2 câu: làm tốt gì, thiếu sót gì (vd: chưa hỏi SĐT, chưa chốt đơn, trả lời chậm, đúng/sai nhu cầu)"
+  "evaluation": "Nhận xét phiên trả lời của sales trong 1-2 câu: làm tốt gì, thiếu sót gì (vd: chưa hỏi SĐT, chưa chốt đơn, trả lời chậm, đúng/sai nhu cầu)",
+  "needs_attention": <true nếu có vấn đề HỆ TRỌNG cần CEO can thiệp ngay: khách bức xúc/phàn nàn/dọa bỏ, NV trả lời sai gây hiểu lầm, khách hỏi nhưng bị bỏ lơ chưa ai trả lời, mất khách tiềm năng rõ ràng, sự cố đơn hàng/giao hàng. Ngược lại false>,
+  "issue": "Nếu needs_attention=true: mô tả ngắn gọn vấn đề hệ trọng cần xử lý. Nếu false: để chuỗi rỗng"
 }
 
 Hội thoại:
@@ -189,6 +197,8 @@ ${text}`
     aiScore: score,
     label: analysis.outcome || null,
     summary,
+    needsAttention: analysis.needs_attention,
+    issue: analysis.needs_attention ? (analysis.issue || null) : null,
     customerName,
     pageName,
   })
@@ -200,5 +210,7 @@ ${text}`
     ai_score: score,
     outcome: analysis.outcome,
     ai_summary: summary,
+    needs_attention: analysis.needs_attention,
+    issue: analysis.needs_attention ? analysis.issue : '',
   })
 }

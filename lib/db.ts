@@ -159,6 +159,8 @@ export async function initDb() {
   await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS sales_evaluation TEXT`
   await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS ai_score INTEGER`
   await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS analyzed_at TIMESTAMPTZ`
+  await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS needs_attention BOOLEAN DEFAULT FALSE`
+  await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS issue TEXT`
   // Insert default course settings if not exists
   const settings = await sql`SELECT COUNT(*) as count FROM course_settings`
   if (parseInt(settings[0].count) === 0) {
@@ -511,6 +513,8 @@ export async function saveConversationAnalysis(pancakeId: string, data: {
   aiScore: number | null
   label: string | null
   summary: string
+  needsAttention: boolean
+  issue: string | null
   customerName?: string
   pageName?: string
 }) {
@@ -518,7 +522,8 @@ export async function saveConversationAnalysis(pancakeId: string, data: {
   await sql`
     INSERT INTO conversation_evaluations (
       pancake_conversation_id, customer_name, page_name,
-      ai_summary, customer_needs, sales_name, sales_evaluation, ai_score, evaluation_label, analyzed_at
+      ai_summary, customer_needs, sales_name, sales_evaluation, ai_score, evaluation_label,
+      needs_attention, issue, analyzed_at
     ) VALUES (
       ${pancakeId},
       ${data.customerName ?? null},
@@ -529,6 +534,8 @@ export async function saveConversationAnalysis(pancakeId: string, data: {
       ${data.salesEvaluation},
       ${data.aiScore},
       ${data.label},
+      ${data.needsAttention},
+      ${data.issue},
       NOW()
     )
     ON CONFLICT (pancake_conversation_id) DO UPDATE SET
@@ -538,6 +545,8 @@ export async function saveConversationAnalysis(pancakeId: string, data: {
       sales_evaluation = ${data.salesEvaluation},
       ai_score         = ${data.aiScore},
       evaluation_label = COALESCE(conversation_evaluations.evaluation_label, ${data.label}),
+      needs_attention  = ${data.needsAttention},
+      issue            = ${data.issue},
       customer_name    = COALESCE(${data.customerName ?? null}, conversation_evaluations.customer_name),
       page_name        = COALESCE(${data.pageName ?? null}, conversation_evaluations.page_name),
       analyzed_at      = NOW(),
@@ -792,6 +801,8 @@ export interface ConversationEvaluation {
   sales_name: string | null
   sales_evaluation: string | null
   ai_score: number | null
+  needs_attention: boolean | null
+  issue: string | null
   evaluation_score: number | null
   evaluation_label: string | null
   evaluation_note: string | null

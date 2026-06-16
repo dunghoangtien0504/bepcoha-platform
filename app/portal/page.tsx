@@ -27,6 +27,8 @@ interface Conversation {
   sales_name: string | null
   sales_evaluation: string | null
   ai_score: number | null
+  needs_attention: boolean | null
+  issue: string | null
   analyzed_at: string | null
   evaluation_score: number | null
   evaluation_label: string | null
@@ -409,7 +411,7 @@ function ConversationsTab({ token }: { token: string }) {
   const [selected, setSelected] = useState<Conversation | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMsgs, setLoadingMsgs] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'unevaluated' | 'order' | 'no_buy'>('all')
+  const [filter, setFilter] = useState<'all' | 'unevaluated' | 'attention' | 'order' | 'no_buy'>('all')
   const [search, setSearch] = useState('')
   const [score, setScore] = useState(0)
   const [label, setLabel] = useState('')
@@ -418,6 +420,9 @@ function ConversationsTab({ token }: { token: string }) {
   const [analyzing, setAnalyzing] = useState(false)
   const [msgWarning, setMsgWarning] = useState('')
   const [showMessages, setShowMessages] = useState(false)
+  const [batchRunning, setBatchRunning] = useState(false)
+  const [batchProgress, setBatchProgress] = useState({ done: 0, total: 0 })
+  const [showReport, setShowReport] = useState(false)
 
   const fetchConvs = useCallback(async () => {
     setLoading(true)
@@ -452,6 +457,8 @@ function ConversationsTab({ token }: { token: string }) {
           sales_name: d.sales_name ?? null,
           sales_evaluation: d.sales_evaluation ?? null,
           ai_score: d.ai_score ?? null,
+          needs_attention: d.needs_attention ?? false,
+          issue: d.issue || null,
           evaluation_label: d.outcome ?? null,
           analyzed_at: new Date().toISOString(),
         }
@@ -463,6 +470,44 @@ function ConversationsTab({ token }: { token: string }) {
       setAnalyzing(false)
     }
   }, [token])
+
+  // Phân tích hàng loạt tất cả hội thoại chưa phân tích
+  const analyzeAll = useCallback(async () => {
+    const pending = convs.filter(c => !c.analyzed_at)
+    if (!pending.length) return
+    setBatchRunning(true)
+    setBatchProgress({ done: 0, total: pending.length })
+    for (let i = 0; i < pending.length; i++) {
+      const c = pending[i]
+      try {
+        const res = await fetch(`/api/portal/conversations/${c.id}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_name: c.customer_name, page_name: c.page_name,
+            page_id: c.page_id, customer_id: c.customer_id,
+          }),
+        })
+        if (res.ok) {
+          const d = await res.json()
+          const patch = {
+            ai_summary: d.ai_summary ?? null,
+            customer_needs: d.customer_needs ?? null,
+            sales_name: d.sales_name ?? null,
+            sales_evaluation: d.sales_evaluation ?? null,
+            ai_score: d.ai_score ?? null,
+            needs_attention: d.needs_attention ?? false,
+            issue: d.issue || null,
+            evaluation_label: d.outcome ?? null,
+            analyzed_at: new Date().toISOString(),
+          }
+          setConvs(prev => prev.map(x => x.id === c.id ? { ...x, ...patch } : x))
+        }
+      } catch { /* bỏ qua lỗi từng cái */ }
+      setBatchProgress({ done: i + 1, total: pending.length })
+    }
+    setBatchRunning(false)
+  }, [convs, token])
 
   const selectConv = async (c: Conversation) => {
     setSelected(c)
@@ -493,6 +538,8 @@ function ConversationsTab({ token }: { token: string }) {
             sales_name: d.sales_name ?? c.sales_name,
             sales_evaluation: d.sales_evaluation ?? c.sales_evaluation,
             ai_score: d.ai_score ?? c.ai_score,
+            needs_attention: d.needs_attention ?? c.needs_attention,
+            issue: d.issue ?? c.issue,
             analyzed_at: d.analyzed_at ?? c.analyzed_at,
             evaluation_score: d.evaluation_score ?? c.evaluation_score,
             evaluation_label: d.evaluation_label ?? c.evaluation_label,
@@ -530,6 +577,7 @@ function ConversationsTab({ token }: { token: string }) {
 
   const filtered = convs.filter(c => {
     if (filter === 'unevaluated' && c.analyzed_at) return false
+    if (filter === 'attention' && !c.needs_attention) return false
     if (filter === 'order' && c.evaluation_label !== 'order') return false
     if (filter === 'no_buy' && c.evaluation_label !== 'no_buy') return false
     if (search) {
@@ -542,10 +590,12 @@ function ConversationsTab({ token }: { token: string }) {
   // Điểm hiển thị ưu tiên điểm người chỉnh tay, fallback điểm AI
   const effScore = (c: Conversation) => c.evaluation_score ?? c.ai_score
   const withScore = convs.filter(c => effScore(c))
+  const flagged = convs.filter(c => c.needs_attention)
+  const pendingCount = convs.filter(c => !c.analyzed_at).length
   const stats = {
     total: convs.length,
     analyzed: convs.filter(c => c.analyzed_at).length,
-    orders: convs.filter(c => c.evaluation_label === 'order').length,
+    attention: flagged.length,
     avgScore: withScore.length
       ? (withScore.reduce((a, c) => a + (effScore(c) || 0), 0) / withScore.length).toFixed(1)
       : '—',
@@ -554,19 +604,76 @@ function ConversationsTab({ token }: { token: string }) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Tổng hội thoại', value: stats.total, color: 'text-blue-600' },
           { label: 'Đã phân tích AI', value: stats.analyzed, color: 'text-purple-600' },
-          { label: 'Có chốt đơn', value: stats.orders, color: 'text-green-600' },
           { label: 'Điểm sales TB', value: `${stats.avgScore}★`, color: 'text-amber-600' },
+          { label: 'Cần CEO xử lý', value: stats.attention, color: stats.attention ? 'text-red-600' : 'text-gray-400', alert: true },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <p className="text-gray-500 text-xs font-medium">{s.label}</p>
+          <button key={s.label} type="button"
+            onClick={() => s.alert && stats.attention ? (setFilter('attention'), setShowReport(true)) : undefined}
+            className={`text-left bg-white rounded-2xl p-4 shadow-sm border transition-colors ${s.alert && stats.attention ? 'border-red-200 hover:border-red-400 cursor-pointer' : 'border-gray-100 cursor-default'}`}>
+            <p className="text-gray-500 text-xs font-medium">{s.label}{s.alert && stats.attention ? ' ⚠️' : ''}</p>
             <p className={`font-black text-2xl mt-1 ${s.color}`}>{s.value}</p>
-          </div>
+          </button>
         ))}
       </div>
+
+      {/* Thanh công cụ: phân tích tất cả + báo cáo */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-wrap items-center gap-3">
+        <button onClick={analyzeAll} disabled={batchRunning || !pendingCount}
+          className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-50">
+          {batchRunning
+            ? `Đang phân tích ${batchProgress.done}/${batchProgress.total}...`
+            : pendingCount ? `🤖 Phân tích tất cả (${pendingCount})` : '✓ Đã phân tích hết'}
+        </button>
+        {batchRunning && (
+          <div className="flex-1 min-w-[120px] h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full bg-purple-500 transition-all" style={{ width: `${batchProgress.total ? Math.round(batchProgress.done / batchProgress.total * 100) : 0}%` }} />
+          </div>
+        )}
+        <button onClick={() => setShowReport(v => !v)}
+          className="text-sm font-semibold px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors ml-auto">
+          📊 Báo cáo tổng quan {stats.attention > 0 && <span className="text-red-500">({stats.attention} ⚠️)</span>}
+        </button>
+      </div>
+
+      {/* Báo cáo tổng quan + vấn đề khách hàng cần CEO xử lý */}
+      {showReport && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div><p className="text-2xl font-black text-blue-600">{stats.total}</p><p className="text-xs text-gray-500">Hội thoại</p></div>
+            <div><p className="text-2xl font-black text-purple-600">{stats.analyzed}</p><p className="text-xs text-gray-500">Đã phân tích</p></div>
+            <div><p className="text-2xl font-black text-amber-500">{stats.avgScore}★</p><p className="text-xs text-gray-500">Điểm sales TB</p></div>
+            <div><p className={`text-2xl font-black ${stats.attention ? 'text-red-600' : 'text-green-600'}`}>{stats.attention}</p><p className="text-xs text-gray-500">Cần CEO xử lý</p></div>
+          </div>
+
+          <div>
+            <p className="text-sm font-bold text-gray-700 mb-2">🚨 Vấn đề khách hàng cần can thiệp</p>
+            {flagged.length === 0 ? (
+              <p className="text-sm text-gray-400 bg-gray-50 rounded-xl p-3 text-center">Không có vấn đề hệ trọng nào 🎉</p>
+            ) : (
+              <div className="space-y-2">
+                {flagged.map(c => (
+                  <button key={c.id} onClick={() => selectConv(c)}
+                    className="w-full text-left flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-3 hover:border-red-400 transition-colors">
+                    <span className="text-lg">⚠️</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm text-gray-800">{c.customer_name}</span>
+                        <span className="text-xs text-gray-400">{c.page_name}</span>
+                        {c.customer_phone && <span className="text-xs text-gray-500">· {c.customer_phone}</span>}
+                      </div>
+                      <p className="text-sm text-red-700 leading-relaxed mt-0.5">{c.issue}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main panel: list + detail */}
       <div className="grid grid-cols-[280px_1fr_240px] gap-3" style={{ minHeight: '520px' }}>
@@ -583,7 +690,8 @@ function ConversationsTab({ token }: { token: string }) {
             <div className="flex gap-1 flex-wrap">
               {[
                 { k: 'all', label: 'Tất cả' },
-                { k: 'unevaluated', label: 'Chưa đánh giá' },
+                { k: 'attention', label: '⚠️ Cần xử lý' },
+                { k: 'unevaluated', label: 'Chưa phân tích' },
                 { k: 'order', label: 'Đặt hàng' },
                 { k: 'no_buy', label: 'Không mua' },
               ].map(f => (
@@ -606,7 +714,9 @@ function ConversationsTab({ token }: { token: string }) {
             ) : filtered.map(c => (
               <button key={c.id} onClick={() => selectConv(c)} className={`w-full text-left p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${selected?.id === c.id ? 'bg-green-50 border-l-2 border-l-[#2E7D32]' : ''}`}>
                 <div className="flex justify-between items-start mb-1">
-                  <span className="font-medium text-sm text-gray-800 truncate pr-2">{c.customer_name || 'Khách ẩn danh'}</span>
+                  <span className="font-medium text-sm text-gray-800 truncate pr-2">
+                    {c.needs_attention && <span className="text-red-500">⚠️ </span>}{c.customer_name || 'Khách ẩn danh'}
+                  </span>
                   <span className="text-xs text-gray-400 whitespace-nowrap">{c.page_name}</span>
                 </div>
                 <div className="text-xs text-gray-500 truncate mb-1.5">
@@ -671,6 +781,14 @@ function ConversationsTab({ token }: { token: string }) {
 
                     {msgWarning && (
                       <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">⚠️ {msgWarning}</div>
+                    )}
+
+                    {/* Cảnh báo vấn đề hệ trọng cần CEO */}
+                    {selected.needs_attention && selected.issue && (
+                      <div className="bg-red-50 border-2 border-red-300 rounded-xl p-3">
+                        <p className="text-xs font-bold text-red-700 mb-1">🚨 Vấn đề cần CEO can thiệp</p>
+                        <p className="text-sm text-red-800 leading-relaxed">{selected.issue}</p>
+                      </div>
                     )}
 
                     {/* Nhu cầu khách */}
