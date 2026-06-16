@@ -605,6 +605,19 @@ function ConversationsTab({ token }: { token: string }) {
   const withScore = convs.filter(c => effScore(c))
   const flagged = convs.filter(c => c.needs_attention)
   const pendingCount = convs.filter(c => !c.analyzed_at).length
+
+  // Gom thống kê theo nhân viên sales (từ sales_name của hội thoại đã phân tích)
+  const bySales: Record<string, { count: number; scoreSum: number; scoreN: number; attention: number }> = {}
+  convs.forEach(c => {
+    if (!c.sales_name) return
+    const k = c.sales_name
+    if (!bySales[k]) bySales[k] = { count: 0, scoreSum: 0, scoreN: 0, attention: 0 }
+    bySales[k].count++
+    const s = effScore(c)
+    if (s) { bySales[k].scoreSum += s; bySales[k].scoreN++ }
+    if (c.needs_attention) bySales[k].attention++
+  })
+  const salesList = Object.entries(bySales).sort((a, b) => b[1].count - a[1].count)
   const stats = {
     total: convs.length,
     analyzed: convs.filter(c => c.analyzed_at).length,
@@ -660,6 +673,43 @@ function ConversationsTab({ token }: { token: string }) {
             <div><p className="text-2xl font-black text-purple-600">{stats.analyzed}</p><p className="text-xs text-gray-500">Đã phân tích</p></div>
             <div><p className="text-2xl font-black text-amber-500">{stats.avgScore}★</p><p className="text-xs text-gray-500">Điểm sales TB</p></div>
             <div><p className={`text-2xl font-black ${stats.attention ? 'text-red-600' : 'text-green-600'}`}>{stats.attention}</p><p className="text-xs text-gray-500">Cần xử lý</p></div>
+          </div>
+
+          {/* Thống kê theo nhân viên sales */}
+          <div>
+            <p className="text-sm font-bold text-gray-700 mb-2">
+              👥 Thống kê theo nhân viên {salesList.length > 0 && <span className="text-gray-400 font-normal">({salesList.length} người)</span>}
+            </p>
+            {salesList.length === 0 ? (
+              <p className="text-sm text-gray-400 bg-gray-50 rounded-xl p-3 text-center">Chưa có dữ liệu — bấm &quot;Phân tích tất cả&quot;</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 text-gray-500 text-xs">
+                      <th className="px-3 py-2 text-left font-semibold">Nhân viên</th>
+                      <th className="px-3 py-2 text-center font-semibold">Hội thoại</th>
+                      <th className="px-3 py-2 text-center font-semibold">Điểm TB</th>
+                      <th className="px-3 py-2 text-center font-semibold">Cần xử lý</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {salesList.map(([name, s]) => (
+                      <tr key={name} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 font-medium text-gray-800">{name}</td>
+                        <td className="px-3 py-2 text-center text-gray-600">{s.count}</td>
+                        <td className="px-3 py-2 text-center text-amber-500 font-semibold">
+                          {s.scoreN ? (s.scoreSum / s.scoreN).toFixed(1) + '★' : '—'}
+                        </td>
+                        <td className={`px-3 py-2 text-center font-semibold ${s.attention ? 'text-red-600' : 'text-gray-400'}`}>
+                          {s.attention || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <div>
