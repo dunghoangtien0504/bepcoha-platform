@@ -140,14 +140,25 @@ export async function initDb() {
       customer_name TEXT,
       page_name TEXT,
       ai_summary TEXT,
+      customer_needs TEXT,
+      sales_name TEXT,
+      sales_evaluation TEXT,
+      ai_score INTEGER,
       evaluation_score INTEGER CHECK (evaluation_score BETWEEN 1 AND 5),
       evaluation_label TEXT,
       evaluation_note TEXT,
+      analyzed_at TIMESTAMPTZ,
       evaluated_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  // Migration: thêm cột phân tích AI cho bảng cũ
+  await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS customer_needs TEXT`
+  await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS sales_name TEXT`
+  await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS sales_evaluation TEXT`
+  await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS ai_score INTEGER`
+  await sql`ALTER TABLE conversation_evaluations ADD COLUMN IF NOT EXISTS analyzed_at TIMESTAMPTZ`
   // Insert default course settings if not exists
   const settings = await sql`SELECT COUNT(*) as count FROM course_settings`
   if (parseInt(settings[0].count) === 0) {
@@ -493,16 +504,44 @@ export async function getConversationById(id: number) {
 }
 
 // ── Conversation Evaluations (live-fetch mode) ────────────────────────────────
-export async function saveConversationSummary(pancakeId: string, summary: string, customerName?: string, pageName?: string) {
+export async function saveConversationAnalysis(pancakeId: string, data: {
+  customerNeeds: string
+  salesName: string
+  salesEvaluation: string
+  aiScore: number | null
+  label: string | null
+  summary: string
+  customerName?: string
+  pageName?: string
+}) {
   const sql = getDb()
   await sql`
-    INSERT INTO conversation_evaluations (pancake_conversation_id, customer_name, page_name, ai_summary)
-    VALUES (${pancakeId}, ${customerName ?? null}, ${pageName ?? null}, ${summary})
+    INSERT INTO conversation_evaluations (
+      pancake_conversation_id, customer_name, page_name,
+      ai_summary, customer_needs, sales_name, sales_evaluation, ai_score, evaluation_label, analyzed_at
+    ) VALUES (
+      ${pancakeId},
+      ${data.customerName ?? null},
+      ${data.pageName ?? null},
+      ${data.summary},
+      ${data.customerNeeds},
+      ${data.salesName},
+      ${data.salesEvaluation},
+      ${data.aiScore},
+      ${data.label},
+      NOW()
+    )
     ON CONFLICT (pancake_conversation_id) DO UPDATE SET
-      ai_summary = ${summary},
-      customer_name = COALESCE(${customerName ?? null}, conversation_evaluations.customer_name),
-      page_name = COALESCE(${pageName ?? null}, conversation_evaluations.page_name),
-      updated_at = NOW()
+      ai_summary       = ${data.summary},
+      customer_needs   = ${data.customerNeeds},
+      sales_name       = ${data.salesName},
+      sales_evaluation = ${data.salesEvaluation},
+      ai_score         = ${data.aiScore},
+      evaluation_label = COALESCE(conversation_evaluations.evaluation_label, ${data.label}),
+      customer_name    = COALESCE(${data.customerName ?? null}, conversation_evaluations.customer_name),
+      page_name        = COALESCE(${data.pageName ?? null}, conversation_evaluations.page_name),
+      analyzed_at      = NOW(),
+      updated_at       = NOW()
   `
 }
 
@@ -749,9 +788,14 @@ export interface ConversationEvaluation {
   customer_name: string | null
   page_name: string | null
   ai_summary: string | null
+  customer_needs: string | null
+  sales_name: string | null
+  sales_evaluation: string | null
+  ai_score: number | null
   evaluation_score: number | null
   evaluation_label: string | null
   evaluation_note: string | null
+  analyzed_at: string | null
   evaluated_at: string | null
   created_at: string
   updated_at: string

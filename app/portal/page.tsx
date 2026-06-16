@@ -23,6 +23,11 @@ interface Conversation {
   messages: ConversationMessage[]
   messages_loaded: boolean
   ai_summary: string | null
+  customer_needs: string | null
+  sales_name: string | null
+  sales_evaluation: string | null
+  ai_score: number | null
+  analyzed_at: string | null
   evaluation_score: number | null
   evaluation_label: string | null
   evaluation_note: string | null
@@ -410,8 +415,9 @@ function ConversationsTab({ token }: { token: string }) {
   const [label, setLabel] = useState('')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
-  const [summarizing, setSummarizing] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
   const [msgWarning, setMsgWarning] = useState('')
+  const [showMessages, setShowMessages] = useState(false)
 
   const fetchConvs = useCallback(async () => {
     setLoading(true)
@@ -424,14 +430,50 @@ function ConversationsTab({ token }: { token: string }) {
 
   useEffect(() => { fetchConvs() }, [fetchConvs])
 
+  // Gọi AI phân tích nhu cầu khách + đánh giá phiên trả lời sales
+  const analyze = useCallback(async (c: Conversation) => {
+    setAnalyzing(true)
+    try {
+      const res = await fetch(`/api/portal/conversations/${c.id}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: c.customer_name,
+          page_name: c.page_name,
+          page_id: c.page_id,
+          customer_id: c.customer_id,
+        }),
+      })
+      if (res.ok) {
+        const d = await res.json()
+        const patch = {
+          ai_summary: d.ai_summary ?? null,
+          customer_needs: d.customer_needs ?? null,
+          sales_name: d.sales_name ?? null,
+          sales_evaluation: d.sales_evaluation ?? null,
+          ai_score: d.ai_score ?? null,
+          evaluation_label: d.outcome ?? null,
+          analyzed_at: new Date().toISOString(),
+        }
+        setSelected(prev => prev && prev.id === c.id ? { ...prev, ...patch } : prev)
+        setConvs(prev => prev.map(x => x.id === c.id ? { ...x, ...patch } : x))
+        setLabel(d.outcome ?? '')
+      }
+    } finally {
+      setAnalyzing(false)
+    }
+  }, [token])
+
   const selectConv = async (c: Conversation) => {
     setSelected(c)
-    setScore(c.evaluation_score ?? 0)
+    setScore(c.evaluation_score ?? c.ai_score ?? 0)
     setLabel(c.evaluation_label ?? '')
     setNote(c.evaluation_note ?? '')
     setMsgWarning('')
+    setShowMessages(false)
 
     // Lazy load messages nếu chưa có
+    let merged = c
     if (!c.messages_loaded) {
       setLoadingMsgs(true)
       try {
@@ -442,24 +484,34 @@ function ConversationsTab({ token }: { token: string }) {
         if (res.ok) {
           const d = await res.json()
           if (d.warning) setMsgWarning(d.warning)
-          const updated: Conversation = {
+          merged = {
             ...c,
             messages: d.messages || [],
             messages_loaded: true,
             ai_summary: d.ai_summary ?? c.ai_summary,
+            customer_needs: d.customer_needs ?? c.customer_needs,
+            sales_name: d.sales_name ?? c.sales_name,
+            sales_evaluation: d.sales_evaluation ?? c.sales_evaluation,
+            ai_score: d.ai_score ?? c.ai_score,
+            analyzed_at: d.analyzed_at ?? c.analyzed_at,
             evaluation_score: d.evaluation_score ?? c.evaluation_score,
             evaluation_label: d.evaluation_label ?? c.evaluation_label,
             evaluation_note: d.evaluation_note ?? c.evaluation_note,
           }
-          setSelected(updated)
-          setScore(updated.evaluation_score ?? 0)
-          setLabel(updated.evaluation_label ?? '')
-          setNote(updated.evaluation_note ?? '')
-          setConvs(prev => prev.map(x => x.id === c.id ? updated : x))
+          setSelected(merged)
+          setScore(merged.evaluation_score ?? merged.ai_score ?? 0)
+          setLabel(merged.evaluation_label ?? '')
+          setNote(merged.evaluation_note ?? '')
+          setConvs(prev => prev.map(x => x.id === c.id ? merged : x))
         }
       } finally {
         setLoadingMsgs(false)
       }
+    }
+
+    // AI tự phân tích nếu chưa từng phân tích & có tin nhắn
+    if (!merged.analyzed_at && merged.messages.length > 0) {
+      analyze(merged)
     }
   }
 
@@ -476,29 +528,8 @@ function ConversationsTab({ token }: { token: string }) {
     setConvs(prev => prev.map(c => c.id === selected.id ? { ...c, evaluation_score: score, evaluation_label: label, evaluation_note: note } : c))
   }
 
-  const summarize = async () => {
-    if (!selected) return
-    setSummarizing(true)
-    const res = await fetch(`/api/portal/conversations/${selected.id}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        customer_name: selected.customer_name,
-        page_name: selected.page_name,
-        page_id: selected.page_id,
-        customer_id: selected.customer_id,
-      }),
-    })
-    if (res.ok) {
-      const d = await res.json()
-      setSelected(prev => prev ? { ...prev, ai_summary: d.summary } : null)
-      setConvs(prev => prev.map(c => c.id === selected.id ? { ...c, ai_summary: d.summary } : c))
-    }
-    setSummarizing(false)
-  }
-
   const filtered = convs.filter(c => {
-    if (filter === 'unevaluated' && c.evaluation_label) return false
+    if (filter === 'unevaluated' && c.analyzed_at) return false
     if (filter === 'order' && c.evaluation_label !== 'order') return false
     if (filter === 'no_buy' && c.evaluation_label !== 'no_buy') return false
     if (search) {
@@ -508,13 +539,15 @@ function ConversationsTab({ token }: { token: string }) {
     return true
   })
 
-  const withScore = convs.filter(c => c.evaluation_score)
+  // Điểm hiển thị ưu tiên điểm người chỉnh tay, fallback điểm AI
+  const effScore = (c: Conversation) => c.evaluation_score ?? c.ai_score
+  const withScore = convs.filter(c => effScore(c))
   const stats = {
     total: convs.length,
-    evaluated: convs.filter(c => c.evaluation_label).length,
-    summarized: convs.filter(c => c.ai_summary).length,
+    analyzed: convs.filter(c => c.analyzed_at).length,
+    orders: convs.filter(c => c.evaluation_label === 'order').length,
     avgScore: withScore.length
-      ? (withScore.reduce((a, c) => a + (c.evaluation_score || 0), 0) / withScore.length).toFixed(1)
+      ? (withScore.reduce((a, c) => a + (effScore(c) || 0), 0) / withScore.length).toFixed(1)
       : '—',
   }
 
@@ -524,9 +557,9 @@ function ConversationsTab({ token }: { token: string }) {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Tổng hội thoại', value: stats.total, color: 'text-blue-600' },
-          { label: 'Đã đánh giá', value: stats.evaluated, color: 'text-green-600' },
-          { label: 'Đã tóm tắt AI', value: stats.summarized, color: 'text-purple-600' },
-          { label: 'Điểm TB', value: `${stats.avgScore}★`, color: 'text-amber-600' },
+          { label: 'Đã phân tích AI', value: stats.analyzed, color: 'text-purple-600' },
+          { label: 'Có chốt đơn', value: stats.orders, color: 'text-green-600' },
+          { label: 'Điểm sales TB', value: `${stats.avgScore}★`, color: 'text-amber-600' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <p className="text-gray-500 text-xs font-medium">{s.label}</p>
@@ -577,16 +610,19 @@ function ConversationsTab({ token }: { token: string }) {
                   <span className="text-xs text-gray-400 whitespace-nowrap">{c.page_name}</span>
                 </div>
                 <div className="text-xs text-gray-500 truncate mb-1.5">
-                  {c.ai_summary
-                    ? <span className="text-purple-600 font-medium">✨ {c.ai_summary.slice(0, 60)}…</span>
+                  {c.customer_needs
+                    ? <span className="text-purple-600 font-medium">🎯 {c.customer_needs.slice(0, 60)}…</span>
                     : c.last_message_preview || '(chưa có tin nhắn)'}
                 </div>
-                <div className="flex gap-1.5 flex-wrap">
+                <div className="flex gap-1.5 flex-wrap items-center">
                   {c.evaluation_label
                     ? <span className={`text-xs px-2 py-0.5 rounded-full border ${labelStyle(c.evaluation_label)}`}>{labelText(c.evaluation_label)}</span>
-                    : <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 border border-gray-200">Chưa đánh giá</span>
+                    : <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 border border-gray-200">Chưa phân tích</span>
                   }
-                  {c.evaluation_score ? <span className="text-xs text-amber-500">{'★'.repeat(c.evaluation_score)}</span> : null}
+                  {(c.evaluation_score ?? c.ai_score)
+                    ? <span className="text-xs text-amber-500">{'★'.repeat(c.evaluation_score ?? c.ai_score ?? 0)}</span>
+                    : null}
+                  {c.sales_name && <span className="text-xs text-gray-400 truncate">· {c.sales_name}</span>}
                 </div>
               </button>
             ))}
@@ -613,48 +649,85 @@ function ConversationsTab({ token }: { token: string }) {
                     <p className="text-xs text-gray-400">{selected.page_name} · {selected.customer_phone || ''}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={summarize} disabled={summarizing || loadingMsgs}
-                    className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors">
-                    {summarizing ? 'Đang tóm tắt...' : '✨ Tóm tắt AI'}
-                  </button>
-                </div>
+                <button onClick={() => analyze(selected)} disabled={analyzing || loadingMsgs}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-semibold disabled:opacity-50 transition-colors">
+                  {analyzing ? 'Đang phân tích...' : selected.analyzed_at ? '🔄 Phân tích lại' : '✨ Phân tích AI'}
+                </button>
               </div>
 
-              {/* Messages */}
+              {/* AI analysis */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {loadingMsgs ? (
                   <div className="flex items-center justify-center py-12 text-gray-400 text-sm gap-2">
                     <div className="animate-spin text-xl">⏳</div> Đang tải tin nhắn...
                   </div>
-                ) : selected.messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-sm gap-2">
-                    <span className="text-3xl">💬</span>
-                    <span>Chưa có tin nhắn</span>
-                    {msgWarning && <span className="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg max-w-xs text-center">⚠️ {msgWarning}</span>}
-                  </div>
-                ) : selected.messages.map((msg, i) => (
-                  <div key={i} className={`flex gap-2 items-end ${!msg.from_customer ? 'flex-row-reverse' : ''}`}>
-                    <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${msg.from_customer ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                      {msg.from_customer ? 'KH' : 'AI'}
-                    </div>
-                    <div className={`max-w-[75%] ${!msg.from_customer ? 'items-end' : 'items-start'} flex flex-col`}>
-                      <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${msg.from_customer
-                        ? 'bg-[#1B5E20] text-white rounded-bl-sm'
-                        : 'bg-gray-100 text-gray-800 rounded-br-sm'}`}>
-                        {msg.content}
+                ) : (
+                  <>
+                    {analyzing && !selected.customer_needs && (
+                      <div className="flex items-center justify-center py-8 text-purple-400 text-sm gap-2">
+                        <div className="animate-spin text-xl">✨</div> AI đang phân tích...
                       </div>
-                      {msg.timestamp && <span className="text-xs text-gray-400 mt-0.5 px-1">{msg.timestamp}</span>}
-                    </div>
-                  </div>
-                ))}
+                    )}
 
-                {/* AI Summary */}
-                {selected.ai_summary && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 mt-2">
-                    <p className="text-xs font-semibold text-purple-700 mb-1">✨ Tóm tắt nhu cầu khách</p>
-                    <p className="text-xs text-purple-900 leading-relaxed">{selected.ai_summary}</p>
-                  </div>
+                    {msgWarning && (
+                      <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">⚠️ {msgWarning}</div>
+                    )}
+
+                    {/* Nhu cầu khách */}
+                    {selected.customer_needs && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
+                        <p className="text-xs font-bold text-purple-700 mb-1">🎯 Nhu cầu khách hàng</p>
+                        <p className="text-sm text-purple-900 leading-relaxed">{selected.customer_needs}</p>
+                      </div>
+                    )}
+
+                    {/* Đánh giá phiên trả lời của sales */}
+                    {selected.sales_evaluation && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-bold text-blue-700">💼 Đánh giá phiên trả lời</p>
+                          {selected.ai_score && <span className="text-xs text-amber-500 font-bold">{'★'.repeat(selected.ai_score)} ({selected.ai_score}/5)</span>}
+                        </div>
+                        {selected.sales_name && <p className="text-xs text-blue-600 mb-1">👤 Sales trả lời: <b>{selected.sales_name}</b></p>}
+                        <p className="text-sm text-blue-900 leading-relaxed">{selected.sales_evaluation}</p>
+                      </div>
+                    )}
+
+                    {!selected.customer_needs && !analyzing && selected.messages.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 text-gray-400 text-sm gap-2">
+                        <span className="text-3xl">💬</span>
+                        <span>Chưa có tin nhắn để phân tích</span>
+                      </div>
+                    )}
+
+                    {/* Tin nhắn gốc (thu gọn) */}
+                    {selected.messages.length > 0 && (
+                      <div className="border border-gray-100 rounded-xl overflow-hidden">
+                        <button onClick={() => setShowMessages(v => !v)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                          <span>💬 Tin nhắn gốc ({selected.messages.length})</span>
+                          <span>{showMessages ? '▲' : '▼'}</span>
+                        </button>
+                        {showMessages && (
+                          <div className="p-3 space-y-2 border-t border-gray-100 max-h-72 overflow-y-auto">
+                            {selected.messages.map((msg, i) => (
+                              <div key={i} className={`flex gap-2 items-end ${!msg.from_customer ? 'flex-row-reverse' : ''}`}>
+                                <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${msg.from_customer ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                                  {msg.from_customer ? 'KH' : 'NV'}
+                                </div>
+                                <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${msg.from_customer
+                                  ? 'bg-[#1B5E20] text-white rounded-bl-sm'
+                                  : 'bg-gray-100 text-gray-800 rounded-br-sm'}`}>
+                                  {!msg.from_customer && msg.sender_name && <span className="block text-[10px] text-gray-400 mb-0.5">{msg.sender_name}</span>}
+                                  {msg.content}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </>
@@ -664,7 +737,7 @@ function ConversationsTab({ token }: { token: string }) {
         {/* RIGHT: Evaluation panel */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
           <div className="p-3 border-b border-gray-100 font-medium text-sm text-gray-700">
-            📋 Đánh giá hội thoại
+            📋 Đánh giá phiên sales
           </div>
           {!selected ? (
             <div className="flex items-center justify-center flex-1 text-sm text-gray-400 p-4 text-center">
@@ -674,7 +747,12 @@ function ConversationsTab({ token }: { token: string }) {
             <div className="p-4 space-y-4 overflow-y-auto flex-1">
               {/* Stars */}
               <div>
-                <p className="text-xs font-medium text-gray-600 mb-2">Chất lượng AI</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-gray-600">Điểm phiên trả lời</p>
+                  {selected.ai_score != null && (
+                    <span className="text-[10px] text-purple-500">AI chấm: {selected.ai_score}★</span>
+                  )}
+                </div>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map(s => (
                     <button key={s} onClick={() => setScore(s)}
@@ -683,6 +761,7 @@ function ConversationsTab({ token }: { token: string }) {
                     </button>
                   ))}
                 </div>
+                <p className="text-[10px] text-gray-400 mt-1">AI tự chấm khi mở · bạn có thể chỉnh lại</p>
               </div>
 
               {/* Labels */}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initDb, getAllConversationEvaluations } from '@/lib/db'
-import { getPancakePages, PANCAKE_PAGE_API, PANCAKE_USER_API } from '@/lib/pancake'
+import { getPancakePages, PANCAKE_PAGE_API, PANCAKE_USER_API, cleanPancakeText } from '@/lib/pancake'
 
 function checkAuth(req: NextRequest) {
   const adminPw = process.env.ADMIN_PASSWORD || 'hacofood2024'
@@ -65,6 +65,10 @@ export async function GET(req: NextRequest) {
         const convId = String(conv.id || conv.conversation_id || '')
         if (!convId) continue
 
+        // Chỉ lấy tin nhắn (INBOX), bỏ qua bình luận (COMMENT)
+        const convType = String(conv.type || '').toUpperCase()
+        if (convType === 'COMMENT' || convType === 'RATING') continue
+
         // customer_id cần cho việc lấy messages
         const customerId = String(
           conv.customer_id ||
@@ -87,11 +91,16 @@ export async function GET(req: NextRequest) {
           customer_phone: String(phone || ''),
           platform: String(conv.type || conv.platform || 'facebook'),
           page_name: page.name,
-          last_message_preview: String(conv.snippet || conv.last_message?.message || conv.last_message || ''),
+          last_message_preview: cleanPancakeText(String(conv.snippet || conv.last_message?.message || conv.last_message || '')).slice(0, 120),
           last_message_at: String(conv.updated_at || conv.last_sent_at || conv.inserted_at || ''),
           messages: [],
           messages_loaded: false,
           ai_summary: eval_?.ai_summary ?? null,
+          customer_needs: eval_?.customer_needs ?? null,
+          sales_name: eval_?.sales_name ?? null,
+          sales_evaluation: eval_?.sales_evaluation ?? null,
+          ai_score: eval_?.ai_score ?? null,
+          analyzed_at: eval_?.analyzed_at ?? null,
           evaluation_score: eval_?.evaluation_score ?? null,
           evaluation_label: eval_?.evaluation_label ?? null,
           evaluation_note: eval_?.evaluation_note ?? null,

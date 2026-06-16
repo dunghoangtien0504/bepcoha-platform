@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { initDb, saveConversationEvaluation, saveConversationSummary, getConversationEvaluation } from '@/lib/db'
-import { getPancakePageById, PANCAKE_PAGE_API } from '@/lib/pancake'
+import { initDb, saveConversationEvaluation, saveConversationAnalysis, getConversationEvaluation } from '@/lib/db'
+import { getPancakePageById, PANCAKE_PAGE_API, cleanPancakeText } from '@/lib/pancake'
 
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
@@ -18,7 +18,7 @@ interface ParsedMessage {
   sender_name: string
 }
 
-// Lấy messages của 1 hội thoại từ Pancake
+// Lấy messages của 1 hội thoại từ Pancake (đã làm sạch HTML, bỏ tin rỗng)
 async function fetchMessages(pageId: string, convId: string, customerId: string): Promise<ParsedMessage[] | { error: string; status: number }> {
   const page = await getPancakePageById(pageId)
   if (!page) return { error: 'Không tìm thấy page (kiểm tra PANCAKE_USER_TOKEN)', status: 500 }
@@ -37,9 +37,8 @@ async function fetchMessages(pageId: string, convId: string, customerId: string)
 
   const data = await res.json()
   const rawMsgs = data?.messages || data?.data || []
-  return rawMsgs.map((m: Record<string, unknown>, i: number) => {
+  const parsed: ParsedMessage[] = rawMsgs.map((m: Record<string, unknown>, i: number) => {
     const from = (m.from as Record<string, unknown>) || {}
-    // Khách: from.id === customer_id, hoặc không phải admin/page
     const fromId = String(from.id || '')
     const isFromCustomer = customerId
       ? fromId === customerId
@@ -47,11 +46,13 @@ async function fetchMessages(pageId: string, convId: string, customerId: string)
     return {
       id: `msg_${i}`,
       from_customer: isFromCustomer,
-      content: String(m.message || m.content || m.text || ''),
+      content: cleanPancakeText(String(m.message || m.content || m.text || '')),
       timestamp: String(m.inserted_at || m.created_at || m.timestamp || ''),
       sender_name: String(from.name || m.sender_name || ''),
     }
   })
+  // Bỏ tin rỗng (vd <div></div> sau khi làm sạch)
+  return parsed.filter(m => m.content.length > 0)
 }
 
 // GET: messages + evaluation
@@ -65,28 +66,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const result = await fetchMessages(pageId, convId, customerId)
   const eval_ = await getConversationEvaluation(convId)
 
-  if ('error' in result) {
-    // Vẫn trả evaluation kể cả khi không lấy được messages
-    return NextResponse.json({
-      messages: [],
-      warning: result.error,
-      ai_summary: eval_?.ai_summary ?? null,
-      evaluation_score: eval_?.evaluation_score ?? null,
-      evaluation_label: eval_?.evaluation_label ?? null,
-      evaluation_note: eval_?.evaluation_note ?? null,
-    })
-  }
-
-  return NextResponse.json({
-    messages: result,
+  const evalFields = {
     ai_summary: eval_?.ai_summary ?? null,
+    customer_needs: eval_?.customer_needs ?? null,
+    sales_name: eval_?.sales_name ?? null,
+    sales_evaluation: eval_?.sales_evaluation ?? null,
+    ai_score: eval_?.ai_score ?? null,
+    analyzed_at: eval_?.analyzed_at ?? null,
     evaluation_score: eval_?.evaluation_score ?? null,
     evaluation_label: eval_?.evaluation_label ?? null,
     evaluation_note: eval_?.evaluation_note ?? null,
-  })
+  }
+
+  if ('error' in result) {
+    return NextResponse.json({ messages: [], warning: result.error, ...evalFields })
+  }
+  return NextResponse.json({ messages: result, ...evalFields })
 }
 
-// PATCH: lưu đánh giá
+// PATCH: lưu đánh giá thủ công (người dùng chỉnh tay)
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   await initDb()
@@ -104,7 +102,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ ok: true })
 }
 
-// POST: tóm tắt nhu cầu khách bằng AI
+interface AiAnalysis {
+  customer_needs: string
+  sales_name: string
+  score: number | null
+  outcome: string
+  evaluation: string
+}
+
+function parseAiJson(raw: string): AiAnalysis | null {
+  try {
+    const cleaned = raw.replace(/```json|```/gi, '').trim()
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+    if (start === -1 || end === -1) return null
+    const obj = JSON.parse(cleaned.slice(start, end + 1))
+    return {
+      customer_needs: String(obj.customer_needs || ''),
+      sales_name: String(obj.sales_name || ''),
+      score: typeof obj.score === 'number' ? obj.score : (parseInt(obj.score) || null),
+      outcome: String(obj.outcome || ''),
+      evaluation: String(obj.evaluation || ''),
+    }
+  } catch {
+    return null
+  }
+}
+
+// POST: AI tự phân tích nhu cầu khách + đánh giá & chấm điểm phiên trả lời của sales
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   await initDb()
@@ -125,20 +150,55 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
   if (!result.length) {
-    return NextResponse.json({ error: 'Không có tin nhắn để tóm tắt' }, { status: 400 })
+    return NextResponse.json({ error: 'Không có tin nhắn để phân tích' }, { status: 400 })
   }
 
   const text = result
-    .map(m => `${m.from_customer ? 'Khách' : 'AI/NV'}: ${m.content}`)
-    .filter(l => l.length > 6)
+    .map(m => m.from_customer
+      ? `Khách: ${m.content}`
+      : `NV${m.sender_name ? ` (${m.sender_name})` : ''}: ${m.content}`)
     .join('\n')
 
-  const model = genai.getGenerativeModel({ model: 'gemini-2.5-flash' })
-  const aiRes = await model.generateContent(
-    `Tóm tắt nhu cầu của khách trong hội thoại này trong 2-3 câu ngắn gọn bằng tiếng Việt. Nêu rõ: khách cần gì, đang ở giai đoạn nào (hỏi thông tin / đang cân nhắc / đã quyết định mua / không mua), và điểm cần chú ý. Không dùng markdown.\n\n${text}`
-  )
-  const summary = aiRes.response.text().trim()
-  await saveConversationSummary(convId, summary, customerName, pageName)
+  const prompt = `Bạn là chuyên gia QA chăm sóc khách hàng. Phân tích đoạn hội thoại bán hàng qua tin nhắn dưới đây và trả về JSON THUẦN (không markdown, không giải thích thêm) đúng cấu trúc:
+{
+  "customer_needs": "Phân tích nhu cầu của khách trong 1-2 câu: khách muốn gì, đang ở giai đoạn nào (hỏi thông tin / cân nhắc / quyết định mua / không mua)",
+  "sales_name": "Tên nhân viên/sales đã trả lời khách (lấy từ tên người gửi NV). Nếu chỉ là tin tự động/chatbot thì ghi 'Tự động (Botcake)'",
+  "score": <số nguyên 1-5: chấm chất lượng phiên trả lời của sales — 5 là xuất sắc>,
+  "outcome": "<một trong: order (đã/đang chốt đơn), inquiry (mới hỏi thông tin), no_buy (không mua), need_staff (cần nhân viên hỗ trợ thêm), ai_wrong (bot trả lời sai/lạc đề)>",
+  "evaluation": "Nhận xét phiên trả lời của sales trong 1-2 câu: làm tốt gì, thiếu sót gì (vd: chưa hỏi SĐT, chưa chốt đơn, trả lời chậm, đúng/sai nhu cầu)"
+}
 
-  return NextResponse.json({ summary })
+Hội thoại:
+${text}`
+
+  const model = genai.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  const aiRes = await model.generateContent(prompt)
+  const analysis = parseAiJson(aiRes.response.text())
+
+  if (!analysis) {
+    return NextResponse.json({ error: 'AI trả về sai định dạng, thử lại' }, { status: 502 })
+  }
+
+  const score = analysis.score && analysis.score >= 1 && analysis.score <= 5 ? analysis.score : null
+  const summary = analysis.customer_needs.slice(0, 200)
+
+  await saveConversationAnalysis(convId, {
+    customerNeeds: analysis.customer_needs,
+    salesName: analysis.sales_name,
+    salesEvaluation: analysis.evaluation,
+    aiScore: score,
+    label: analysis.outcome || null,
+    summary,
+    customerName,
+    pageName,
+  })
+
+  return NextResponse.json({
+    customer_needs: analysis.customer_needs,
+    sales_name: analysis.sales_name,
+    sales_evaluation: analysis.evaluation,
+    ai_score: score,
+    outcome: analysis.outcome,
+    ai_summary: summary,
+  })
 }

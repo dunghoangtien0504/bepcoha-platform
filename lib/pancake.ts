@@ -65,6 +65,27 @@ export async function getPancakePageById(pageId: string): Promise<PancakePage | 
   return pages.find(p => p.pageId === pageId)
 }
 
+/** Làm sạch nội dung tin nhắn Pancake (HTML → text thuần). */
+export function cleanPancakeText(raw: string): string {
+  if (!raw) return ''
+  return raw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(div|p)>/gi, '\n')
+    .replace(/<a[^>]*href=['"]([^'"]+)['"][^>]*>(.*?)<\/a>/gi, (_m, url, text) =>
+      (text && text.trim() && !/^link/i.test(text.trim())) ? `${text.trim()} (${url})` : String(url))
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+/g, ' ')
+    .trim()
+}
+
 // Variation IDs (or SKU) của sản phẩm trong POScake
 const VARIATION_IDS: Record<string, string> = {
   '500g': process.env.PANCAKE_VAR_500G || '',
