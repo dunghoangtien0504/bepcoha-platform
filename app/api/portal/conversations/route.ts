@@ -43,9 +43,14 @@ export async function GET(req: NextRequest) {
   const conversations: unknown[] = []
   const debugRaw: unknown[] = []
 
+  // Pancake bắt buộc `since` & `until` (Unix timestamp giây). Lấy 60 ngày gần nhất.
+  const until = Math.floor(Date.now() / 1000)
+  const since = until - 60 * 24 * 60 * 60
+
   for (const page of pages) {
     try {
-      const url = `${PANCAKE_PAGE_API}/pages/${page.pageId}/conversations?page_access_token=${page.token}&page_number=1`
+      const url = `${PANCAKE_PAGE_API}/pages/${page.pageId}/conversations` +
+        `?page_access_token=${page.token}&page_number=1&since=${since}&until=${until}`
       const res = await fetch(url, { next: { revalidate: 0 } })
       if (!res.ok) {
         if (debug) debugRaw.push({ page: page.name, status: res.status, body: await res.text() })
