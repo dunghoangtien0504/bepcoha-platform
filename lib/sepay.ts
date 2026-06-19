@@ -16,6 +16,20 @@ export interface SepayWebhookPayload {
   description: string
 }
 
+// STN = Sốt Trộn Nộm
+export function generateStnRef(phone: string): string {
+  const ts = Date.now().toString().slice(-6)
+  const phonePart = phone.replace(/\D/g, '').slice(-4)
+  return `STN${phonePart}${ts}`
+}
+
+// KDX = Khăn Đồ Xôi
+export function generateKdxRef(phone: string): string {
+  const ts = Date.now().toString().slice(-6)
+  const phonePart = phone.replace(/\D/g, '').slice(-4)
+  return `KDX${phonePart}${ts}`
+}
+
 export function generatePaymentRef(phone: string): string {
   const ts = Date.now().toString().slice(-6)
   const phonePart = phone.replace(/\D/g, '').slice(-4)

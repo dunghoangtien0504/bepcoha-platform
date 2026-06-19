@@ -98,6 +98,26 @@ const VARIATION_IDS: Record<string, string> = {
   '1kg':  process.env.PANCAKE_VAR_1KG  || '',
 }
 
+// Khăn Đồ Xôi variation ID (1 size duy nhất: 1m×1m)
+const KDX_VARIATION_IDS: Record<string, string> = {
+  'lon': process.env.PANCAKE_KDX_VAR || '',
+}
+
+export async function updatePancakeOrderStatus(orderId: string, status: number) {
+  if (!API_KEY) return null
+  const url = `${PANCAKE_API_BASE}/shops/${SHOP_ID}/orders/${orderId}?api_key=${API_KEY}`
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })
+  if (!res.ok) {
+    console.warn('[pancake] updateOrderStatus thất bại:', res.status, await res.text())
+    return null
+  }
+  return await res.json()
+}
+
 export async function createPancakeOrder(data: {
   name: string
   phone: string
@@ -162,5 +182,71 @@ export async function createPancakeOrder(data: {
 
   const json = await res.json()
   console.log('[pancake] Tạo đơn thành công, ID:', json?.data?.id || json?.id)
+  return json
+}
+
+export async function createKdxPancakeOrder(data: {
+  name: string
+  phone: string
+  email: string
+  address: string
+  product: 'nho' | 'lon'
+  quantity: number
+  totalPrice: number
+  note?: string
+}) {
+  if (!API_KEY) {
+    console.warn('[pancake] PANCAKE_API_KEY chưa được cấu hình — bỏ qua')
+    return null
+  }
+
+  const variationId = KDX_VARIATION_IDS[data.product]
+  if (!variationId) {
+    console.warn(`[pancake] PANCAKE_KDX_VAR chưa được cấu hình — bỏ qua`)
+    return null
+  }
+
+  const unitPrice = data.totalPrice / data.quantity
+
+  const body = {
+    bill_full_name: data.name,
+    bill_phone_number: data.phone,
+    bill_email: data.email || undefined,
+    note: [
+      data.note ? `Ghi chú: ${data.note}` : '',
+      `Đặt qua website hacofood.vn/khan-do-xoi`,
+    ].filter(Boolean).join(' | '),
+    cod: data.totalPrice,
+    shipping_address: {
+      full_name: data.name,
+      phone_number: data.phone,
+      full_address: data.address,
+    },
+    items: [
+      {
+        variation_id: variationId,
+        quantity: data.quantity,
+        variation_info: {
+          retail_price: unitPrice,
+        },
+      },
+    ],
+  }
+
+  const url = `${PANCAKE_API_BASE}/shops/${SHOP_ID}/orders?api_key=${API_KEY}`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    console.error('[pancake] Tạo đơn KDX thất bại:', res.status, err)
+    return null
+  }
+
+  const json = await res.json()
+  console.log('[pancake] Tạo đơn KDX thành công, ID:', json?.data?.id || json?.id)
   return json
 }
