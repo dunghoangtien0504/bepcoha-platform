@@ -1,0 +1,90 @@
+{
+  "name": "aigg-vscode",
+  "displayName": "AI Governance Gateway",
+  "description": "Đăng nhập AI Governance Gateway, giao việc cho AI ngay trong VSCode và định tuyến request AI qua Gateway để quản trị token/chi phí theo User · Project · Task.",
+  "version": "0.1.0",
+  "publisher": "techable",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/techable/ai-governance-gateway"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "configuration": {
+      "title": "AI Governance Gateway",
+      "properties": {
+        "aigg.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:3900",
+          "description": "Địa chỉ AI Governance Gateway (vd: http://localhost:3900)."
+        },
+        "aigg.serviceTier": {
+          "type": "string",
+          "enum": ["api_key", "claude_pro"],
+          "enumDescriptions": [
+            "Gói API key doanh nghiệp — định tuyến request AI qua Gateway (proxy + enforce hạn ngạch).",
+            "Gói Claude Pro cá nhân — Gateway không proxy được; chỉ gán task + báo cáo usage ước tính."
+          ],
+          "default": "api_key",
+          "description": "Gói dịch vụ AI đang dùng."
+        },
+        "aigg.estimationModel": {
+          "type": "string",
+          "default": "claude-3-5-sonnet",
+          "description": "Model dùng để ước lượng token khi báo cáo usage (gói Claude Pro)."
+        }
+      }
+    },
+    "commands": [
+      { "command": "aigg.login", "title": "AIGG: Đăng nhập", "icon": "$(sign-in)" },
+      { "command": "aigg.logout", "title": "AIGG: Đăng xuất", "icon": "$(sign-out)" },
+      { "command": "aigg.selectTask", "title": "AIGG: Giao việc cho AI (chọn/tạo task)", "icon": "$(target)" },
+      { "command": "aigg.clearTask", "title": "AIGG: Bỏ task đang hoạt động" },
+      { "command": "aigg.showQuota", "title": "AIGG: Xem hạn ngạch token", "icon": "$(dashboard)" },
+      { "command": "aigg.configureRouting", "title": "AIGG: Cấu hình định tuyến qua Gateway", "icon": "$(gear)" },
+      { "command": "aigg.copyHeaders", "title": "AIGG: Copy headers/cURL Gateway", "icon": "$(clippy)" },
+      { "command": "aigg.reportUsage", "title": "AIGG: Báo cáo usage (gói Claude Pro)", "icon": "$(cloud-upload)" },
+      { "command": "aigg.refresh", "title": "AIGG: Làm mới", "icon": "$(refresh)" }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aigg",
+          "title": "AI Governance Gateway",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "aigg": [
+        { "id": "aiggPanel", "name": "AI Governance" }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        { "command": "aigg.selectTask", "when": "view == aiggPanel", "group": "navigation@1" },
+        { "command": "aigg.showQuota", "when": "view == aiggPanel", "group": "navigation@2" },
+        { "command": "aigg.refresh", "when": "view == aiggPanel", "group": "navigation@3" }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run build",
+    "package": "vsce package --no-dependencies -o aigg-vscode.vsix",
+    "install:code": "npm run package && code --install-extension aigg-vscode.vsix --force"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.2.0",
+    "typescript": "^5.4.0"
+  }
+}

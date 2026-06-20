@@ -1,0 +1,22 @@
+{
+  "name": "ai-governance-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Governance Gateway & ROI Dashboard - Monorepo workspace",
+  "workspaces": [
+    "apps/backend-gateway",
+    "apps/admin-dashboard"
+  ],
+  "scripts": {
+    "dev:backend": "npm run start:dev --workspace=backend-gateway",
+    "dev:dashboard": "npm run dev --workspace=admin-dashboard",
+    "build:backend": "npm run build --workspace=backend-gateway",
+    "build:dashboard": "npm run build --workspace=admin-dashboard",
+    "lint": "npm run lint --workspaces --if-present",
+    "infra:up": "docker-compose up -d",
+    "infra:down": "docker-compose down"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

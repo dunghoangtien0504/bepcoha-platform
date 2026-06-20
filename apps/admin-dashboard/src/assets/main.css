@@ -1,0 +1,111 @@
+@import 'driver.js/dist/driver.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --project-color: #0E5AF1;
+  color-scheme: light;
+}
+
+body {
+  @apply bg-slate-100 text-slate-800 antialiased;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.rail-bg {
+  background: color-mix(in srgb, #000000, var(--project-color, #0e5af1) 90%);
+}
+
+.rail-bg-brand {
+  background-color: rgb(32 14 244);
+}
+
+.rail-item-bg {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
+.gantt-wh-cell {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  border-right: 2px solid #e2e8f0;
+  white-space: nowrap;
+  padding: 0 4px;
+  overflow: hidden;
+}
+
+.gantt-wh-row {
+  display: flex;
+  height: 44px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.gantt-dh-row {
+  display: flex;
+  height: 44px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  position: sticky;
+  top: 44px;
+  z-index: 10;
+}
+
+.card {
+  @apply rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition;
+}
+
+.btn-primary {
+  @apply btn bg-brand text-white hover:bg-brand-dark disabled:opacity-50;
+}
+
+.btn-ghost {
+  @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200;
+}
+
+.input {
+  @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand;
+}
+
+.label {
+  @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500;
+}
+
+/*
+ * Chuẩn bảng danh sách (List Page): ưu tiên đọc & thao tác.
+ * - .table-scroll: cuộn ngang khi nhiều cột + cuộn dọc khi nhiều dòng.
+ * - .data-table: không tự xuống dòng (no word-wrap), header dính khi cuộn dọc.
+ */
+.table-scroll {
+  @apply overflow-auto;
+  max-height: 65vh;
+}
+
+.data-table {
+  @apply w-full text-sm;
+}
+
+.data-table th,
+.data-table td {
+  @apply whitespace-nowrap;
+}
+
+.data-table thead th {
+  @apply sticky top-0 z-10 bg-white;
+}
