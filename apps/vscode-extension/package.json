@@ -4,7 +4,7 @@
   "description": "Đăng nhập AI Governance Gateway, giao việc cho AI ngay trong VSCode và định tuyến request AI qua Gateway để quản trị token/chi phí theo User · Project · Task.",
   "version": "0.1.0",
   "publisher": "techable",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "https://github.com/techable/ai-governance-gateway"
@@ -12,9 +12,13 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "main": "./dist/extension.js",
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
     "configuration": {
       "title": "AI Governance Gateway",
@@ -26,7 +30,10 @@
         },
         "aigg.serviceTier": {
           "type": "string",
-          "enum": ["api_key", "claude_pro"],
+          "enum": [
+            "api_key",
+            "claude_pro"
+          ],
           "enumDescriptions": [
             "Gói API key doanh nghiệp — định tuyến request AI qua Gateway (proxy + enforce hạn ngạch).",
             "Gói Claude Pro cá nhân — Gateway không proxy được; chỉ gán task + báo cáo usage ước tính."
@@ -42,15 +49,50 @@
       }
     },
     "commands": [
-      { "command": "aigg.login", "title": "AIGG: Đăng nhập", "icon": "$(sign-in)" },
-      { "command": "aigg.logout", "title": "AIGG: Đăng xuất", "icon": "$(sign-out)" },
-      { "command": "aigg.selectTask", "title": "AIGG: Giao việc cho AI (chọn/tạo task)", "icon": "$(target)" },
-      { "command": "aigg.clearTask", "title": "AIGG: Bỏ task đang hoạt động" },
-      { "command": "aigg.showQuota", "title": "AIGG: Xem hạn ngạch token", "icon": "$(dashboard)" },
-      { "command": "aigg.configureRouting", "title": "AIGG: Cấu hình định tuyến qua Gateway", "icon": "$(gear)" },
-      { "command": "aigg.copyHeaders", "title": "AIGG: Copy headers/cURL Gateway", "icon": "$(clippy)" },
-      { "command": "aigg.reportUsage", "title": "AIGG: Báo cáo usage (gói Claude Pro)", "icon": "$(cloud-upload)" },
-      { "command": "aigg.refresh", "title": "AIGG: Làm mới", "icon": "$(refresh)" }
+      {
+        "command": "aigg.login",
+        "title": "AIGG: Đăng nhập",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "aigg.logout",
+        "title": "AIGG: Đăng xuất",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "aigg.selectTask",
+        "title": "AIGG: Giao việc cho AI (chọn/tạo task)",
+        "icon": "$(target)"
+      },
+      {
+        "command": "aigg.clearTask",
+        "title": "AIGG: Bỏ task đang hoạt động"
+      },
+      {
+        "command": "aigg.showQuota",
+        "title": "AIGG: Xem hạn ngạch token",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "aigg.configureRouting",
+        "title": "AIGG: Cấu hình định tuyến qua Gateway",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "aigg.copyHeaders",
+        "title": "AIGG: Copy headers/cURL Gateway",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "aigg.reportUsage",
+        "title": "AIGG: Báo cáo usage (gói Claude Pro)",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "aigg.refresh",
+        "title": "AIGG: Làm mới",
+        "icon": "$(refresh)"
+      }
     ],
     "viewsContainers": {
       "activitybar": [
@@ -63,14 +105,29 @@
     },
     "views": {
       "aigg": [
-        { "id": "aiggPanel", "name": "AI Governance" }
+        {
+          "id": "aiggPanel",
+          "name": "AI Governance"
+        }
       ]
     },
     "menus": {
       "view/title": [
-        { "command": "aigg.selectTask", "when": "view == aiggPanel", "group": "navigation@1" },
-        { "command": "aigg.showQuota", "when": "view == aiggPanel", "group": "navigation@2" },
-        { "command": "aigg.refresh", "when": "view == aiggPanel", "group": "navigation@3" }
+        {
+          "command": "aigg.selectTask",
+          "when": "view == aiggPanel",
+          "group": "navigation@1"
+        },
+        {
+          "command": "aigg.showQuota",
+          "when": "view == aiggPanel",
+          "group": "navigation@2"
+        },
+        {
+          "command": "aigg.refresh",
+          "when": "view == aiggPanel",
+          "group": "navigation@3"
+        }
       ]
     }
   },

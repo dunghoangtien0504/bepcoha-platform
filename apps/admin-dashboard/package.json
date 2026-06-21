@@ -32,5 +32,6 @@
     "typescript": "^5.4.5",
     "vite": "^5.3.3",
     "vue-tsc": "^2.0.26"
-  }
+  },
+  "license": "AGPL-3.0-only"
 }

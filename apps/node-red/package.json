@@ -10,5 +10,6 @@
   "dependencies": {
     "express": "^4.21.2",
     "node-red": "^5.0.0"
-  }
+  },
+  "license": "AGPL-3.0-only"
 }
