@@ -309,6 +309,15 @@ Short answers below — see the [full FAQ on the overview page](https://techrun.
 
 ---
 
+## Contact / Work with me
+
+Built and maintained by **Hoàng Hồ** — product architect (system design + AI orchestration). Open to collaboration, consulting, and opportunities around AI governance and self-hosted developer tooling.
+
+- 🌐 Website — [techrun.ai.vn](https://techrun.ai.vn)
+- ✉️ Email — [hoanganzglobal@gmail.com](mailto:hoanganzglobal@gmail.com)
+
+---
+
 <div align="center">
 <sub>© Techable — AI Governance Gateway · AGPL-3.0 · <a href="https://techrun.ai.vn/ai-governance-gateway">techrun.ai.vn/ai-governance-gateway</a></sub>
 </div>

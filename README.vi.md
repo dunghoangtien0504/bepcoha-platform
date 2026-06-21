@@ -351,6 +351,15 @@ ai-governance-gateway/
 
 ---
 
+## 15. Liên hệ / Hợp tác
+
+Xây dựng & duy trì bởi **Hoàng Hồ** — product architect (thiết kế hệ thống + điều phối AI). Sẵn sàng hợp tác, tư vấn và đón các cơ hội quanh AI governance và công cụ dev self-hosted.
+
+- 🌐 Website — [techrun.ai.vn](https://techrun.ai.vn)
+- ✉️ Email — [hoanganzglobal@gmail.com](mailto:hoanganzglobal@gmail.com)
+
+---
+
 <div align="center">
 <sub>© Techable — AI Governance Gateway · <a href="LICENSE">AGPL-3.0</a> · <a href="https://techrun.ai.vn/ai-governance-gateway">techrun.ai.vn/ai-governance-gateway</a></sub>
 </div>
