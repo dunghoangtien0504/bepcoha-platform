@@ -41,6 +41,10 @@ pnpm-debug.log*
 # Internal specs / docs (kept out of the public repo)
 docs/
 
+# Claude Code local config (per-machine — not project source)
+.claude/
+**/.claude/
+
 # Test & coverage
 coverage/
 .nyc_output/

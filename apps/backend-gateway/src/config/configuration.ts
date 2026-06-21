@@ -32,6 +32,10 @@ export interface ProviderConfig {
   openAiBaseUrl: string;
   anthropicApiKey: string;
   anthropicBaseUrl: string;
+  /** Endpoint LLM nội bộ tương thích OpenAI (Ollama mặc định :11434/v1, vLLM :8000/v1). */
+  localLlmBaseUrl: string;
+  /** Tùy chọn — vLLM cần Bearer; Ollama để trống. */
+  localLlmApiKey: string;
 }
 
 export interface JwtConfig {
@@ -96,6 +100,8 @@ export default (): RootConfig => ({
     openAiBaseUrl: process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1',
     anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
     anthropicBaseUrl: process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com/v1',
+    localLlmBaseUrl: process.env.LOCAL_LLM_BASE_URL ?? 'http://localhost:11434/v1',
+    localLlmApiKey: process.env.LOCAL_LLM_API_KEY ?? '',
   },
   jwt: {
     secret: process.env.JWT_SECRET ?? 'jwt-secret',

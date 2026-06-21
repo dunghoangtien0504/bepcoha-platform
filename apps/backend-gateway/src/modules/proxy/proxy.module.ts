@@ -4,6 +4,7 @@ import { AuditLogModule } from '../audit-log/audit-log.module';
 import { AuthModule } from '../auth/auth.module';
 import { QuotaModule } from '../quota/quota.module';
 import { AnthropicProvider } from './providers/anthropic.provider';
+import { LocalLlmProvider } from './providers/local.provider';
 import { OpenAiProvider } from './providers/openai.provider';
 import { ProviderRegistry } from './providers/provider.registry';
 import { ProxyController } from './proxy.controller';
@@ -12,6 +13,6 @@ import { ProxyService } from './proxy.service';
 @Module({
   imports: [HttpModule, AuthModule, QuotaModule, AuditLogModule],
   controllers: [ProxyController],
-  providers: [ProxyService, ProviderRegistry, OpenAiProvider, AnthropicProvider],
+  providers: [ProxyService, ProviderRegistry, OpenAiProvider, AnthropicProvider, LocalLlmProvider],
 })
 export class ProxyModule {}
