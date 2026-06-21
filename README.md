@@ -16,7 +16,7 @@
 
 [Live overview →](https://techrun.ai.vn/ai-governance-gateway)
 
-<img src="assets/dashboard.png" alt="AIGG ROI &amp; KPI dashboard — AI cost, labor saved, Net ROI and token usage" width="880">
+<img src="assets/dashboard.jpg" alt="AIGG ROI &amp; KPI dashboard — AI cost, labor saved, Net ROI and token usage" width="880">
 
 </div>
 
