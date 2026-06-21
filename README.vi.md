@@ -9,7 +9,7 @@
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white)
-![License](https://img.shields.io/badge/License-Proprietary-lightgrey)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL_3.0-blue.svg)](LICENSE)
 
 **🌐 [English](README.md) · Tiếng Việt**
 
@@ -345,6 +345,12 @@ ai-governance-gateway/
 
 ---
 
+## 14. Giấy phép
+
+[AGPL-3.0](LICENSE) © Techable. Bạn được tự do self-host và dùng nội bộ (kể cả mục đích thương mại); nếu chỉnh sửa và cung cấp qua mạng như một dịch vụ thì phải mở mã thay đổi theo cùng giấy phép. Cần phương án thương mại (đóng mã/OEM)? Có thể trao đổi license riêng.
+
+---
+
 <div align="center">
-<sub>© Techable — AI Governance Gateway. Internal / Proprietary.</sub>
+<sub>© Techable — AI Governance Gateway · <a href="LICENSE">AGPL-3.0</a> · <a href="https://techrun.ai.vn/ai-governance-gateway">techrun.ai.vn/ai-governance-gateway</a></sub>
 </div>
