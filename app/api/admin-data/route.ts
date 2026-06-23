@@ -7,11 +7,11 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('Authorization')
   const user = await verifyAuthHeader(authHeader)
 
-  // Fallback: check x-admin-password header (legacy)
+  // Fallback: check x-admin-password header (legacy) — fail-closed, không default
   if (!user) {
-    const adminPassword = process.env.ADMIN_PASSWORD || 'hacofood2026'
+    const adminPassword = process.env.ADMIN_PASSWORD
     const headerPassword = req.headers.get('x-admin-password')
-    if (headerPassword !== adminPassword) {
+    if (!adminPassword || headerPassword !== adminPassword) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
   }

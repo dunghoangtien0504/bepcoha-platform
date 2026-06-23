@@ -43,13 +43,16 @@ function formatMessages(messages: Array<{ from_customer?: boolean; message?: str
 }
 
 export async function POST(req: NextRequest) {
-  // Xác thực webhook secret (tùy chọn)
+  // Xác thực webhook secret — fail-closed: bắt buộc phải có PANCAKE_WEBHOOK_SECRET
   const secret = process.env.PANCAKE_WEBHOOK_SECRET
-  if (secret) {
-    const incoming = req.headers.get('x-webhook-secret') || req.headers.get('authorization') || ''
-    if (!incoming.includes(secret)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+  if (!secret) {
+    console.error('[pancake-ai] PANCAKE_WEBHOOK_SECRET chưa được cấu hình')
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+  }
+  const incoming = (req.headers.get('x-webhook-secret') || '').trim() ||
+    (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (incoming !== secret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   await initDb()
@@ -103,7 +106,8 @@ export async function POST(req: NextRequest) {
     const raw = (msg.content[0] as { text: string }).text.trim()
     extraction = JSON.parse(raw.replace(/```json?/g, '').replace(/```/g, '').trim())
   } catch (e) {
-    return NextResponse.json({ status: 'error', reason: `AI error: ${e}` }, { status: 500 })
+    console.error('[pancake-ai] AI error:', e)
+    return NextResponse.json({ status: 'error', reason: 'AI processing failed' }, { status: 500 })
   }
 
   if (!extraction.has_order) {

@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initDb, getAllConversationEvaluations } from '@/lib/db'
 import { getPancakePages, PANCAKE_PAGE_API, PANCAKE_USER_API, cleanPancakeText, parseTags } from '@/lib/pancake'
-
-function checkAuth(req: NextRequest) {
-  const adminPw = process.env.ADMIN_PASSWORD || 'hacofood2024'
-  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
-  if (token === adminPw) return true
-  // Cho phép xác thực qua query param ?secret= để mở debug bằng trình duyệt
-  const secret = req.nextUrl.searchParams.get('secret') || ''
-  return secret === adminPw
-}
+import { checkAdminAuth } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!checkAdminAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const debug = req.nextUrl.searchParams.get('debug') === '1'
 
@@ -59,20 +51,32 @@ export async function GET(req: NextRequest) {
       const data = await res.json()
       const convList = data?.conversations || data?.data || []
 
-      // Debug: liệt kê danh sách nhân viên (users) của page
-      if (debug) {
-        let users: unknown = 'n/a'
-        try {
-          const uRes = await fetch(`${PANCAKE_PAGE_API}/pages/${page.pageId}/users?page_access_token=${page.token}`)
-          const uData = await uRes.json()
-          const list = uData?.users || uData?.data || uData
-          users = Array.isArray(list)
-            ? list.map((u: Record<string, unknown>) => ({ id: u.id, name: u.name || u.fb_name || u.admin_name }))
-            : { status: uRes.status, body: uData }
-        } catch (e) {
-          users = { error: String(e) }
+      // Debug: dump 1 hội thoại INBOX thật (field assignee) + tất cả từ-người-gửi của tin nhắn
+      if (debug && debugRaw.length === 0) {
+        const inbox = convList.find((c: Record<string, unknown>) =>
+          String(c.type || '').toUpperCase() === 'INBOX') || convList[0]
+        let msgFroms: unknown = 'n/a'
+        if (inbox) {
+          const fid = String(inbox.id || inbox.conversation_id || '')
+          const cid = String(inbox.customer_id || inbox.customers?.[0]?.id || '')
+          try {
+            const mRes = await fetch(`${PANCAKE_PAGE_API}/pages/${page.pageId}/conversations/${fid}/messages?page_access_token=${page.token}&customer_id=${cid}`)
+            const mData = await mRes.json()
+            msgFroms = (mData?.messages || mData?.data || []).map((m: Record<string, unknown>) => ({
+              from: m.from, original_message: String(m.original_message || m.message || '').slice(0, 50),
+            }))
+          } catch (e) { msgFroms = { error: String(e) } }
         }
-        debugRaw.push({ page: page.name, users })
+        debugRaw.push({
+          page: page.name,
+          conversation_assignee_fields: inbox ? {
+            current_assign_users: inbox.current_assign_users,
+            assignee_ids: inbox.assignee_ids,
+            assignee_histories: inbox.assignee_histories,
+            last_sent_by: inbox.last_sent_by,
+          } : null,
+          message_froms: msgFroms,
+        })
       }
 
       for (const conv of convList) {

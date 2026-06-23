@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { initDb, saveConversationEvaluation, saveConversationAnalysis, getConversationEvaluation } from '@/lib/db'
 import { getPancakePageById, PANCAKE_PAGE_API, cleanPancakeText, parseTags } from '@/lib/pancake'
+import { checkAdminAuth } from '@/lib/admin-auth'
 
 const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
-function checkAuth(req: NextRequest) {
-  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
-  return token === (process.env.ADMIN_PASSWORD || 'hacofood2024')
-}
+const checkAuth = checkAdminAuth
 
 interface ParsedMessage {
   id: string

@@ -16,8 +16,9 @@ export async function POST(req: NextRequest) {
 
     // Special case: Admin login bằng ADMIN_PASSWORD (.env)
     // Cho phép bất kỳ email nào dùng ADMIN_PASSWORD để vào với quyền admin
-    const adminPassword = (process.env.ADMIN_PASSWORD || 'hacofood2026').trim()
-    if (password.trim() === adminPassword) {
+    // Fail-closed: không có fallback mặc định — thiếu env thì bỏ qua nhánh admin
+    const adminPassword = (process.env.ADMIN_PASSWORD || '').trim()
+    if (adminPassword && password.trim() === adminPassword) {
       const token = await createToken({
         id: 0,
         email: email.toLowerCase().trim(),

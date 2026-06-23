@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initDb, getDb } from '@/lib/db'
-
-function checkAuth(req: NextRequest): boolean {
-  const auth = req.headers.get('Authorization') || ''
-  const token = auth.replace(/^Bearer\s+/i, '').trim()
-  const expected = process.env.ADMIN_PASSWORD || 'hacofood2024'
-  return token === expected
-}
+import { checkAdminAuth } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
+  if (!checkAdminAuth(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

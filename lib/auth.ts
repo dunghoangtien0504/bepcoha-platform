@@ -1,9 +1,15 @@
 import * as bcrypt from 'bcryptjs'
 import { jwtVerify, SignJWT } from 'jose'
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-)
+// Fail-closed lúc CHẠY (không throw ở top-level để tránh vỡ `next build`
+// khi env chưa có trong môi trường build).
+function getJwtSecret(): Uint8Array {
+  const s = process.env.JWT_SECRET
+  if (!s || s.length < 32) {
+    throw new Error('JWT_SECRET chưa được cấu hình (cần ≥32 ký tự ngẫu nhiên)')
+  }
+  return new TextEncoder().encode(s)
+}
 
 const SALT_ROUNDS = 10
 
@@ -29,12 +35,12 @@ export async function createToken(payload: any): Promise<string> {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(JWT_SECRET)
+    .sign(getJwtSecret())
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const verified = await jwtVerify(token, JWT_SECRET)
+    const verified = await jwtVerify(token, getJwtSecret())
     return {
       id: verified.payload.id as number,
       email: verified.payload.email as string,
