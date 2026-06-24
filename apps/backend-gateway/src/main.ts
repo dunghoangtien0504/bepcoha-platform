@@ -23,7 +23,7 @@ async function bootstrap(): Promise<void> {
 
   const config = app.get(ConfigService).getOrThrow<AppConfig>('app');
   await app.listen(config.port);
-  logger.log(`AI Governance Gateway đang chạy tại cổng ${config.port}`);
+  logger.log(`HACO-food-OS đang chạy tại cổng ${config.port}`);
 }
 
 void bootstrap();

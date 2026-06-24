@@ -20,8 +20,8 @@ const handleSubmit = async (): Promise<void> => {
 <template>
   <div class="flex min-h-screen items-center justify-center bg-slate-900 p-4">
     <div class="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
-      <h1 class="text-2xl font-bold text-slate-900">AI Governance Gateway</h1>
-      <p class="mt-1 text-sm text-slate-500">Đăng nhập quản trị (Tech Lead / CTO)</p>
+      <h1 class="text-2xl font-bold text-slate-900">HACO-food-OS</h1>
+      <p class="mt-1 text-sm text-slate-500">Hệ thống quản trị AI — Bếp Cô Hạ</p>
 
       <form class="mt-6 space-y-4" @submit.prevent="handleSubmit">
         <div>

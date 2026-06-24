@@ -6,7 +6,7 @@ export class AppController {
   health(): { status: string; service: string; timestamp: string } {
     return {
       status: 'ok',
-      service: 'ai-governance-gateway',
+      service: 'haco-food-os',
       timestamp: new Date().toISOString(),
     };
   }

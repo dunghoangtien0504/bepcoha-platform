@@ -1,8 +1,8 @@
 {
-  "name": "ai-governance-gateway",
+  "name": "haco-food-os",
   "version": "1.0.0",
   "private": true,
-  "description": "AI Governance Gateway & ROI Dashboard - Monorepo workspace",
+  "description": "HACO-food-OS — Hệ thống quản trị AI cho Bếp Cô Hạ (Hacofood.vn)",
   "workspaces": [
     "apps/backend-gateway",
     "apps/admin-dashboard"
