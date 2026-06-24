@@ -72,7 +72,7 @@ const handleLogout = (): void => {
   <div class="flex h-screen overflow-hidden bg-slate-100">
     <!-- Aside rail: menu gốc/nhóm dạng icon, cố định -->
     <aside class="flex w-16 flex-shrink-0 flex-col items-center gap-1 rail-bg py-3 text-slate-300">
-      <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-lg rail-bg-brand text-sm font-bold text-white" title="HACO-food-OS">
+      <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-lg rail-bg-brand text-sm font-black text-white shadow-lg" title="HACO-food-OS · Bếp Cô Hạ">
         HC
       </div>
       <button

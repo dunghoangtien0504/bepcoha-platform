@@ -30,18 +30,18 @@ const granularity = ref<'DAILY' | 'WEEKLY' | 'MONTHLY'>('DAILY');
 const loading = ref(true);
 const errorMessage = ref<string | null>(null);
 
-const demoToken = 'storo_live_demo_dev_token_0001';
+const demoToken = 'haco_live_demo_dev_token_0001';
 const copied = ref(false);
 
 const ideConfig = `{
   "models": [
     {
-      "title": "Claude 3.5 Sonnet (STORO Gateway)",
+      "title": "Claude Sonnet (HACO Gateway)",
       "provider": "openai",
-      "model": "claude-3-5-sonnet",
+      "model": "claude-sonnet-4-6",
       "apiBase": "http://localhost:3900/v1",
-      "apiKey": "storo_live_your_internal_token_here",
-      "requestOptions": { "headers": { "X-Task-ID": "TERO-102" } }
+      "apiKey": "haco_live_your_internal_token_here",
+      "requestOptions": { "headers": { "X-Task-ID": "HACO-101" } }
     }
   ]
 }`;
@@ -308,7 +308,7 @@ onMounted(async () => {
         </div>
         <div id="tour-discipline" class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
           <strong>Kỷ luật Task ID:</strong> trước mỗi đầu việc mới, đổi X-Task-ID khớp mã thẻ
-          công việc trên Jira (hoặc dùng Git Hook tự bóc tách tên branch).
+          công việc (vd: HACO-101, HACO-202). Dùng Git Hook để tự bóc tách từ tên branch.
         </div>
       </div>
 

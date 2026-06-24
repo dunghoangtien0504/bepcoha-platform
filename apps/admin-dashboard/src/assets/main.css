@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  --project-color: #0E5AF1;
+  --project-color: #d97706;
   color-scheme: light;
 }
 
@@ -15,11 +15,11 @@ body {
 }
 
 .rail-bg {
-  background: color-mix(in srgb, #000000, var(--project-color, #0e5af1) 90%);
+  background: #1c1917;
 }
 
 .rail-bg-brand {
-  background-color: rgb(32 14 244);
+  background-color: #d97706;
 }
 
 .rail-item-bg {

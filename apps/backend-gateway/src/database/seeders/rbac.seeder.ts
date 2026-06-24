@@ -135,12 +135,12 @@ export class RbacSeeder implements OnModuleInit {
 
     await this.userModel.create({
       roleId: role.id,
-      fullName: 'System Administrator',
-      displayName: 'Administrator',
+      fullName: 'Bếp Cô Hạ',
+      displayName: 'Cô Hạ',
       email: admin.email,
       passwordHashed: hashPassword(admin.password),
-      gender: 'unknow',
-      title: 'Administrator',
+      gender: 'female',
+      title: 'Quản trị viên',
       isAdmin: true,
       isActive: true,
     } as UserEntity);

@@ -21,14 +21,14 @@ const apiKeySteps: ReadonlyArray<Step> = [
     code: '# apps/backend-gateway/.env\nOPENAI_API_KEY=sk-...\nANTHROPIC_API_KEY=sk-ant-...',
   },
   {
-    title: 'Lấy internal token của nhân viên',
-    body: 'Mỗi nhân viên có một token nội bộ dạng storo_live_... dùng để xác thực với Gateway (không phải API key thật của nhà cung cấp). Token demo có sẵn sau khi seed dữ liệu.',
-    code: 'storo_live_demo_dev_token_0001',
+    title: 'Lấy internal token của thành viên',
+    body: 'Mỗi thành viên team Bếp Cô Hạ có một token nội bộ dạng haco_live_... dùng để xác thực với Gateway (không phải API key thật). Token demo có sẵn sau khi seed dữ liệu.',
+    code: 'haco_live_demo_dev_token_0001',
   },
   {
-    title: 'Cấu hình IDE (Continue.dev / Cursor) trỏ về Gateway',
-    body: 'Đổi apiBase sang Gateway và đặt header X-Task-ID cho mỗi phiên làm việc. Gateway đóng vai reverse proxy: nhận prompt, kiểm tra hạn ngạch, chuyển tiếp tới nhà cung cấp rồi đo usage.',
-    code: '{\n  "models": [{\n    "title": "AIGG Proxy",\n    "provider": "openai",\n    "model": "claude-3-5-sonnet",\n    "apiBase": "http://localhost:3900/v1",\n    "apiKey": "storo_live_demo_dev_token_0001",\n    "requestOptions": { "headers": { "X-Task-ID": "TERO-102" } }\n  }]\n}',
+    title: 'Cấu hình IDE (Continue.dev / Cursor) trỏ về HACO Gateway',
+    body: 'Đổi apiBase sang Gateway và đặt header X-Task-ID cho mỗi phiên làm việc. Gateway kiểm tra hạn ngạch, chuyển tiếp tới LLM và đo usage theo từng task HACO.',
+    code: '{\n  "models": [{\n    "title": "HACO Gateway",\n    "provider": "openai",\n    "model": "claude-sonnet-4-6",\n    "apiBase": "http://localhost:3900/v1",\n    "apiKey": "haco_live_demo_dev_token_0001",\n    "requestOptions": { "headers": { "X-Task-ID": "HACO-101" } }\n  }]\n}',
   },
   {
     title: 'Làm việc bình thường trong IDE',
@@ -53,7 +53,7 @@ const proSteps: ReadonlyArray<Step> = [
   {
     title: 'Hoặc ghi nhận tự động bằng CLI / git hook',
     body: 'Dùng script report-usage.mjs để gửi nội dung tới Gateway từ terminal. Bản ghi có source = ESTIMATED, captureMode = CHAT/API. Cần JWT đăng nhập (--token hoặc biến môi trường AIGG_JWT).',
-    code: 'node ide-configs/report-usage.mjs \\\n  --task AIGG-UI --requester dev@storo.vn \\\n  --file src/views/GuideView.vue --mode CHAT \\\n  --model claude-3-5-sonnet',
+    code: 'node ide-configs/report-usage.mjs \\\n  --task HACO-101 --requester dev@hacofood.vn \\\n  --file src/views/GuideView.vue --mode CHAT \\\n  --model claude-sonnet-4-6',
   },
   {
     title: 'Hệ thống ước tính token + chi phí tham chiếu',
@@ -69,12 +69,12 @@ const proSteps: ReadonlyArray<Step> = [
 const apiKeyExtSteps: ReadonlyArray<Step> = [
   {
     title: 'Cài extension & chọn gói API key',
-    body: 'Cài extension “AI Governance Gateway” (apps/vscode-extension → nhấn F5 để chạy thử, hoặc đóng gói .vsix rồi Install). Vào Settings đặt aigg.baseUrl và aigg.serviceTier = api_key.',
+    body: 'Cài extension “HACO-food-OS” (apps/vscode-extension → nhấn F5 để chạy thử, hoặc đóng gói .vsix rồi Install). Vào Settings đặt aigg.baseUrl và aigg.serviceTier = api_key.',
     code: '// .vscode/settings.json\n{\n  "aigg.baseUrl": "http://localhost:3900",\n  "aigg.serviceTier": "api_key"\n}',
   },
   {
     title: 'Đăng nhập ngay trong VSCode',
-    body: 'Mở Command Palette → “AIGG: Đăng nhập”, nhập email + mật khẩu tài khoản Gateway. Extension tự lấy internal token (storo_live_...) của bạn và lưu an toàn trong SecretStorage.',
+    body: 'Mở Command Palette → “AIGG: Đăng nhập”, nhập email + mật khẩu tài khoản HACO-food-OS. Extension tự lấy internal token (haco_live_...) của bạn và lưu an toàn trong SecretStorage.',
   },
   {
     title: 'Giao việc cho AI — không gõ tay mã task',
@@ -83,7 +83,7 @@ const apiKeyExtSteps: ReadonlyArray<Step> = [
   {
     title: 'Extension tự cấu hình định tuyến qua Gateway',
     body: 'Sau khi giao việc, extension ghi .aigg/routing.json + mẫu Continue.dev (apiBase trỏ Gateway, kèm header X-Task-ID, X-Project-ID, X-Conversation-ID). Đặt biến môi trường AIGG_TOKEN = internal token để client gọi qua Gateway; hoặc dùng “AIGG: Copy headers/cURL”.',
-    code: 'export AIGG_TOKEN=storo_live_...   # token nội bộ của bạn',
+    code: 'export AIGG_TOKEN=haco_live_...   # token nội bộ của bạn',
   },
   {
     title: 'Làm việc bình thường — đo realtime + áp hạn ngạch',
@@ -95,8 +95,8 @@ const apiKeyExtSteps: ReadonlyArray<Step> = [
 const proExtSteps: ReadonlyArray<Step> = [
   {
     title: 'Chọn gói Claude Pro trong extension',
-    body: 'Vào Settings đặt aigg.serviceTier = claude_pro và aigg.estimationModel (vd claude-3-5-sonnet). Đăng nhập bằng “AIGG: Đăng nhập”.',
-    code: '// .vscode/settings.json\n{\n  "aigg.serviceTier": "claude_pro",\n  "aigg.estimationModel": "claude-3-5-sonnet"\n}',
+    body: 'Vào Settings đặt aigg.serviceTier = claude_pro và aigg.estimationModel (vd claude-sonnet-4-6). Đăng nhập bằng “AIGG: Đăng nhập”.',
+    code: '// .vscode/settings.json\n{\n  “aigg.serviceTier”: “claude_pro”,\n  “aigg.estimationModel”: “claude-sonnet-4-6”\n}',
   },
   {
     title: 'Giao việc cho AI để gắn ngữ cảnh task',
@@ -123,7 +123,7 @@ const mcpPrep: ReadonlyArray<Step> = [
   },
   {
     title: 'Bước 2 — Lấy "mã đăng nhập" (token)',
-    body: 'Cần token để công cụ AI biết bạn là ai. Cách dễ nhất: mở VSCode extension “AIGG: Đăng nhập” (hoặc đăng nhập web), rồi sao chép token. Token này điền vào ô AIGG_TOKEN ở các cấu hình bên dưới.',
+    body: 'Cần token để hệ thống biết bạn là ai. Cách dễ nhất: mở VSCode extension “AIGG: Đăng nhập” (hoặc đăng nhập web HACO-food-OS), rồi sao chép token dạng haco_live_... Điền vào ô AIGG_TOKEN ở các cấu hình bên dưới.',
   },
   {
     title: 'Bước 3 — Đảm bảo Node-RED đang chạy',
@@ -191,8 +191,8 @@ const mcpUsage: ReadonlyArray<Step> = [
   },
   {
     title: 'Mẹo: đặt tên nhánh git theo mã task',
-    body: 'Đặt nhánh dạng AIGG-123-ten-viec (123 là mã công việc). Khi đó AI tự biết bạn đang làm task nào (gọi aigg_active_task) — khỏi chọn tay.',
-    code: 'git checkout -b AIGG-123-toi-uu-dashboard',
+    body: 'Đặt nhánh dạng HACO-101-ten-viec (101 là mã công việc Hacofood). Khi đó AI tự biết bạn đang làm task nào (gọi aigg_active_task) — khỏi chọn tay.',
+    code: 'git checkout -b HACO-101-landing-page-duacamuoi',
   },
 ];
 </script>
@@ -328,8 +328,8 @@ const mcpUsage: ReadonlyArray<Step> = [
           Ví dụ thực tế: dogfooding chính dự án này
         </p>
         <p class="mt-1 text-sm text-slate-600">
-          Dự án <strong>“AI Governance Gateway”</strong> được dùng làm ví dụ đo lường: các task
-          AIGG-BE, AIGG-METER, AIGG-INT, AIGG-UI đã có sẵn cùng vài phiên làm việc bằng Claude Pro
+          Dự án <strong>”Hacofood.vn”</strong> được dùng làm ví dụ đo lường: các task
+          HACO-101 (Landing page), HACO-201 (Video khóa học), HACO-301 (AI Support) đã có sẵn cùng vài phiên làm việc bằng Claude Pro
           (nguồn ESTIMATED). Mở Quản lý Công việc để xem chi phí token so với giờ công tiết kiệm.
         </p>
         <button class="btn-primary mt-3" @click="router.push({ name: 'work-tasks' })">
