@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initDb, getAllGiftLeads, getAllCourseLeads } from '@/lib/db'
+import { initDb, getAllGiftLeads, getAllCourseLeads, getAllStnOrders, getAllKdxOrders } from '@/lib/db'
 import { verifyAuthHeader } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
-  // Ưu tiên JWT auth
   const authHeader = req.headers.get('Authorization')
   const user = await verifyAuthHeader(authHeader)
 
-  // Fallback: check x-admin-password header (legacy) — fail-closed, không default
   if (!user) {
     const adminPassword = process.env.ADMIN_PASSWORD
     const headerPassword = req.headers.get('x-admin-password')
@@ -17,19 +15,33 @@ export async function GET(req: NextRequest) {
   }
 
   await initDb()
-  const giftLeads = await getAllGiftLeads()
-  const courseLeads = await getAllCourseLeads()
+  const [giftLeads, courseLeads, stnOrders, kdxOrders] = await Promise.all([
+    getAllGiftLeads(),
+    getAllCourseLeads(),
+    getAllStnOrders(),
+    getAllKdxOrders(),
+  ])
+
+  const paidCourse = courseLeads.filter((l) => l.payment_status === 'paid')
+  const paidStn = stnOrders.filter((o) => o.payment_status === 'paid')
+  const paidKdx = kdxOrders.filter((o) => o.payment_status === 'paid')
 
   return NextResponse.json({
     giftLeads,
     courseLeads,
+    stnOrders,
+    kdxOrders,
     stats: {
       totalGiftLeads: giftLeads.length,
       totalCourseLeads: courseLeads.length,
-      paidLeads: courseLeads.filter((l) => l.payment_status === 'paid').length,
-      revenue: courseLeads
-        .filter((l) => l.payment_status === 'paid')
-        .reduce((sum, l) => sum + (l.amount || 0), 0),
+      paidLeads: paidCourse.length,
+      revenue: paidCourse.reduce((s, l) => s + (l.amount || 0), 0),
+      stnTotal: stnOrders.length,
+      stnPaid: paidStn.length,
+      stnRevenue: paidStn.reduce((s, o) => s + (o.total_price || 0), 0),
+      kdxTotal: kdxOrders.length,
+      kdxPaid: paidKdx.length,
+      kdxRevenue: paidKdx.reduce((s, o) => s + (o.total_price || 0), 0),
     },
   })
 }

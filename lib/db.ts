@@ -730,6 +730,19 @@ export async function getAllAiOrders(limit = 100) {
   return rows as unknown as AiOrder[]
 }
 
+// ── All Orders Queries ────────────────────────────────────────────────────────
+export async function getAllStnOrders() {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM sot_tron_nom_orders ORDER BY created_at DESC`
+  return rows as unknown as StnOrder[]
+}
+
+export async function getAllKdxOrders() {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM khan_do_xoi_orders ORDER BY created_at DESC`
+  return rows as unknown as KdxOrder[]
+}
+
 // ── Course Settings ───────────────────────────────────────────────────────────
 export async function getCourseSettings() {
   const sql = getDb()
