@@ -5,14 +5,14 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 
 export const metadata: Metadata = {
-  title: "Khóa Học Dưa Cà Muối – Bếp Cô Hạ | Hacofood.vn",
+  title: "Bếp Cô Hạ | Hacofood.vn",
   description:
-    "Học làm dưa cải bẹ, dưa góp, sung cà muối, cà muối mắm chuyên sâu từ Cô Hạ. Dùng cho gia đình và kinh doanh. Chỉ 299.000đ.",
-  keywords: ["dưa cà muối", "học làm dưa", "cô hạ", "hacofood", "khóa học nấu ăn"],
+    "Bếp Cô Hạ – Nguyên liệu & khóa học nấu ăn online. Sốt Trộn Nộm, Sét Xôi Cốm, Khăn Đồ Xôi, Khóa Dưa Cà Muối.",
+  keywords: ["bếp cô hạ", "hacofood", "nấu ăn", "sốt trộn nộm", "xôi cốm"],
   openGraph: {
-    title: "Khóa Học Dưa Cà Muối – Bếp Cô Hạ",
-    description: "Học làm dưa cà muối chuyên sâu. Chỉ 299.000đ, giảm 86%!",
-    url: "https://hacofood.vn/khoahocduacamuoi",
+    title: "Bếp Cô Hạ | Hacofood.vn",
+    description: "Nguyên liệu & khóa học nấu ăn online từ Bếp Cô Hạ",
+    url: "https://hacofood.vn",
     siteName: "Hacofood.vn",
     locale: "vi_VN",
     type: "website",
