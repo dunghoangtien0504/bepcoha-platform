@@ -1,0 +1,15 @@
+{
+  "name": "aigg-node-red",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node-RED nhúng dạng Express app cho AI Governance Gateway (middleware). Đăng nhập bằng tài khoản admin của hệ thống. Tách thành domain riêng khi cần.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "node-red": "^5.0.0"
+  },
+  "license": "AGPL-3.0-only"
+}

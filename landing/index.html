@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Governance Gateway — Self-hosted AI cost & governance for engineering teams</title>
+<meta name="description" content="Self-hosted, privacy-first governance gateway for AI coding teams: meter every token, enforce quotas, run local LLMs (Ollama/vLLM), and prove real ROI." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b1020; --bg2: #121933; --card: #161e3b; --line: rgba(255,255,255,.10);
+    --txt: #e9edf7; --muted: #9aa6c4; --brand: #6c5ce7; --brand2: #00d4a0; --amber: #f7b955; --rose: #ff6b81;
+    --radius: 14px; --maxw: 1120px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--txt); line-height: 1.65; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+  .muted { color: var(--muted); }
+  .accent { color: var(--brand2); }
+  section { padding: 72px 0; }
+  h2 { font-size: clamp(24px, 4vw, 34px); font-weight: 700; letter-spacing: -.02em; margin-bottom: 8px; }
+  .lead { color: var(--muted); font-size: 17px; max-width: 640px; margin-bottom: 36px; }
+  .eyebrow { color: var(--brand2); font-weight: 600; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
+
+  /* nav */
+  nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); background: rgba(11,16,32,.78); border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+  .logo .mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--brand), var(--brand2)); display: grid; place-items: center; font-size: 16px; }
+  .nav-right { display: flex; align-items: center; gap: 8px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 14px; border: 1px solid var(--line); transition: .15s; cursor: pointer; background: transparent; color: var(--txt); }
+  .btn:hover { border-color: rgba(255,255,255,.3); transform: translateY(-1px); }
+  .btn-primary { background: linear-gradient(135deg, var(--brand), #8b7bff); border: none; }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .lang { font-size: 13px; font-weight: 600; padding: 7px 12px; }
+  .lang b { color: var(--brand2); }
+
+  /* hero */
+  .hero { padding: 84px 0 56px; text-align: center; background: radial-gradient(900px 420px at 50% -10%, rgba(108,92,231,.28), transparent 70%); }
+  .hero h1 { font-size: clamp(32px, 6vw, 56px); font-weight: 800; letter-spacing: -.03em; line-height: 1.08; margin-bottom: 18px; }
+  .hero h1 .g { background: linear-gradient(120deg, var(--brand2), var(--brand)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { font-size: clamp(16px, 2.4vw, 20px); color: var(--muted); max-width: 660px; margin: 0 auto 30px; }
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand2); }
+
+  /* stat strip */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 52px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; text-align: center; }
+  .stat .n { font-size: 28px; font-weight: 800; }
+  .stat .n.b2 { color: var(--brand2); } .stat .n.am { color: var(--amber); } .stat .n.ro { color: var(--rose); }
+  .stat .l { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* generic grid */
+  .grid { display: grid; gap: 16px; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; transition: .15s; }
+  .card:hover { border-color: rgba(255,255,255,.22); transform: translateY(-2px); }
+  .card .ic { width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; font-size: 20px; margin-bottom: 14px; background: rgba(108,92,231,.16); }
+  .card h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .card p { font-size: 14.5px; color: var(--muted); }
+
+  .alt { background: var(--bg2); }
+
+  /* problem */
+  .qcard { display: flex; gap: 14px; align-items: flex-start; }
+  .qnum { flex: none; width: 34px; height: 34px; border-radius: 9px; background: rgba(255,107,129,.16); color: var(--rose); display: grid; place-items: center; font-weight: 700; }
+
+  /* flow */
+  .flow { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding-bottom: 6px; }
+  .step { flex: 1; min-width: 150px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; position: relative; }
+  .step .si { font-size: 22px; margin-bottom: 8px; }
+  .step h4 { font-size: 14.5px; font-weight: 600; margin-bottom: 4px; }
+  .step p { font-size: 12.5px; color: var(--muted); }
+  .arrow { flex: none; align-self: center; color: var(--brand2); font-size: 22px; padding: 0 6px; }
+
+  /* charts */
+  .chart-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .chart-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .chart-card .sub { font-size: 12.5px; color: var(--muted); margin-bottom: 14px; }
+  .canvas-box { position: relative; height: 240px; }
+  .demo-tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); padding: 2px 8px; border-radius: 999px; float: right; }
+
+  /* security */
+  .sec { display: flex; gap: 12px; align-items: center; }
+  .sec .si { font-size: 20px; }
+
+  /* faq */
+  .faq-item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 18px; margin-bottom: 12px; }
+  .faq-item summary { cursor: pointer; font-weight: 600; font-size: 15.5px; padding: 14px 0; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after { content: "+"; color: var(--brand2); font-size: 20px; font-weight: 700; flex: none; }
+  .faq-item[open] summary::after { content: "−"; }
+  .faq-item p { color: var(--muted); font-size: 14.5px; padding: 0 0 16px; margin: 0; }
+
+  footer { border-top: 1px solid var(--line); padding: 40px 0; text-align: center; color: var(--muted); font-size: 14px; }
+  .footer-cta { text-align: center; }
+  .footer-cta h2 { margin-bottom: 14px; }
+
+  @media (max-width: 880px) {
+    .stats, .g4, .g3 { grid-template-columns: repeat(2, 1fr); }
+    .g2 { grid-template-columns: 1fr; }
+    section { padding: 52px 0; }
+    .arrow { transform: rotate(90deg); }
+    .flow { flex-direction: column; }
+    .step { min-width: 0; }
+  }
+  @media (max-width: 520px) {
+    .stats, .g4, .g3 { grid-template-columns: 1fr; }
+    nav .desktop-only { display: none; }
+  }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><span class="mark">🛡️</span><span>AI Governance Gateway</span></div>
+    <div class="nav-right">
+      <a class="btn lang" id="langBtn" role="button" tabindex="0">EN | <b>VI</b></a>
+      <a class="btn desktop-only" href="https://github.com/techablevn/ai-governance-gateway" data-i18n="nav_github">GitHub</a>
+      <a class="btn btn-primary" href="#start" data-i18n="nav_cta">Get started</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="pill"><span class="dot"></span><span data-i18n="hero_pill">Self-hosted · privacy-first · open governance</span></span>
+    <h1 data-i18n="hero_h1">Govern your AI spend.<br/>Keep your code <span class="g">in-house.</span></h1>
+    <p data-i18n="hero_p">A gateway between your IDEs and any LLM — OpenAI, Anthropic, or your own local Ollama/vLLM. Meter every token, enforce quotas, and prove the real ROI of AI on engineering work.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="https://github.com/techablevn/ai-governance-gateway" data-i18n="hero_cta1">⭐ Star on GitHub</a>
+      <a class="btn" href="#how" data-i18n="hero_cta2">See how it works</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n b2" data-i18n="stat1_n">$0</div><div class="l" data-i18n="stat1_l">API cost on local LLMs</div></div>
+      <div class="stat"><div class="n" data-i18n="stat2_n">100%</div><div class="l" data-i18n="stat2_l">Self-hosted, your infra</div></div>
+      <div class="stat"><div class="n am" data-i18n="stat3_n">5 apps</div><div class="l" data-i18n="stat3_l">Gateway · Dashboard · MCP</div></div>
+      <div class="stat"><div class="n ro" data-i18n="stat4_n">0-config</div><div class="l" data-i18n="stat4_l">Git-branch attribution</div></div>
+    </div>
+  </div>
+</header>
+
+<section id="built">
+  <div class="wrap" style="max-width:780px;text-align:center">
+    <p class="eyebrow" data-i18n="ai_eyebrow">Full transparency</p>
+    <h2 data-i18n="ai_h2">Human architecture, AI execution</h2>
+    <span class="pill" style="margin:6px 0 18px"><span class="dot"></span><span data-i18n="ai_tag">100% of this codebase was generated by Claude Code</span></span>
+    <p class="lead" style="margin:0 auto 16px;max-width:680px" data-i18n="ai_p1">Before you read the source, let's be upfront: every line here was written by Claude Code. As a product creator and system architect, I don't write code line by line — I focus where it matters: business logic, database schema, git workflows, and how humans and machines collaborate.</p>
+    <p class="lead" style="margin:0 auto;max-width:680px" data-i18n="ai_p2">This repo is living proof of the philosophy it governs. In the AI era we aren't mechanics staring at syntax — we are the architects. AI is the execution engine; it still needs a human mind for structure, intent, and governance.</p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <p class="eyebrow" data-i18n="prob_eyebrow">The problem</p>
+    <h2 data-i18n="prob_h2">Three questions most teams can't answer</h2>
+    <p class="lead" data-i18n="prob_lead">AI coding assistants are now a real cost and a real risk. AIGG answers all three — without changing how developers work.</p>
+    <div class="grid g3">
+      <div class="card qcard"><div class="qnum">1</div><div><h3 data-i18n="prob1_h">Where is the money going?</h3><p data-i18n="prob1_p">Which developer, which project, which task burned the tokens this week?</p></div></div>
+      <div class="card qcard"><div class="qnum">2</div><div><h3 data-i18n="prob2_h">Is our source code leaving?</h3><p data-i18n="prob2_p">Cloud LLM APIs see every prompt. Where does your proprietary code actually go?</p></div></div>
+      <div class="card qcard"><div class="qnum">3</div><div><h3 data-i18n="prob3_h">Is any of it paying off?</h3><p data-i18n="prob3_p">What's the ROI versus the engineer hours the AI was supposed to save?</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <p class="eyebrow" data-i18n="how_eyebrow">How it works</p>
+    <h2 data-i18n="how_h2">The full picture, end to end</h2>
+    <p class="lead" data-i18n="how_lead">Every AI request flows through one governed path — from the developer's branch to the dashboard.</p>
+    <div class="flow">
+      <div class="step"><div class="si">👩‍💻</div><h4 data-i18n="f1_h">Developer + branch</h4><p data-i18n="f1_p">git checkout feature/AIGG-123 → Task ID auto-tagged</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="si">🔑</div><h4 data-i18n="f2_h">Internal token</h4><p data-i18n="f2_p">Per-dev token; master key never exposed</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="si">🛡️</div><h4 data-i18n="f3_h">Gateway</h4><p data-i18n="f3_p">Quota check + async audit + prompt capture</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="si">🧠</div><h4 data-i18n="f4_h">LLM</h4><p data-i18n="f4_p">Cloud (OpenAI/Anthropic) or local Ollama/vLLM</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="si">📊</div><h4 data-i18n="f5_h">ROI dashboard</h4><p data-i18n="f5_p">Cost, hours saved, Net ROI, anomalies</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <p class="eyebrow" data-i18n="ch_eyebrow">What you see</p>
+    <h2 data-i18n="ch_h2">Numbers leadership actually wants</h2>
+    <p class="lead" data-i18n="ch_lead">Illustrative dashboards. Real deployments show your own data live.</p>
+    <div class="grid g3">
+      <div class="chart-card"><span class="demo-tag" data-i18n="demo">demo data</span><h3 data-i18n="ch1_h">Net ROI by month</h3><div class="sub" data-i18n="ch1_s">Hours saved − AI cost (USD)</div><div class="canvas-box"><canvas id="roiChart" role="img" aria-label="Bar chart of monthly net ROI trending upward"></canvas></div></div>
+      <div class="chart-card"><span class="demo-tag" data-i18n="demo">demo data</span><h3 data-i18n="ch2_h">Prompt quality</h3><div class="sub" data-i18n="ch2_s">Good vs poor (auto-scored)</div><div class="canvas-box"><canvas id="qualityChart" role="img" aria-label="Doughnut chart showing majority good prompts"></canvas></div></div>
+      <div class="chart-card"><span class="demo-tag" data-i18n="demo">demo data</span><h3 data-i18n="ch3_h">Cost by provider</h3><div class="sub" data-i18n="ch3_s">Local is $0</div><div class="canvas-box"><canvas id="providerChart" role="img" aria-label="Bar chart of cost by provider, local at zero"></canvas></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <p class="eyebrow" data-i18n="feat_eyebrow">Features</p>
+    <h2 data-i18n="feat_h2">Governance without getting in the way</h2>
+    <p class="lead" data-i18n="feat_lead">Everything runs on your infrastructure. Developers don't change a thing.</p>
+    <div class="grid g4">
+      <div class="card"><div class="ic">🏠</div><h3 data-i18n="ft1_h">Local LLMs</h3><p data-i18n="ft1_p">Route ollama/ · vllm/ · local/ models on-prem. $0 cost, full governance.</p></div>
+      <div class="card"><div class="ic">🔐</div><h3 data-i18n="ft2_h">Internal tokens</h3><p data-i18n="ft2_p">Per-developer keys; the company master key stays server-side.</p></div>
+      <div class="card"><div class="ic">📊</div><h3 data-i18n="ft3_h">Quotas & add-ons</h3><p data-i18n="ft3_p">Day / week / month / task limits with roll-over and alerts.</p></div>
+      <div class="card"><div class="ic">💰</div><h3 data-i18n="ft4_h">ROI dashboard</h3><p data-i18n="ft4_p">Tokens → cost → Net ROI vs engineer hours saved.</p></div>
+      <div class="card"><div class="ic">✨</div><h3 data-i18n="ft5_h">Prompt quality</h3><p data-i18n="ft5_p">Preview + SHA-256 hash only. Auto-scored. Cache the best.</p></div>
+      <div class="card"><div class="ic">🪄</div><h3 data-i18n="ft6_h">Zero-config attribution</h3><p data-i18n="ft6_p">Git hook reads the branch and tags every request to the task.</p></div>
+      <div class="card"><div class="ic">🔗</div><h3 data-i18n="ft7_h">Jira / GitLab / GitHub</h3><p data-i18n="ft7_p">Sync tasks, receive webhooks, expose usage per ticket.</p></div>
+      <div class="card"><div class="ic">🤖</div><h3 data-i18n="ft8_h">MCP bridge</h3><p data-i18n="ft8_p">AI agents self-report usage and check quota via MCP → Node-RED.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <p class="eyebrow" data-i18n="sec_eyebrow">Security by design</p>
+    <h2 data-i18n="sec_h2">Built so nothing sensitive leaks</h2>
+    <div class="grid g2" style="margin-top:24px">
+      <div class="card sec"><div class="si">🔑</div><p data-i18n="sec1">Master API keys live only in the backend — never sent to clients.</p></div>
+      <div class="card sec"><div class="si">🏠</div><p data-i18n="sec2">Local LLM routing keeps prompts and source on your own infrastructure.</p></div>
+      <div class="card sec"><div class="si">🧾</div><p data-i18n="sec3">Audit logs store no code — only financial, time and token metadata.</p></div>
+      <div class="card sec"><div class="si">✂️</div><p data-i18n="sec4">Prompts stored as preview + SHA-256 hash only, never raw.</p></div>
+      <div class="card sec"><div class="si">🔐</div><p data-i18n="sec5">Integration tokens encrypted at rest with AES-256-GCM.</p></div>
+      <div class="card sec"><div class="si">🧩</div><p data-i18n="sec6">RBAC: module → scope → permission, with permission-filtered menus.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="alt">
+  <div class="wrap" style="max-width:820px">
+    <p class="eyebrow" data-i18n="faq_eyebrow">FAQ</p>
+    <h2 data-i18n="faq_h2">Questions you're probably asking</h2>
+    <div style="margin-top:24px">
+      <details class="faq-item"><summary data-i18n="q1">Is it really 100% AI-coded — and how do you keep quality up?</summary><p data-i18n="a1"></p></details>
+      <details class="faq-item"><summary data-i18n="q2">Why AGPL-3.0? Can I use it at my company?</summary><p data-i18n="a2"></p></details>
+      <details class="faq-item"><summary data-i18n="q3">How is this different from LiteLLM / OpenRouter?</summary><p data-i18n="a3"></p></details>
+      <details class="faq-item"><summary data-i18n="q4">Isn't this just CodeRabbit / an AI code reviewer?</summary><p data-i18n="a4"></p></details>
+      <details class="faq-item"><summary data-i18n="q5">Which local models work, and do my prompts leave my network?</summary><p data-i18n="a5"></p></details>
+      <details class="faq-item"><summary data-i18n="q6">What do you store about my prompts?</summary><p data-i18n="a6"></p></details>
+      <details class="faq-item"><summary data-i18n="q7">Is it production-ready? What's missing?</summary><p data-i18n="a7"></p></details>
+    </div>
+  </div>
+</section>
+
+<section id="start" class="footer-cta">
+  <div class="wrap">
+    <h2 data-i18n="cta_h2">Run it in 5 minutes</h2>
+    <p class="lead" style="margin:0 auto 24px" data-i18n="cta_lead">Clone, copy .env, docker compose up. First boot seeds everything automatically.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="https://github.com/techablevn/ai-governance-gateway" data-i18n="cta_btn1">⭐ Star on GitHub</a>
+      <a class="btn" href="https://github.com/techablevn/ai-governance-gateway#quick-start" data-i18n="cta_btn2">Read the docs</a>
+    </div>
+    <p class="lead" style="margin:26px auto 0;max-width:560px;font-size:14px" data-i18n="contact_line">Built by Hoàng Hồ — open to collaboration & opportunities.</p>
+    <p style="margin:6px 0 0;font-size:14px"><a class="accent" href="mailto:hoanganzglobal@gmail.com">hoanganzglobal@gmail.com</a> · <a class="accent" href="https://techrun.ai.vn">techrun.ai.vn</a></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    © <span id="year"></span> Hoàng Hồ — AI Governance Gateway · <a class="accent" href="https://techrun.ai.vn/ai-governance-gateway">techrun.ai.vn/ai-governance-gateway</a>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const I18N = {
+  en: {
+    nav_github:"GitHub", nav_cta:"Get started",
+    hero_pill:"Self-hosted · privacy-first · open governance",
+    hero_h1:'Govern your AI spend.<br/>Keep your code <span class="g">in-house.</span>',
+    hero_p:"A gateway between your IDEs and any LLM — OpenAI, Anthropic, or your own local Ollama/vLLM. Meter every token, enforce quotas, and prove the real ROI of AI on engineering work.",
+    hero_cta1:"⭐ Star on GitHub", hero_cta2:"See how it works",
+    ai_eyebrow:"Full transparency", ai_h2:"Human architecture, AI execution",
+    ai_tag:"100% of this codebase was generated by Claude Code",
+    ai_p1:"Before you read the source, let's be upfront: every line here was written by Claude Code. As a product creator and system architect, I don't write code line by line — I focus where it matters: business logic, database schema, git workflows, and how humans and machines collaborate.",
+    ai_p2:"This repo is living proof of the philosophy it governs. In the AI era we aren't mechanics staring at syntax — we are the architects. AI is the execution engine; it still needs a human mind for structure, intent, and governance.",
+    stat1_n:"$0", stat1_l:"API cost on local LLMs", stat2_n:"100%", stat2_l:"Self-hosted, your infra",
+    stat3_n:"5 apps", stat3_l:"Gateway · Dashboard · MCP", stat4_n:"0-config", stat4_l:"Git-branch attribution",
+    prob_eyebrow:"The problem", prob_h2:"Three questions most teams can't answer",
+    prob_lead:"AI coding assistants are now a real cost and a real risk. AIGG answers all three — without changing how developers work.",
+    prob1_h:"Where is the money going?", prob1_p:"Which developer, which project, which task burned the tokens this week?",
+    prob2_h:"Is our source code leaving?", prob2_p:"Cloud LLM APIs see every prompt. Where does your proprietary code actually go?",
+    prob3_h:"Is any of it paying off?", prob3_p:"What's the ROI versus the engineer hours the AI was supposed to save?",
+    how_eyebrow:"How it works", how_h2:"The full picture, end to end",
+    how_lead:"Every AI request flows through one governed path — from the developer's branch to the dashboard.",
+    f1_h:"Developer + branch", f1_p:"git checkout feature/AIGG-123 → Task ID auto-tagged",
+    f2_h:"Internal token", f2_p:"Per-dev token; master key never exposed",
+    f3_h:"Gateway", f3_p:"Quota check + async audit + prompt capture",
+    f4_h:"LLM", f4_p:"Cloud (OpenAI/Anthropic) or local Ollama/vLLM",
+    f5_h:"ROI dashboard", f5_p:"Cost, hours saved, Net ROI, anomalies",
+    ch_eyebrow:"What you see", ch_h2:"Numbers leadership actually wants",
+    ch_lead:"Illustrative dashboards. Real deployments show your own data live.",
+    ch1_h:"Net ROI by month", ch1_s:"Hours saved − AI cost (USD)",
+    ch2_h:"Prompt quality", ch2_s:"Good vs poor (auto-scored)",
+    ch3_h:"Cost by provider", ch3_s:"Local is $0", demo:"demo data",
+    feat_eyebrow:"Features", feat_h2:"Governance without getting in the way",
+    feat_lead:"Everything runs on your infrastructure. Developers don't change a thing.",
+    ft1_h:"Local LLMs", ft1_p:"Route ollama/ · vllm/ · local/ models on-prem. $0 cost, full governance.",
+    ft2_h:"Internal tokens", ft2_p:"Per-developer keys; the company master key stays server-side.",
+    ft3_h:"Quotas & add-ons", ft3_p:"Day / week / month / task limits with roll-over and alerts.",
+    ft4_h:"ROI dashboard", ft4_p:"Tokens → cost → Net ROI vs engineer hours saved.",
+    ft5_h:"Prompt quality", ft5_p:"Preview + SHA-256 hash only. Auto-scored. Cache the best.",
+    ft6_h:"Zero-config attribution", ft6_p:"Git hook reads the branch and tags every request to the task.",
+    ft7_h:"Jira / GitLab / GitHub", ft7_p:"Sync tasks, receive webhooks, expose usage per ticket.",
+    ft8_h:"MCP bridge", ft8_p:"AI agents self-report usage and check quota via MCP → Node-RED.",
+    sec_eyebrow:"Security by design", sec_h2:"Built so nothing sensitive leaks",
+    sec1:"Master API keys live only in the backend — never sent to clients.",
+    sec2:"Local LLM routing keeps prompts and source on your own infrastructure.",
+    sec3:"Audit logs store no code — only financial, time and token metadata.",
+    sec4:"Prompts stored as preview + SHA-256 hash only, never raw.",
+    sec5:"Integration tokens encrypted at rest with AES-256-GCM.",
+    sec6:"RBAC: module → scope → permission, with permission-filtered menus.",
+    faq_eyebrow:"FAQ", faq_h2:"Questions you're probably asking",
+    q1:"100% AI-coded — how do you review it and verify quality as a non-coder?",
+    a1:"Yes, every line was generated by Claude Code. But review, to me, isn't inspecting whether each function is 'clean' — it's guaranteeing the system behaves exactly as the human-defined flows require (flow compliance).<br><br>Code only solves local correctness and performance. A governance system lives or dies on one rule: every request must pass through the checkpoint, and the rules must never be bypassable. If the flow deviates from the design, the system fails — period.<br><br>So I verify quality by hand and by logic against three core scenarios that must always fail closed:<br><br><strong>1. Absolute proxy enforcement</strong> — a request that tries to reach the LLM directly with a personal API key (bypassing the gateway) must FAIL. Provider keys live only behind the gateway; no user and no agent ever sees the master key.<br><strong>2. Quota integrity</strong> — a request that passes the gateway but whose user/task budget is already exhausted must FAIL. Quota is checked in real time; out of budget means cut off immediately, no exceptions.<br><strong>3. Audit immutability</strong> — a request that succeeds at the LLM but isn't written to the audit log or synced back to its Task ID must FAIL. Every request, success or failure, must leave a data footprint for the ROI reports.<br><br>Below that flow layer, automated guardrails do the line-level work: strict TypeScript (no any), CI lint+build on every push, encrypted secrets, and audit logs that never store code. AI writes inside the functions 10x faster than I could — but the human defines and polices the supreme business rules. I govern by owning the rules of the game, not by supervising the typists.",
+    q2:"Why AGPL-3.0? Can I use it at my company?",
+    a2:"You can self-host and use it internally for free, including commercially. AGPL only requires that if you modify it and offer it to others over a network as a service, you share your changes under the same license — which keeps it open and prevents closed SaaS forks. Need a closed/OEM arrangement? A commercial license can be discussed.",
+    q3:"How is this different from LiteLLM / OpenRouter?",
+    a3:"Those route and normalize many providers behind one API. AIGG is the governance layer on top: per-developer identity and internal tokens, day/week/month/task quotas with roll-over, audit logging, prompt-quality scoring, and an ROI dashboard tying spend to engineer hours saved. LiteLLM is how to call models; AIGG is who may, how much, and was it worth it. They're complementary.",
+    q4:"Isn't this just CodeRabbit / an AI code reviewer?",
+    a4:"No — different category. CodeRabbit reviews pull requests; AIGG governs cost, quota and attribution of AI usage. A quota-aware AI reviewer is on the roadmap, but the core today is governance and ROI, not review.",
+    q5:"Which local models work, and do my prompts leave my network?",
+    a5:"Anything behind an OpenAI-compatible endpoint — Ollama and vLLM are first-class. Prefix a model with ollama/ or vllm/ and the request routes to your own infrastructure: prompts and source code never leave your network and API cost is $0, while still passing through full quota + audit + ROI accounting.",
+    q6:"What do you store about my prompts?",
+    a6:"For prompt management, only a short preview plus a SHA-256 hash — never the raw prompt. Audit logs store financial/time/token metadata only, never request or response bodies. Integration tokens are encrypted at rest with AES-256-GCM.",
+    q7:"Is it production-ready? What's missing?",
+    a7:"It's a working, self-hostable system with auth, RBAC, quotas, audit, ROI and a dashboard — but it's young and actively evolving. On the roadmap: an AI code reviewer with a quota-aware merge gate, Slack/Teams alerts, and multi-tenant mode. Feedback and issues are very welcome.",
+    cta_h2:"Run it in 5 minutes", cta_lead:"Clone, copy .env, docker compose up. First boot seeds everything automatically.",
+    cta_btn1:"⭐ Star on GitHub", cta_btn2:"Read the docs",
+    contact_line:"Built by Hoàng Hồ — open to collaboration & opportunities.",
+    months:["Jan","Feb","Mar","Apr","May","Jun"], roi:"Net ROI", good:"Good", poor:"Poor", cost:"Cost (USD)"
+  },
+  vi: {
+    nav_github:"GitHub", nav_cta:"Bắt đầu",
+    hero_pill:"Self-hosted · ưu tiên riêng tư · quản trị mở",
+    hero_h1:'Kiểm soát chi phí AI.<br/>Giữ source <span class="g">trong nhà.</span>',
+    hero_p:"Cổng trung gian giữa IDE của bạn và mọi LLM — OpenAI, Anthropic, hoặc Ollama/vLLM chạy nội bộ. Đếm từng token, áp hạn ngạch, và chứng minh ROI thật của AI lên công việc kỹ thuật.",
+    hero_cta1:"⭐ Star trên GitHub", hero_cta2:"Xem cách hoạt động",
+    ai_eyebrow:"Minh bạch hoàn toàn", ai_h2:"Con người kiến trúc, AI thực thi",
+    ai_tag:"100% mã nguồn dự án này được tạo bởi Claude Code",
+    ai_p1:"Trước khi bạn đọc source, xin nói thẳng: từng dòng ở đây đều do Claude Code viết. Là một người tạo sản phẩm kiêm system architect, tôi không viết code từng dòng — tôi tập trung vào nơi quan trọng nhất: business logic, thiết kế database schema, git workflow, và cách con người với máy phối hợp.",
+    ai_p2:"Repo này là minh chứng sống cho chính triết lý nó quản trị. Trong kỷ nguyên AI, ta không phải thợ máy dán mắt vào cú pháp — ta là kiến trúc sư. AI là cỗ máy thực thi, nhưng vẫn cần trí óc con người cho cấu trúc, chủ đích và quản trị.",
+    stat1_n:"$0", stat1_l:"Chi phí API với LLM nội bộ", stat2_n:"100%", stat2_l:"Self-hosted, hạ tầng của bạn",
+    stat3_n:"5 app", stat3_l:"Gateway · Dashboard · MCP", stat4_n:"0 cấu hình", stat4_l:"Gắn task theo git branch",
+    prob_eyebrow:"Vấn đề", prob_h2:"Ba câu hỏi hầu hết đội nhóm không trả lời được",
+    prob_lead:"Trợ lý AI giờ là chi phí thật và rủi ro thật. AIGG trả lời cả ba — mà không đổi cách dev làm việc.",
+    prob1_h:"Tiền đang chảy đi đâu?", prob1_p:"Dev nào, dự án nào, task nào đốt token tuần này?",
+    prob2_h:"Source có đang rò ra ngoài?", prob2_p:"API LLM đám mây thấy mọi prompt. Code độc quyền của bạn thực sự đi đâu?",
+    prob3_h:"Có thực sự hiệu quả?", prob3_p:"ROI so với số giờ công mà AI lẽ ra tiết kiệm là bao nhiêu?",
+    how_eyebrow:"Cách hoạt động", how_h2:"Toàn cảnh, từ đầu đến cuối",
+    how_lead:"Mọi request AI đi qua một luồng được quản trị duy nhất — từ branch của dev tới dashboard.",
+    f1_h:"Dev + branch", f1_p:"git checkout feature/AIGG-123 → tự gắn Task ID",
+    f2_h:"Internal token", f2_p:"Token theo dev; master key không lộ",
+    f3_h:"Gateway", f3_p:"Kiểm tra quota + audit + capture prompt",
+    f4_h:"LLM", f4_p:"Đám mây (OpenAI/Anthropic) hoặc Ollama/vLLM nội bộ",
+    f5_h:"ROI dashboard", f5_p:"Chi phí, giờ tiết kiệm, Net ROI, bất thường",
+    ch_eyebrow:"Bạn sẽ thấy gì", ch_h2:"Những con số lãnh đạo cần",
+    ch_lead:"Dashboard minh hoạ. Khi triển khai thật sẽ hiển thị dữ liệu của chính bạn.",
+    ch1_h:"Net ROI theo tháng", ch1_s:"Giờ tiết kiệm − chi phí AI (USD)",
+    ch2_h:"Chất lượng prompt", ch2_s:"Tốt vs kém (tự chấm điểm)",
+    ch3_h:"Chi phí theo nhà cung cấp", ch3_s:"Nội bộ = $0", demo:"dữ liệu demo",
+    feat_eyebrow:"Tính năng", feat_h2:"Quản trị mà không cản đường",
+    feat_lead:"Mọi thứ chạy trên hạ tầng của bạn. Dev không phải đổi gì cả.",
+    ft1_h:"LLM nội bộ", ft1_p:"Định tuyến model ollama/ · vllm/ · local/ on-prem. $0 chi phí, đủ governance.",
+    ft2_h:"Internal token", ft2_p:"Token theo từng dev; master key của công ty ở server.",
+    ft3_h:"Hạn ngạch & add-on", ft3_p:"Giới hạn ngày / tuần / tháng / task, cộng dồn và cảnh báo.",
+    ft4_h:"ROI dashboard", ft4_p:"Token → chi phí → Net ROI so với giờ công tiết kiệm.",
+    ft5_h:"Chất lượng prompt", ft5_p:"Chỉ preview + hash SHA-256. Tự chấm điểm. Cache cái tốt.",
+    ft6_h:"Gắn task 0 cấu hình", ft6_p:"Git hook đọc branch và gắn mọi request vào task.",
+    ft7_h:"Jira / GitLab / GitHub", ft7_p:"Đồng bộ task, nhận webhook, lộ usage theo ticket.",
+    ft8_h:"Cầu MCP", ft8_p:"AI agent tự báo usage và xem quota qua MCP → Node-RED.",
+    sec_eyebrow:"Bảo mật từ thiết kế", sec_h2:"Xây để không rò rỉ thứ gì nhạy cảm",
+    sec1:"Master API key chỉ ở backend — không bao giờ gửi xuống client.",
+    sec2:"Định tuyến LLM nội bộ giữ prompt và source trên hạ tầng của bạn.",
+    sec3:"Audit log không lưu code — chỉ metadata tài chính, thời gian, token.",
+    sec4:"Prompt chỉ lưu preview + hash SHA-256, không lưu bản gốc.",
+    sec5:"Token tích hợp mã hoá AES-256-GCM khi lưu trữ.",
+    sec6:"RBAC: module → scope → permission, menu lọc theo quyền.",
+    faq_eyebrow:"Câu hỏi thường gặp", faq_h2:"Những điều bạn có thể đang thắc mắc",
+    q1:"100% do AI viết — bạn (không phải dev) review và kiểm chứng chất lượng thế nào?",
+    a1:"Đúng, từng dòng đều do Claude Code tạo ra. Nhưng với tôi, review không phải ngồi soi từng hàm có 'clean' hay dùng ngôn ngữ gì, mà là đảm bảo hệ thống chạy đúng theo các luồng do con người định nghĩa (flow compliance).<br><br>Code chỉ giải quyết tính đúng và hiệu suất cục bộ. Sự sống còn của một hệ thống governance nằm ở chỗ: mọi request bắt buộc phải đi qua chốt chặn, và rule không bao giờ được phép bypass. Luồng đi sai thiết kế là hệ thống FAIL ngay lập tức.<br><br>Tôi kiểm chứng chất lượng bằng mắt và logic qua ba kịch bản cốt lõi, tất cả đều phải FAIL đúng cách:<br><br><strong>1. Cô lập tuyệt đối (proxy enforcement)</strong> — request cố gọi thẳng tới LLM bằng API key cá nhân (bypass Gateway) phải FAIL. Key nhà cung cấp chỉ nằm sau Gateway; không một user hay agent nào được biết master key.<br><strong>2. Toàn vẹn hạn ngạch (quota integrity)</strong> — request qua được Gateway nhưng token của user hoặc task đã cạn phải FAIL. Kiểm tra real-time; hết ngân sách là ngắt ngay, không ngoại lệ.<br><strong>3. Bất biến audit (audit immutability)</strong> — request thành công ở LLM nhưng không được ghi vào audit log hoặc không đồng bộ ngược Task ID phải FAIL. Mọi request, dù thành hay bại, đều phải để lại dấu vết dữ liệu cho báo cáo ROI.<br><br>Bên dưới tầng flow, các guardrail tự động lo phần dòng-lệnh: TypeScript strict (không dùng any), CI lint+build mỗi lần push, secret mã hoá, và audit log không bao giờ lưu code. AI viết trong các hàm nhanh hơn tôi gấp 10 lần — nhưng con người mới là bên thiết kế và giám sát các business rule tối cao. Tôi quản trị bằng cách nắm luật chơi, không quản thợ gõ code.",
+    q2:"Vì sao AGPL-3.0? Công ty tôi dùng được không?",
+    a2:"Bạn được self-host và dùng nội bộ miễn phí, kể cả mục đích thương mại. AGPL chỉ yêu cầu: nếu bạn chỉnh sửa và cung cấp cho người khác qua mạng như một dịch vụ thì phải mở mã thay đổi theo cùng giấy phép — giữ cho dự án luôn mở và chống fork thành SaaS đóng. Cần phương án đóng mã/OEM? Có thể trao đổi license thương mại.",
+    q3:"Khác gì LiteLLM / OpenRouter?",
+    a3:"Những công cụ đó định tuyến và chuẩn hoá nhiều nhà cung cấp sau một API. AIGG là lớp governance bên trên: định danh theo từng dev và internal token, hạn ngạch ngày/tuần/tháng/task có cộng dồn, audit log, chấm điểm chất lượng prompt, và ROI dashboard gắn chi phí với giờ công tiết kiệm. LiteLLM là 'gọi model thế nào'; AIGG là 'ai được phép, bao nhiêu, và có đáng không'. Bổ trợ cho nhau.",
+    q4:"Đây có phải CodeRabbit / công cụ review code bằng AI?",
+    a4:"Không — khác hạng mục. CodeRabbit review pull request; AIGG quản trị chi phí, hạn ngạch và quy gán usage AI. Con AI review gắn hạn ngạch nằm trong roadmap, nhưng lõi hiện tại là governance và ROI, không phải review.",
+    q5:"Model nội bộ nào chạy được, và prompt của tôi có rời mạng không?",
+    a5:"Bất kỳ endpoint nào tương thích OpenAI — Ollama và vLLM được hỗ trợ hạng nhất. Thêm tiền tố ollama/ hoặc vllm/ vào tên model là request đi tới hạ tầng của bạn: prompt và source không rời mạng, chi phí API = 0, nhưng vẫn qua đủ quota + audit + ROI.",
+    q6:"Bạn lưu gì về prompt của tôi?",
+    a6:"Với Prompt Management, chỉ lưu một bản preview ngắn + hash SHA-256 — không bao giờ lưu prompt gốc. Audit log chỉ lưu metadata tài chính/thời gian/token, không lưu nội dung request hay response. Token tích hợp được mã hoá AES-256-GCM khi lưu.",
+    q7:"Đã production-ready chưa? Còn thiếu gì?",
+    a7:"Đây là hệ thống chạy được, self-host được, có auth, RBAC, quota, audit, ROI và dashboard — nhưng còn non và đang phát triển tích cực. Roadmap: AI review code có merge-gate theo hạn ngạch, cảnh báo Slack/Teams, và chế độ multi-tenant. Rất hoan nghênh góp ý và issue.",
+    contact_line:"Xây dựng bởi Hoàng Hồ — sẵn sàng hợp tác & đón cơ hội.",
+    cta_h2:"Chạy thử trong 5 phút", cta_lead:"Clone, copy .env, docker compose up. Lần chạy đầu tự seed mọi thứ.",
+    cta_btn1:"⭐ Star trên GitHub", cta_btn2:"Đọc tài liệu",
+    months:["T1","T2","T3","T4","T5","T6"], roi:"Net ROI", good:"Tốt", poor:"Kém", cost:"Chi phí (USD)"
+  }
+};
+
+let lang = localStorage.getItem('aigg_lang') || 'en';
+let charts = {};
+
+function applyI18n() {
+  const d = I18N[lang];
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (d[k] != null) el.innerHTML = d[k];
+  });
+  document.getElementById('langBtn').innerHTML = lang === 'en' ? '<b>EN</b> | VI' : 'EN | <b>VI</b>';
+  renderCharts();
+}
+
+function renderCharts() {
+  const d = I18N[lang];
+  Object.values(charts).forEach(c => c && c.destroy());
+  const grid = 'rgba(255,255,255,.08)', tick = '#9aa6c4';
+  const baseOpts = (extra={}) => Object.assign({ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{ x:{ grid:{ color:grid }, ticks:{ color:tick } }, y:{ grid:{ color:grid }, ticks:{ color:tick } } } }, extra);
+
+  charts.roi = new Chart(document.getElementById('roiChart'), {
+    type:'bar',
+    data:{ labels:d.months, datasets:[{ label:d.roi, data:[1.8,2.4,3.1,3.6,4.5,5.8], backgroundColor:'#6c5ce7', borderRadius:6 }] },
+    options: baseOpts({ scales:{ x:{ grid:{display:false}, ticks:{color:tick} }, y:{ grid:{color:grid}, ticks:{ color:tick, callback:v=>'$'+v+'k' } } } })
+  });
+  charts.quality = new Chart(document.getElementById('qualityChart'), {
+    type:'doughnut',
+    data:{ labels:[d.good,d.poor], datasets:[{ data:[78,22], backgroundColor:['#00d4a0','#ff6b81'], borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'66%', plugins:{ legend:{ position:'bottom', labels:{ color:tick, padding:14, font:{size:12} } } } }
+  });
+  charts.provider = new Chart(document.getElementById('providerChart'), {
+    type:'bar',
+    data:{ labels:['OpenAI','Anthropic','Ollama','vLLM'], datasets:[{ label:d.cost, data:[420,560,0,0], backgroundColor:['#f7b955','#6c5ce7','#00d4a0','#00d4a0'], borderRadius:6 }] },
+    options: baseOpts({ scales:{ x:{ grid:{display:false}, ticks:{color:tick} }, y:{ grid:{color:grid}, ticks:{ color:tick, callback:v=>'$'+v } } } })
+  });
+}
+
+document.getElementById('langBtn').addEventListener('click', () => {
+  lang = lang === 'en' ? 'vi' : 'en';
+  localStorage.setItem('aigg_lang', lang);
+  applyI18n();
+});
+document.getElementById('year').textContent = new Date().getFullYear();
+applyI18n();
+</script>
+</body>
+</html>

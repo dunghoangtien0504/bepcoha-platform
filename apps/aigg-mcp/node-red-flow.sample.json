@@ -1,0 +1,153 @@
+[
+  {
+    "id": "aigg-tab",
+    "type": "tab",
+    "label": "AIGG MCP Bridge",
+    "disabled": false,
+    "info": "Endpoint cho aigg-mcp + nhận noti từ Gateway."
+  },
+  {
+    "id": "manifest-in",
+    "type": "http in",
+    "z": "aigg-tab",
+    "name": "GET /aigg/manifest",
+    "url": "/aigg/manifest",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 80,
+    "wires": [
+      [
+        "manifest-fn"
+      ]
+    ]
+  },
+  {
+    "id": "manifest-fn",
+    "type": "function",
+    "z": "aigg-tab",
+    "name": "Khai báo tool",
+    "func": "// Khai báo tool động cho aigg-mcp. Thêm/bớt tool tại đây (đổi tức thì, không build lại MCP).\nmsg.payload = {\n  tools: [\n    { name: 'aigg_active_task', description: 'Tự xác định công việc đang làm từ git branch hiện tại (vd AIGG-123-...) và task đã giao cho AI.',\n      inputSchema: { type: 'object', properties: {} } },\n    { name: 'aigg_my_tasks', description: 'Liệt kê công việc đang giao cho tôi (theo token người gọi).',\n      inputSchema: { type: 'object', properties: {} } },\n    { name: 'aigg_assign_to_ai', description: 'Giao một công việc (work task) cho AI: tạo ai_task + trả X-Task-ID để gắn vào phiên.',\n      inputSchema: { type: 'object', properties: {\n        taskId: { type: 'number', description: 'ID công việc (tasks.id). Bỏ trống = tự lấy từ git branch.' },\n        baselineHours: { type: 'number', description: 'Số giờ công ước tính (mốc ROI).' },\n        endDate: { type: 'string', description: 'Hạn (YYYY-MM-DD), tùy chọn.' },\n        budgetTokens: { type: 'number', description: 'Ngân sách token, tùy chọn.' },\n        moreDesc: { type: 'string', description: 'Ngữ cảnh thêm cho AI, tùy chọn.' },\n        title: { type: 'string', description: 'Tiêu đề tác vụ AI, tùy chọn.' }\n      }, required: ['baselineHours'] } },\n    { name: 'aigg_ai_assignment', description: 'Xem việc đã giao cho AI của một công việc (trạng thái, budget, hạn).',\n      inputSchema: { type: 'object', properties: { taskId: { type: 'number' } } } },\n    { name: 'aigg_report_usage', description: 'Báo cáo usage AI cho task đang làm. Gửi kèm promptText để hệ thống capture & đánh giá prompt (Prompt Management).',\n      inputSchema: { type: 'object', properties: {\n        taskId: { type: 'string' },\n        promptText: { type: 'string', description: 'Nội dung prompt/ngữ cảnh đầu vào (chỉ lưu bản rút gọn + hash).' },\n        completionText: { type: 'string', description: 'Nội dung phản hồi (tùy chọn, để ước lượng token).' },\n        promptTokens: { type: 'number' }, completionTokens: { type: 'number' }, model: { type: 'string' }\n      } } },\n    { name: 'aigg_quota', description: 'Xem hạn ngạch token còn lại (DAILY/WEEKLY/MONTHLY/TASK) cho task hiện tại.',\n      inputSchema: { type: 'object', properties: { taskId: { type: 'string' } } } }\n  ]\n};\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 80,
+    "wires": [
+      [
+        "manifest-res"
+      ]
+    ]
+  },
+  {
+    "id": "manifest-res",
+    "type": "http response",
+    "z": "aigg-tab",
+    "name": "",
+    "statusCode": "200",
+    "headers": {},
+    "x": 620,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "invoke-in",
+    "type": "http in",
+    "z": "aigg-tab",
+    "name": "POST /aigg/invoke",
+    "url": "/aigg/invoke",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 180,
+    "wires": [
+      [
+        "invoke-fn"
+      ]
+    ]
+  },
+  {
+    "id": "invoke-fn",
+    "type": "function",
+    "z": "aigg-tab",
+    "name": "Gọi AIGG Gateway",
+    "func": "// Bộ não: nhận { tool, arguments, context } + Authorization (JWT) từ aigg-mcp, gọi Gateway.\nconst fetch = global.get('fetch');\nconst GATEWAY = (global.get('gatewayUrl') || 'http://localhost:3900').replace(/\\/+$/, '');\nconst BRANCH_RE = new RegExp(global.get('branchTaskRegex') || '(?:^|[/_-])(?:AIGG-)?(\\\\d+)', 'i');\nconst auth = (msg.req && msg.req.headers && msg.req.headers.authorization) || '';\nconst body = msg.payload || {};\nconst tool = body.tool;\nconst args = body.arguments || {};\nconst context = body.context || {};\nconst H = Object.assign({ 'Content-Type': 'application/json' }, auth ? { Authorization: auth } : {});\n\nconst call = async (method, path, payload) => {\n  const r = await fetch(GATEWAY + path, { method, headers: H, body: payload ? JSON.stringify(payload) : undefined });\n  const t = await r.text();\n  let d; try { d = t ? JSON.parse(t) : null; } catch (e) { d = t; }\n  if (!r.ok) throw new Error((d && d.message) || ('HTTP ' + r.status));\n  return d;\n};\nconst me = async () => call('GET', '/v1/auth/me');\nconst branchWorkTaskId = () => { const b = (context.gitBranch || ''); const m = b.match(BRANCH_RE); return m ? Number(m[1]) : null; };\nconst resolveActive = async () => {\n  const wid = branchWorkTaskId();\n  if (!wid) return { branch: context.gitBranch || null, note: 'Branch không khớp mẫu task (vd AIGG-123-...).' };\n  let task = null, assign = null;\n  try { task = await call('GET', '/v1/work/tasks/' + wid); } catch (e) {}\n  try { assign = await call('GET', '/v1/work/tasks/' + wid + '/ai-assignment'); } catch (e) {}\n  return { branch: context.gitBranch, workTaskId: wid, title: task && task.title, aiTaskId: assign && assign.aiTaskId, aiStatus: assign && assign.status, note: assign ? 'Dùng aiTaskId làm X-Task-ID.' : 'Công việc chưa giao cho AI (gọi aigg_assign_to_ai).' };\n};\nconst effectiveTaskId = async () => {\n  if (args.taskId) return args.taskId;\n  if (context.activeTaskId) return context.activeTaskId;\n  const a = await resolveActive();\n  return a.aiTaskId || null;\n};\n\ntry {\n  let result;\n  switch (tool) {\n    case 'aigg_active_task':\n      result = await resolveActive();\n      break;\n    case 'aigg_my_tasks': {\n      const u = await me();\n      const res = await call('GET', '/v1/work/tasks?assignedToUserId=' + u.id + '&pageSize=50');\n      result = { user: u.fullName, count: res.total, tasks: res.rows.map((t) => ({ id: t.id, title: t.title, status: t.status, priority: t.priority, project: t.project && t.project.title, category: t.category && t.category.title, due: t.dueDate })) };\n      break;\n    }\n    case 'aigg_assign_to_ai': {\n      const wid = args.taskId || branchWorkTaskId();\n      if (!wid) throw new Error('Thiếu taskId và git branch không chứa mã task.');\n      const r = await call('POST', '/v1/work/tasks/' + wid + '/assign-ai', { baselineHours: Number(args.baselineHours) || 1, endDate: args.endDate, budgetTokens: args.budgetTokens, moreDesc: args.moreDesc, title: args.title });\n      result = { ok: true, aiTaskId: r.id, taskId: wid, message: 'Đã giao việc cho AI. X-Task-ID = ' + r.id };\n      break;\n    }\n    case 'aigg_ai_assignment': {\n      const wid = args.taskId || branchWorkTaskId();\n      if (!wid) throw new Error('Thiếu taskId và git branch không chứa mã task.');\n      result = (await call('GET', '/v1/work/tasks/' + wid + '/ai-assignment')) || { note: 'Chưa giao cho AI.' };\n      break;\n    }\n    case 'aigg_report_usage': {\n      const u = await me();\n      const taskId = await effectiveTaskId();\n      if (!taskId) throw new Error('Không xác định được task (taskId/activeTaskId/branch).');\n      result = await call('POST', '/v1/usage/ingest', {\n        taskId: taskId, requesterId: u.email, model: args.model || 'claude-3-5-sonnet',\n        promptText: args.promptText, completionText: args.completionText,\n        promptTokens: args.promptTokens != null ? Number(args.promptTokens) : undefined,\n        completionTokens: args.completionTokens != null ? Number(args.completionTokens) : undefined,\n        captureMode: 'API', projectId: context.projectId || undefined, conversationId: context.conversationId || undefined\n      });\n      break;\n    }\n    case 'aigg_quota': {\n      const taskId = (await effectiveTaskId()) || 'N/A';\n      result = await call('GET', '/v1/quotas/me?taskId=' + encodeURIComponent(taskId));\n      break;\n    }\n    default:\n      throw new Error('Tool chưa hỗ trợ: ' + tool);\n  }\n  msg.payload = result;\n} catch (e) {\n  msg.statusCode = 400;\n  msg.payload = { error: e.message };\n}\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 410,
+    "y": 180,
+    "wires": [
+      [
+        "invoke-res"
+      ]
+    ]
+  },
+  {
+    "id": "invoke-res",
+    "type": "http response",
+    "z": "aigg-tab",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 620,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "notify-in",
+    "type": "http in",
+    "z": "aigg-tab",
+    "name": "POST /aigg/notify",
+    "url": "/aigg/notify",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 280,
+    "wires": [
+      [
+        "notify-fn"
+      ]
+    ]
+  },
+  {
+    "id": "notify-fn",
+    "type": "function",
+    "z": "aigg-tab",
+    "name": "Xử lý noti",
+    "func": "const ev = msg.payload || {};\nnode.warn('[AIGG noti] ' + (ev.event || '?') + ' :: ' + JSON.stringify(ev.payload || {}));\nmsg.payload = { received: true, event: ev.event };\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 280,
+    "wires": [
+      [
+        "notify-res"
+      ]
+    ]
+  },
+  {
+    "id": "notify-res",
+    "type": "http response",
+    "z": "aigg-tab",
+    "name": "",
+    "statusCode": "200",
+    "headers": {},
+    "x": 620,
+    "y": 280,
+    "wires": []
+  }
+]

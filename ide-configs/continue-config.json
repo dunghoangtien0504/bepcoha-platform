@@ -1,0 +1,29 @@
+{
+  "_comment": "Sao chép khối models này vào ~/.continue/config.json. Đổi apiKey thành Internal Token cá nhân (storo_live_...) và X-Task-ID khớp mã thẻ công việc Jira.",
+  "models": [
+    {
+      "title": "Claude 3.5 Sonnet (STORO Gateway)",
+      "provider": "openai",
+      "model": "claude-3-5-sonnet",
+      "apiBase": "http://localhost:3900/v1",
+      "apiKey": "storo_live_REPLACE_WITH_YOUR_INTERNAL_TOKEN",
+      "requestOptions": {
+        "headers": {
+          "X-Task-ID": "TERO-102"
+        }
+      }
+    },
+    {
+      "title": "GPT-4o (STORO Gateway)",
+      "provider": "openai",
+      "model": "gpt-4o",
+      "apiBase": "http://localhost:3900/v1",
+      "apiKey": "storo_live_REPLACE_WITH_YOUR_INTERNAL_TOKEN",
+      "requestOptions": {
+        "headers": {
+          "X-Task-ID": "TERO-102"
+        }
+      }
+    }
+  ]
+}
