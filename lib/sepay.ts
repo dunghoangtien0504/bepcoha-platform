@@ -23,6 +23,13 @@ export function generateStnRef(phone: string): string {
   return `STN${phonePart}${ts}`
 }
 
+// SXC = Sét Xôi Cốm
+export function generateSxcRef(phone: string): string {
+  const ts = Date.now().toString().slice(-6)
+  const phonePart = phone.replace(/\D/g, '').slice(-4)
+  return `SXC${phonePart}${ts}`
+}
+
 // KDX = Khăn Đồ Xôi
 export function generateKdxRef(phone: string): string {
   const ts = Date.now().toString().slice(-6)

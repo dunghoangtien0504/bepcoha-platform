@@ -198,6 +198,24 @@ export async function initDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS set_xoi_com_orders (
+      id SERIAL PRIMARY KEY,
+      ref_code TEXT UNIQUE NOT NULL,
+      pancake_order_id TEXT,
+      name TEXT NOT NULL,
+      phone TEXT NOT NULL,
+      email TEXT DEFAULT '',
+      address TEXT NOT NULL,
+      product TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      total_price INTEGER NOT NULL,
+      payment_status TEXT NOT NULL DEFAULT 'pending',
+      paid_at TIMESTAMPTZ,
+      note TEXT DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
   // Insert default course settings if not exists
   const settings = await sql`SELECT COUNT(*) as count FROM course_settings`
   if (parseInt(settings[0].count) === 0) {
@@ -863,6 +881,47 @@ export async function confirmKdxPayment(refCode: string) {
   `
 }
 
+// ── Sét Xôi Cốm Orders ───────────────────────────────────────────────────────
+export async function insertSxcOrder(data: {
+  refCode: string
+  pancakeOrderId?: string
+  name: string; phone: string; email: string; address: string
+  product: string; quantity: number; totalPrice: number; note?: string
+}) {
+  const sql = getDb()
+  const rows = await sql`
+    INSERT INTO set_xoi_com_orders
+      (ref_code, pancake_order_id, name, phone, email, address, product, quantity, total_price, note)
+    VALUES
+      (${data.refCode}, ${data.pancakeOrderId || null}, ${data.name}, ${data.phone},
+       ${data.email || ''}, ${data.address}, ${data.product}, ${data.quantity},
+       ${data.totalPrice}, ${data.note || ''})
+    RETURNING id
+  `
+  return rows[0].id as number
+}
+
+export async function getSxcOrderByRef(refCode: string) {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM set_xoi_com_orders WHERE ref_code = ${refCode}`
+  return rows[0] as SxcOrder | undefined
+}
+
+export async function confirmSxcPayment(refCode: string) {
+  const sql = getDb()
+  await sql`
+    UPDATE set_xoi_com_orders
+    SET payment_status = 'paid', paid_at = NOW()
+    WHERE ref_code = ${refCode}
+  `
+}
+
+export async function getAllSxcOrders() {
+  const sql = getDb()
+  const rows = await sql`SELECT * FROM set_xoi_com_orders ORDER BY created_at DESC`
+  return rows as unknown as SxcOrder[]
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface GiftLead {
   id: number; name: string; email: string; phone: string
@@ -950,6 +1009,12 @@ export interface StnOrder {
   payment_status: string; paid_at: string | null; note: string; created_at: string
 }
 export interface KdxOrder {
+  id: number; ref_code: string; pancake_order_id: string | null
+  name: string; phone: string; email: string; address: string
+  product: string; quantity: number; total_price: number
+  payment_status: string; paid_at: string | null; note: string; created_at: string
+}
+export interface SxcOrder {
   id: number; ref_code: string; pancake_order_id: string | null
   name: string; phone: string; email: string; address: string
   product: string; quantity: number; total_price: number

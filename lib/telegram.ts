@@ -154,6 +154,46 @@ export async function notifyKdxPaid(data: {
   await sendMessage(ORDER_GROUP_ID, msg)
 }
 
+export async function notifySxcPending(data: {
+  name: string; phone: string; address: string
+  product: string; quantity: number; totalPrice: number
+  refCode: string; pancakeOrderId?: string; note?: string
+}) {
+  const msg = `🟡 <b>SÉT XÔI CỐM – CHỜ THANH TOÁN</b>
+
+• Tên: <b>${data.name}</b>
+• SĐT: <b>${data.phone}</b>
+• Địa chỉ: ${data.address}
+• Sản phẩm: ${data.product} x${data.quantity}
+• Tổng tiền: <b>${data.totalPrice.toLocaleString('vi-VN')}đ</b>
+• Mã TT: <code>${data.refCode}</code>${data.pancakeOrderId ? `\n• Đơn POScake: <b>#${data.pancakeOrderId}</b>` : ''}${data.note ? `\n• Ghi chú: ${data.note}` : ''}
+• Thời gian: ${new Date().toLocaleString('vi-VN')}
+
+⏳ Khách đang xem hướng dẫn chuyển khoản`
+  await sendMessage(ORDER_GROUP_ID, msg)
+}
+
+export async function notifySxcPaid(data: {
+  name: string; phone: string
+  product: string; quantity: number; totalPrice: number
+  refCode: string; pancakeOrderId?: string; pancakeUpdated: boolean
+}) {
+  const posLine = data.pancakeOrderId
+    ? (data.pancakeUpdated
+        ? `\n• POScake: <b>#${data.pancakeOrderId}</b> → Chờ chuyển hàng ✅`
+        : `\n• POScake: <b>#${data.pancakeOrderId}</b> – cập nhật tay sang "Chờ chuyển hàng"`)
+    : ''
+  const msg = `✅ <b>SÉT XÔI CỐM – ĐÃ THANH TOÁN</b>
+
+• Tên: <b>${data.name}</b>
+• SĐT: <b>${data.phone}</b>
+• Sản phẩm: ${data.product} x${data.quantity}
+• Số tiền: <b>${data.totalPrice.toLocaleString('vi-VN')}đ ✓</b>
+• Mã TT: <code>${data.refCode}</code>${posLine}
+• Thời gian TT: ${new Date().toLocaleString('vi-VN')}`
+  await sendMessage(ORDER_GROUP_ID, msg)
+}
+
 // Cảnh báo khi khách chuyển KHÔNG ĐỦ tiền (vd test 10k) – gửi để admin xử lý tay
 export async function notifyPaymentMismatch(data: {
   paymentRef: string
