@@ -13,24 +13,24 @@ type Step = 'idle' | 'loading' | 'success' | 'error'
 function fmt(n: number) { return n.toLocaleString('vi-VN') + 'đ' }
 
 // ─── Countdown ────────────────────────────────────────────────────────────────
-function useCountdown(hours = 48) {
-  const [time, setTime] = useState({ h: hours, m: 0, s: 0 })
+function useCountdown(minutes = 138) {
+  const [time, setTime] = useState({ h: Math.floor(minutes / 60), m: minutes % 60, s: 0 })
   useEffect(() => {
     const key = 'haco_rauma_cd'
     const stored = typeof window !== 'undefined' ? localStorage.getItem(key) : null
-    const end = stored ? parseInt(stored) : Date.now() + hours * 3600000
+    const end = stored ? parseInt(stored) : Date.now() + minutes * 60000
     if (!stored) localStorage.setItem(key, String(end))
     const tick = () => {
       const d = Math.max(0, end - Date.now())
       setTime({ h: Math.floor(d / 3600000), m: Math.floor((d % 3600000) / 60000), s: Math.floor((d % 60000) / 1000) })
     }
     tick(); const id = setInterval(tick, 1000); return () => clearInterval(id)
-  }, [hours])
+  }, [minutes])
   return time
 }
 
 function CountdownBox({ dark = false }: { dark?: boolean }) {
-  const { h, m, s } = useCountdown(48)
+  const { h, m, s } = useCountdown(138)
   const box = dark
     ? 'bg-white/20 text-white border border-white/40 backdrop-blur-sm'
     : 'bg-white text-[#1B5E20] border-2 border-[#A5D6A7] shadow-sm'
