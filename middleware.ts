@@ -12,10 +12,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(REDIRECT_MAP[host], 301)
   }
 
-  if (host.includes('hacofood.vn') && !host.startsWith('bepcoha.')) {
-    return NextResponse.redirect('https://bepcoha.hacofood.vn/dua-ca-muoi', 301)
-  }
-
   return NextResponse.next()
 }
 
