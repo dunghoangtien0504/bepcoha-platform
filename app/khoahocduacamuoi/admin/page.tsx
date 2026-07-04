@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
-export default function OldAdminPage() {
-  redirect('/dua-ca-muoi/admin')
+export default function OldKhoaHocAdminPage() {
+  redirect('/hacoadmin')
 }
