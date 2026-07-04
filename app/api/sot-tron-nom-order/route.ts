@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { notifyOrder } from '@/lib/telegram'
+import { initDb, insertStnOrder } from '@/lib/db'
+import { notifyStnPending } from '@/lib/telegram'
 import { createPancakeOrder } from '@/lib/pancake'
+import { generateStnRef, buildQRPayload } from '@/lib/sepay'
 
 const PRICES: Record<string, number> = {
   '500g': 65000,
   '1kg': 105000,
+}
+
+const PRODUCT_LABELS: Record<string, string> = {
+  '500g': 'Sốt Trộn Nộm 500g',
+  '1kg': 'Sốt Trộn Nộm 1kg',
 }
 
 export async function POST(req: NextRequest) {
@@ -28,28 +35,51 @@ export async function POST(req: NextRequest) {
 
     const unitPrice = PRICES[product]
     const totalPrice = unitPrice * qty
-    const productLabel = product === '500g'
-      ? `Sốt Trộn Nộm 500g (${unitPrice.toLocaleString('vi-VN')}đ/chai)`
-      : `Sốt Trộn Nộm 1kg (${unitPrice.toLocaleString('vi-VN')}đ/chai)`
+    const productLabel = PRODUCT_LABELS[product]
+    const refCode = generateStnRef(phone.trim())
 
-    const orderData = {
-      name: name.trim(),
-      phone: phone.trim(),
-      email: (email || '').trim(),
-      address: address.trim(),
+    await initDb()
+
+    // Tạo đơn POScake status 0 (Mới)
+    const pancakeResult = await createPancakeOrder({
+      name: name.trim(), phone: phone.trim(),
+      email: (email || '').trim(), address: address.trim(),
       product: product as '500g' | '1kg',
-      quantity: qty,
-      totalPrice,
+      quantity: qty, totalPrice,
       note: note?.trim() || '',
-    }
+    })
+    const pancakeOrderId: string | undefined = pancakeResult?.data?.id
+      ? String(pancakeResult.data.id)
+      : pancakeResult?.id ? String(pancakeResult.id) : undefined
 
-    // Gửi song song: Telegram + POScake (không chặn nhau)
-    await Promise.allSettled([
-      notifyOrder({ ...orderData, product: `${productLabel} x${qty}` }),
-      createPancakeOrder(orderData),
-    ])
+    // Lưu Supabase
+    await insertStnOrder({
+      refCode,
+      pancakeOrderId,
+      name: name.trim(), phone: phone.trim(),
+      email: (email || '').trim(), address: address.trim(),
+      product, quantity: qty, totalPrice,
+      note: note?.trim() || '',
+    })
 
-    return NextResponse.json({ success: true, totalPrice, productLabel })
+    // Telegram: chưa thanh toán
+    await notifyStnPending({
+      name: name.trim(), phone: phone.trim(), address: address.trim(),
+      product: productLabel, quantity: qty, totalPrice,
+      refCode, pancakeOrderId,
+      note: note?.trim() || '',
+    }).catch(console.error)
+
+    // QR chuyển khoản
+    const qr = buildQRPayload(refCode, totalPrice)
+
+    return NextResponse.json({
+      success: true,
+      refCode,
+      totalPrice,
+      productLabel,
+      qr,
+    })
   } catch (err) {
     console.error('[sot-tron-nom-order]', err)
     return NextResponse.json({ error: 'Có lỗi xảy ra, vui lòng thử lại' }, { status: 500 })

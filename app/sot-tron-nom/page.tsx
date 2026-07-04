@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 // ─── Image paths ──────────────────────────────────────────────────────────────
 const TP = '/images/sot-tron-nom/thanh-pham/'
@@ -36,13 +36,99 @@ interface FormState {
   product: '500g' | '1kg'; quantity: number; note: string
 }
 
+interface PaymentData {
+  refCode: string
+  totalPrice: number
+  productLabel: string
+  qr: { bankAccount: string; bankCode: string; accountName: string; amount: number; content: string; qrUrl: string }
+}
+
+function Countdown({ seconds }: { seconds: number }) {
+  const [left, setLeft] = useState(seconds)
+  useEffect(() => {
+    if (left <= 0) return
+    const t = setTimeout(() => setLeft(l => l - 1), 1000)
+    return () => clearTimeout(t)
+  }, [left])
+  const m = Math.floor(left / 60).toString().padStart(2, '0')
+  const s = (left % 60).toString().padStart(2, '0')
+  return <span className={left < 120 ? 'text-red-500 font-bold' : 'font-bold text-[#006400]'}>{m}:{s}</span>
+}
+
+function PaymentStep({ data, form }: { data: PaymentData; form: FormState }) {
+  const [copied, setCopied] = useState<'ref' | 'amount' | null>(null)
+  function copy(text: string, type: 'ref' | 'amount') {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(type)
+      setTimeout(() => setCopied(null), 2000)
+    })
+  }
+  return (
+    <div className="space-y-5">
+      <div className="text-center">
+        <p className="text-[#006400] font-extrabold text-lg mb-0.5">Bước 2: Chuyển khoản để xác nhận đơn</p>
+        <p className="text-gray-500 text-sm">Quét QR hoặc chuyển khoản thủ công trong <Countdown seconds={30 * 60} /></p>
+      </div>
+
+      {/* QR code */}
+      <div className="flex justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={data.qr.qrUrl} alt="QR chuyển khoản"
+          className="w-52 h-52 rounded-2xl border-4 border-[#006400] shadow-lg object-contain bg-white" />
+      </div>
+
+      {/* Bank info */}
+      <div className="bg-[#f0fff4] border border-green-200 rounded-2xl p-4 space-y-2.5 text-sm">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500">Ngân hàng</span>
+          <span className="font-bold">{data.qr.bankCode} – {data.qr.accountName}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500">Số tài khoản</span>
+          <span className="font-bold font-mono">{data.qr.bankAccount}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500">Số tiền</span>
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-[#D97706] text-base">{fmt(data.totalPrice)}</span>
+            <button onClick={() => copy(String(data.totalPrice), 'amount')}
+              className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 px-2 py-0.5 rounded-lg transition-colors">
+              {copied === 'amount' ? '✓ Đã copy' : 'Copy'}
+            </button>
+          </div>
+        </div>
+        <div className="flex justify-between items-center border-t border-green-100 pt-2.5">
+          <span className="text-gray-500">Nội dung CK <span className="text-red-500 font-bold">(bắt buộc)</span></span>
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold font-mono text-[#006400]">{data.refCode}</span>
+            <button onClick={() => copy(data.refCode, 'ref')}
+              className="text-xs bg-green-100 hover:bg-green-200 text-green-700 px-2 py-0.5 rounded-lg transition-colors">
+              {copied === 'ref' ? '✓ Đã copy' : 'Copy'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+        ⚠️ Nhập <strong>đúng nội dung</strong> <code className="bg-amber-100 px-1 rounded">{data.refCode}</code> khi chuyển khoản — hệ thống tự động xác nhận và đơn hàng chuyển ngay sang trạng thái <strong>Chờ chuyển hàng</strong>.
+      </div>
+
+      <div className="text-center text-sm text-gray-400 pt-1">
+        <p>Đơn của <strong>{form.name}</strong> · {data.productLabel} × {form.quantity}</p>
+        <p className="mt-1">Sau khi chuyển khoản, đơn được xử lý tự động — không cần chờ xác nhận.</p>
+      </div>
+    </div>
+  )
+}
+
 function OrderForm() {
   const [form, setForm] = useState<FormState>({
     name: '', phone: '', email: '', address: '',
     product: '500g', quantity: 1, note: '',
   })
-  const [step, setStep] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [step, setStep] = useState<'idle' | 'loading' | 'payment' | 'error'>('idle')
   const [error, setError] = useState('')
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null)
 
   const total = PRICES[form.product] * form.quantity
 
@@ -66,29 +152,16 @@ function OrderForm() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Lỗi')
-      setStep('success')
+      setPaymentData(data)
+      setStep('payment')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Có lỗi xảy ra')
       setStep('error')
     }
   }
 
-  if (step === 'success') {
-    return (
-      <div className="text-center py-10 px-6">
-        <div className="text-7xl mb-4">🎉</div>
-        <h3 className="text-2xl font-extrabold text-[#006400] mb-2">Đặt hàng thành công!</h3>
-        <p className="text-gray-600 mb-1">Cô Hạ đã nhận được đơn của bạn.</p>
-        <p className="text-gray-600 mb-5">
-          Nhân viên sẽ liên hệ xác nhận đơn qua SĐT <strong>{form.phone}</strong> trong 1–2 giờ làm việc.
-        </p>
-        <div className="bg-[#f0fff4] border border-green-200 rounded-2xl p-4 text-sm text-left space-y-1 max-w-xs mx-auto">
-          <p><span className="text-gray-500">Sản phẩm:</span> <strong>Sốt Trộn Nộm {form.product} × {form.quantity}</strong></p>
-          <p><span className="text-gray-500">Tổng tiền:</span> <strong className="text-[#D97706]">{fmt(total)}</strong></p>
-          <p className="text-xs text-gray-400 pt-1">* Thanh toán khi nhận hàng (COD)</p>
-        </div>
-      </div>
-    )
+  if (step === 'payment' && paymentData) {
+    return <PaymentStep data={paymentData} form={form} />
   }
 
   return (
@@ -180,9 +253,9 @@ function OrderForm() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>Đang gửi đơn...
             </span>
-          : '🛒 ĐẶT HÀNG NGAY – GIAO TẬN NHÀ'}
+          : '🛒 ĐẶT HÀNG NGAY – NHẬN QR CHUYỂN KHOẢN'}
       </button>
-      <p className="text-xs text-gray-400 text-center">🔒 Thông tin bảo mật tuyệt đối · Thanh toán khi nhận hàng (COD)</p>
+      <p className="text-xs text-gray-400 text-center">🔒 Thông tin bảo mật tuyệt đối · Xác nhận đơn qua chuyển khoản</p>
     </form>
   )
 }
