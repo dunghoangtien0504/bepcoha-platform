@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const REDIRECT_MAP: Record<string, string> = {
-  'sottronnom.hacofood.vn': 'https://bepcoha.hacofood.vn/sot-tron-nom',
-  'www.sottronnom.hacofood.vn': 'https://bepcoha.hacofood.vn/sot-tron-nom',
-}
-
-export function middleware(req: NextRequest) {
-  const host = req.headers.get('host') || ''
-
-  if (REDIRECT_MAP[host]) {
-    return NextResponse.redirect(REDIRECT_MAP[host], 301)
-  }
-
+export function middleware(_req: NextRequest) {
   return NextResponse.next()
 }
 
