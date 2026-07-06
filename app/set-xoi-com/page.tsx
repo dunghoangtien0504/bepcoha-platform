@@ -283,7 +283,7 @@ export default function SetXoiCom() {
       <div className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${showStickyBar ? 'translate-y-0' : 'translate-y-full'}`}>
         <div className="bg-white/95 backdrop-blur-xl border-t border-gray-200 px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-500 truncate">Cốm vụ Thu 2025 -- Số lượng có hạn</p>
+            <p className="text-xs text-gray-500 truncate">Đóng gói mỗi ngày -- luôn tươi mới</p>
             <p className="font-extrabold text-amber-600 text-lg leading-tight">{fmt(PRICE)}<span className="text-xs font-normal text-gray-400">/sét</span></p>
           </div>
           <button onClick={scrollToOrder}
@@ -295,8 +295,8 @@ export default function SetXoiCom() {
 
       {/* ══ ANNOUNCEMENT BAR ══ */}
       <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-white text-center py-2.5 px-4">
-        <p className="text-sm font-bold tracking-wide animate-pulse">
-          Cốm khô vụ Thu 2025 -- Chỉ nhập 1 lần/năm. Khi hết là phải chờ năm sau.
+        <p className="text-sm font-bold tracking-wide">
+          Nguyên liệu nhập &amp; đóng gói mỗi ngày -- giao trong ngày, luôn tươi mới
         </p>
       </div>
       <div id="sticky-sentinel" className="h-0" />
@@ -323,7 +323,7 @@ export default function SetXoiCom() {
 
           {/* Headline */}
           <div className="text-center mb-8 max-w-3xl mx-auto">
-            <p className="text-amber-600 text-sm font-bold uppercase tracking-widest mb-4">Sét nguyên liệu -- Cốm khô vụ Thu 2025</p>
+            <p className="text-amber-600 text-sm font-bold uppercase tracking-widest mb-4">Sét nguyên liệu -- Đóng gói mới mỗi ngày</p>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-5">
               Mở Ra, Làm Theo,<br />
               <span className="bg-gradient-to-r from-emerald-700 to-emerald-600 bg-clip-text text-transparent">Thành Công Ngay Lần Đầu</span>
@@ -888,11 +888,11 @@ export default function SetXoiCom() {
           <div className="bg-gradient-to-br from-amber-500/10 to-emerald-500/10 border border-gray-200 rounded-3xl p-8">
             <p className="text-amber-600 text-sm font-semibold mb-3">P.S.</p>
             <p className="text-lg leading-relaxed text-gray-700 mb-2">
-              Cốm khô ngon nhất chỉ có <strong className="text-gray-900">vài tháng trong năm</strong> -- vụ Thu qua là phải chờ năm sau mới có lại.
+              Sét nguyên liệu <strong className="text-gray-900">nhập và đóng gói mỗi ngày</strong> -- đặt hôm nào, nhận hàng tươi mới hôm đó.
             </p>
             <p className="text-base leading-relaxed text-gray-500 mb-4">
               Nếu bạn đang đọc đến đây, nghĩa là bạn thật sự muốn làm xôi cốm ngon.
-              Đừng để hết mùa cốm rồi mới tiếc. Đặt ngay, nhận sét về, và gửi ảnh thành phẩm cho Cô Hạ xem nhé!
+              Đặt ngay, nhận sét về, và gửi ảnh thành phẩm cho Cô Hạ xem nhé!
             </p>
             <button onClick={scrollToOrder}
               className="mt-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold px-10 py-4 rounded-2xl transition-all active:scale-[0.98] text-xl shadow-xl shadow-amber-500/30">
