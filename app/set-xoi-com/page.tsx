@@ -95,7 +95,7 @@ function Countdown({ seconds }: { seconds: number }) {
   }, [left])
   const m = Math.floor(left / 60).toString().padStart(2, '0')
   const s = (left % 60).toString().padStart(2, '0')
-  return <span className={left < 120 ? 'text-red-400 font-bold' : 'font-bold text-emerald-400'}>{m}:{s}</span>
+  return <span className={left < 120 ? 'text-red-600 font-bold' : 'font-bold text-emerald-700'}>{m}:{s}</span>
 }
 
 // ─── Payment Step ─────────────────────────────────────────────────────────────
@@ -107,49 +107,49 @@ function PaymentStep({ data, form }: { data: PaymentData; form: FormState }) {
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <p className="text-emerald-400 font-extrabold text-lg mb-0.5">Bước 2: Chuyển khoản xác nhận đơn</p>
-        <p className="text-zinc-400 text-sm">Quét QR hoặc chuyển thủ công trong <Countdown seconds={30 * 60} /></p>
+        <p className="text-emerald-700 font-extrabold text-lg mb-0.5">Bước 2: Chuyển khoản xác nhận đơn</p>
+        <p className="text-gray-500 text-sm">Quét QR hoặc chuyển thủ công trong <Countdown seconds={30 * 60} /></p>
       </div>
       <div className="flex justify-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={data.qr.qrUrl} alt="QR chuyển khoản"
           className="w-52 h-52 rounded-2xl border-4 border-emerald-500 shadow-lg shadow-emerald-500/20 object-contain bg-white" />
       </div>
-      <div className="bg-zinc-800/80 border border-zinc-700 rounded-2xl p-4 space-y-2.5 text-sm">
+      <div className="bg-white/80 border border-gray-200 rounded-2xl p-4 space-y-2.5 text-sm">
         <div className="flex justify-between items-center">
-          <span className="text-zinc-400">Ngân hàng</span>
-          <span className="font-bold text-zinc-100">{data.qr.bankCode} – {data.qr.accountName}</span>
+          <span className="text-gray-500">Ngân hàng</span>
+          <span className="font-bold text-gray-900">{data.qr.bankCode} – {data.qr.accountName}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-zinc-400">Số tài khoản</span>
-          <span className="font-bold font-mono text-zinc-100">{data.qr.bankAccount}</span>
+          <span className="text-gray-500">Số tài khoản</span>
+          <span className="font-bold font-mono text-gray-900">{data.qr.bankAccount}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-zinc-400">Số tiền</span>
+          <span className="text-gray-500">Số tiền</span>
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-amber-400 text-base">{fmt(data.totalPrice)}</span>
+            <span className="font-extrabold text-amber-600 text-base">{fmt(data.totalPrice)}</span>
             <button onClick={() => copy(String(data.totalPrice), 'amount')}
-              className="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded-lg transition-colors">
+              className="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-600 px-2 py-0.5 rounded-lg transition-colors">
               {copied === 'amount' ? '✓ Đã copy' : 'Copy'}
             </button>
           </div>
         </div>
-        <div className="flex justify-between items-center border-t border-zinc-700 pt-2.5">
-          <span className="text-zinc-400">Nội dung CK <span className="text-red-400 font-bold">(bắt buộc)</span></span>
+        <div className="flex justify-between items-center border-t border-gray-200 pt-2.5">
+          <span className="text-gray-500">Nội dung CK <span className="text-red-600 font-bold">(bắt buộc)</span></span>
           <div className="flex items-center gap-2">
-            <span className="font-extrabold font-mono text-emerald-400">{data.refCode}</span>
+            <span className="font-extrabold font-mono text-emerald-700">{data.refCode}</span>
             <button onClick={() => copy(data.refCode, 'ref')}
-              className="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded-lg transition-colors">
+              className="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-600 px-2 py-0.5 rounded-lg transition-colors">
               {copied === 'ref' ? '✓ Đã copy' : 'Copy'}
             </button>
           </div>
         </div>
       </div>
-      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-300">
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-600">
         Nhập <strong>đúng nội dung</strong> <code className="bg-amber-500/20 px-1 rounded">{data.refCode}</code> khi chuyển khoản – hệ thống tự động xác nhận và đơn chuyển sang <strong>Chờ chuyển hàng</strong>.
       </div>
-      <div className="text-center text-sm text-zinc-500 pt-1">
-        <p>Đơn của <strong className="text-zinc-300">{form.name}</strong> · {data.productLabel} x {form.quantity}</p>
+      <div className="text-center text-sm text-gray-400 pt-1">
+        <p>Đơn của <strong className="text-gray-700">{form.name}</strong> · {data.productLabel} x {form.quantity}</p>
         <p className="mt-1">Sau khi chuyển khoản, đơn xử lý tự động – không cần chờ xác nhận.</p>
       </div>
     </div>
@@ -200,47 +200,47 @@ function OrderForm({ compact = false }: { compact?: boolean }) {
 
       {/* Quantity */}
       <div>
-        <label className="font-bold text-zinc-300 mb-2 block text-sm">Số lượng sét *</label>
+        <label className="font-bold text-gray-700 mb-2 block text-sm">Số lượng sét *</label>
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => set('quantity', Math.max(1, form.quantity - 1))}
-            className="w-10 h-10 rounded-full border-2 border-zinc-600 text-xl font-bold hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center justify-center text-zinc-300">&minus;</button>
-          <span className="w-10 text-center font-bold text-xl text-emerald-400">{form.quantity}</span>
+            className="w-10 h-10 rounded-full border-2 border-gray-300 text-xl font-bold hover:border-emerald-500 hover:text-emerald-700 transition-colors flex items-center justify-center text-gray-700">&minus;</button>
+          <span className="w-10 text-center font-bold text-xl text-emerald-700">{form.quantity}</span>
           <button type="button" onClick={() => set('quantity', Math.min(20, form.quantity + 1))}
-            className="w-10 h-10 rounded-full border-2 border-zinc-600 text-xl font-bold hover:border-emerald-500 hover:text-emerald-400 transition-colors flex items-center justify-center text-zinc-300">+</button>
-          <span className="ml-2 text-sm text-zinc-400">Tổng: <strong className="text-amber-400 text-lg">{fmt(total)}</strong></span>
+            className="w-10 h-10 rounded-full border-2 border-gray-300 text-xl font-bold hover:border-emerald-500 hover:text-emerald-700 transition-colors flex items-center justify-center text-gray-700">+</button>
+          <span className="ml-2 text-sm text-gray-500">Tổng: <strong className="text-amber-600 text-lg">{fmt(total)}</strong></span>
         </div>
       </div>
 
       <div>
-        <label className="font-bold text-zinc-300 mb-2 block text-sm">Họ và tên *</label>
+        <label className="font-bold text-gray-700 mb-2 block text-sm">Họ và tên *</label>
         <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Ví dụ: Nguyễn Thị Lan"
-          className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none transition-colors" />
+          className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none transition-colors" />
       </div>
       <div>
-        <label className="font-bold text-zinc-300 mb-2 block text-sm">Số điện thoại *</label>
+        <label className="font-bold text-gray-700 mb-2 block text-sm">Số điện thoại *</label>
         <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="0912 345 678" type="tel"
-          className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none transition-colors" />
+          className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none transition-colors" />
       </div>
       {!compact && (
         <div>
-          <label className="font-bold text-zinc-300 mb-2 block text-sm">Email <span className="text-zinc-500 font-normal">(không bắt buộc)</span></label>
+          <label className="font-bold text-gray-700 mb-2 block text-sm">Email <span className="text-gray-400 font-normal">(không bắt buộc)</span></label>
           <input value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@gmail.com" type="email"
-            className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none transition-colors" />
+            className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none transition-colors" />
         </div>
       )}
       <div>
-        <label className="font-bold text-zinc-300 mb-2 block text-sm">Địa chỉ giao hàng *</label>
+        <label className="font-bold text-gray-700 mb-2 block text-sm">Địa chỉ giao hàng *</label>
         <textarea value={form.address} onChange={e => set('address', e.target.value)} rows={3}
           placeholder="Số nhà, ngõ/hẻm, đường, phường/xã, quận/huyện, tỉnh/thành phố"
-          className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none transition-colors resize-none" />
+          className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none transition-colors resize-none" />
       </div>
       <div>
-        <label className="font-bold text-zinc-300 mb-2 block text-sm">Ghi chú <span className="text-zinc-500 font-normal">(không bắt buộc)</span></label>
+        <label className="font-bold text-gray-700 mb-2 block text-sm">Ghi chú <span className="text-gray-400 font-normal">(không bắt buộc)</span></label>
         <input value={form.note} onChange={e => set('note', e.target.value)} placeholder="Giao giờ nào, yêu cầu đặc biệt..."
-          className="w-full bg-zinc-800 border-2 border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none transition-colors" />
+          className="w-full bg-white border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none transition-colors" />
       </div>
 
-      {error && <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl py-2.5 px-4 text-center">{error}</p>}
+      {error && <p className="text-red-600 text-sm bg-red-500/10 border border-red-500/20 rounded-xl py-2.5 px-4 text-center">{error}</p>}
 
       <button type="submit" disabled={step === 'loading'}
         className="w-full py-4 rounded-2xl font-extrabold text-white text-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-500 transition-all active:scale-[0.98] disabled:opacity-60 shadow-xl shadow-amber-500/30">
@@ -251,9 +251,9 @@ function OrderForm({ compact = false }: { compact?: boolean }) {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>Đang gửi đơn...
             </span>
-          : 'Cho Tôi Sét Nguyên Liệu →'}
+          : 'Gửi Đơn & Nhận Sét Nguyên Liệu →'}
       </button>
-      <p className="text-xs text-zinc-500 text-center">Thông tin bảo mật · Xác nhận qua chuyển khoản · COD toàn quốc</p>
+      <p className="text-xs text-gray-400 text-center">Hoàn tiền 100% nếu không hài lòng · COD toàn quốc · Bảo mật thông tin</p>
     </form>
   )
 }
@@ -266,72 +266,84 @@ export default function SetXoiCom() {
   const scrollToOrder = () => orderRef.current?.scrollIntoView({ behavior: 'smooth' })
 
   useEffect(() => {
-    const onScroll = () => setShowStickyBar(window.scrollY > 400)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const sentinel = document.getElementById('sticky-sentinel')
+    if (!sentinel) { setShowStickyBar(true); return }
+    const obs = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0 }
+    )
+    obs.observe(sentinel)
+    return () => obs.disconnect()
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-zinc-100 font-sans antialiased">
+    <div className="min-h-screen bg-white text-gray-900 font-sans antialiased">
 
       {/* ══ STICKY BOTTOM BAR ══ */}
       <div className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${showStickyBar ? 'translate-y-0' : 'translate-y-full'}`}>
-        <div className="bg-zinc-900/95 backdrop-blur-xl border-t border-zinc-800 px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
+        <div className="bg-white/95 backdrop-blur-xl border-t border-gray-200 px-4 py-3 flex items-center gap-3 max-w-5xl mx-auto">
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-zinc-400 truncate">Sét Nguyên Liệu Xôi Cốm Sen Dừa</p>
-            <p className="font-extrabold text-amber-400 text-lg leading-tight">{fmt(PRICE)}<span className="text-xs font-normal text-zinc-500">/sét</span></p>
+            <p className="text-xs text-gray-500 truncate">Cốm vụ Thu 2025 -- Số lượng có hạn</p>
+            <p className="font-extrabold text-amber-600 text-lg leading-tight">{fmt(PRICE)}<span className="text-xs font-normal text-gray-400">/sét</span></p>
           </div>
           <button onClick={scrollToOrder}
             className="flex-shrink-0 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold px-6 py-3 rounded-xl text-sm active:scale-[0.98] transition-all shadow-lg shadow-amber-500/30">
-            Đặt Ngay →
+            Cho Tôi Sét Này →
           </button>
         </div>
       </div>
 
       {/* ══ ANNOUNCEMENT BAR ══ */}
       <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-white text-center py-2.5 px-4">
-        <p className="text-sm font-bold tracking-wide">
-          Cốm khô chính vụ – số lượng có hạn, hết hàng không báo trước
+        <p className="text-sm font-bold tracking-wide animate-pulse">
+          Cốm khô vụ Thu 2025 -- Chỉ nhập 1 lần/năm. Khi hết là phải chờ năm sau.
         </p>
       </div>
+      <div id="sticky-sentinel" className="h-0" />
 
       {/* ══ HERO ══ */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/40 via-[#0a0a0f] to-[#0a0a0f]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/60 via-white to-white" />
         <div className="absolute inset-0 opacity-[0.03]"
           style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-10 pb-16">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="bg-zinc-900/80 backdrop-blur rounded-2xl px-5 py-3 border border-zinc-800 inline-flex items-center gap-3">
+            <div className="bg-gray-50 backdrop-blur rounded-2xl px-5 py-3 border border-gray-200 inline-flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/images/logo-bep-co-ha.png" alt="Bếp Cô Hạ" className="h-12 w-12 object-contain"
                 onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
               <div>
-                <p className="text-emerald-400 font-extrabold text-xl leading-tight tracking-tight">Bếp Cô Hạ</p>
-                <p className="text-zinc-500 text-xs">Hacofood.vn</p>
+                <p className="text-emerald-700 font-extrabold text-xl leading-tight tracking-tight">Bếp Cô Hạ</p>
+                <p className="text-gray-400 text-xs">Hacofood.vn</p>
               </div>
             </div>
           </div>
 
           {/* Headline */}
           <div className="text-center mb-8 max-w-3xl mx-auto">
-            <p className="text-amber-400 text-sm font-bold uppercase tracking-widest mb-4">Sét nguyên liệu từ Bếp Cô Hạ</p>
+            <p className="text-amber-600 text-sm font-bold uppercase tracking-widest mb-4">Sét nguyên liệu -- Cốm khô vụ Thu 2025</p>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-5">
-              Lần Đầu Làm Xôi Cốm<br />
-              <span className="bg-gradient-to-r from-emerald-400 to-emerald-300 bg-clip-text text-transparent">Cũng Thành Công</span>
+              Mở Ra, Làm Theo,<br />
+              <span className="bg-gradient-to-r from-emerald-700 to-emerald-600 bg-clip-text text-transparent">Thành Công Ngay Lần Đầu</span>
             </h1>
-            <p className="text-zinc-400 text-lg sm:text-xl max-w-xl mx-auto leading-relaxed">
-              8 nguyên liệu chọn sẵn, đóng bộ đầy đủ.
-              Kèm công thức bí quyết của Cô Hạ.
-              Nhận về, làm theo từng bước, ra ngay đĩa xôi cốm chuẩn vị.
+            <p className="text-gray-500 text-lg sm:text-xl max-w-xl mx-auto leading-relaxed">
+              Cô Hạ chọn sẵn 8 nguyên liệu, đóng thành bộ, kèm công thức bí quyết.
+              Bạn chỉ cần nhận về và làm theo -- ra ngay đĩa xôi cốm dẻo thơm, đẹp mắt.
             </p>
+          </div>
+
+          {/* Mini social proof ngay Hero */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-full px-5 py-2 text-sm text-emerald-700 font-semibold">
+              Hàng trăm khách đã đặt & gửi ảnh thành phẩm cho Cô Hạ
+            </div>
           </div>
 
           {/* Hero image */}
           <div className="flex justify-center mb-10">
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-emerald-500/10 border border-zinc-800 w-full max-w-sm">
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-emerald-500/10 border border-gray-200 w-full max-w-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={HERO_IMG} alt="Sét Nguyên Liệu Xôi Cốm Sen Dừa Bếp Cô Hạ"
                 className="w-full h-auto object-contain" />
@@ -346,10 +358,10 @@ export default function SetXoiCom() {
             {[
               'Nguyên liệu chọn sẵn đủ bộ',
               'Kèm công thức bí quyết',
-              'Làm theo là thành công',
-              'Giao toàn quốc – COD',
+              'Không ngon -- hoàn tiền 100%',
+              'Giao toàn quốc -- COD',
             ].map(text => (
-              <div key={text} className="flex items-center gap-2 bg-zinc-800/60 backdrop-blur border border-zinc-700/50 rounded-full px-4 py-2 text-sm text-zinc-300">
+              <div key={text} className="flex items-center gap-2 bg-white/60 backdrop-blur border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700">
                 <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full flex-shrink-0" />
                 <span>{text}</span>
               </div>
@@ -362,24 +374,24 @@ export default function SetXoiCom() {
               Cho Tôi Sét Nguyên Liệu →
             </button>
             <a href="#san-pham"
-              className="bg-zinc-800/60 border border-zinc-700 text-zinc-300 font-bold text-base px-8 py-4 rounded-2xl hover:bg-zinc-800 transition-colors text-center">
-              Xem Chi Tiết
+              className="bg-white/60 border border-gray-200 text-gray-700 font-bold text-base px-8 py-4 rounded-2xl hover:bg-gray-100 transition-colors text-center">
+              Xem Trong Sét Có Gì
             </a>
           </div>
         </div>
       </section>
 
       {/* ══ TRUST BAR ══ */}
-      <section className="bg-zinc-900/80 border-y border-zinc-800 py-4 px-4">
+      <section className="bg-gray-50 border-y border-gray-200 py-4 px-4">
         <div className="max-w-4xl mx-auto flex flex-wrap justify-center gap-x-8 gap-y-2">
           {[
-            'Hàng trăm đơn thành công',
-            'Kèm công thức chi tiết',
-            'COD – trả tiền khi nhận',
+            'Video triệu view trên TikTok',
+            'Kèm công thức bí quyết',
+            'COD -- trả tiền khi nhận',
             'Không ngon hoàn tiền 100%',
           ].map(text => (
-            <div key={text} className="flex items-center gap-2 text-zinc-400 text-sm font-medium">
-              <span className="text-emerald-400">&#10003;</span><span>{text}</span>
+            <div key={text} className="flex items-center gap-2 text-gray-500 text-sm font-medium">
+              <span className="text-emerald-700">&#10003;</span><span>{text}</span>
             </div>
           ))}
         </div>
@@ -388,34 +400,34 @@ export default function SetXoiCom() {
       {/* ══ PAIN SECTION ══ */}
       <section className="py-16 px-4 sm:px-6">
         <FadeSection className="max-w-3xl mx-auto text-center">
-          <p className="inline-block border border-red-500/30 bg-red-500/10 text-red-400 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-5 uppercase">
+          <p className="inline-block border border-red-500/30 bg-red-500/10 text-red-600 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-5 uppercase">
             Bạn có đang gặp tình huống này?
           </p>
           <h2 className="text-3xl sm:text-4xl font-extrabold mb-3 leading-tight">
-            Muốn Làm Xôi Cốm Ngon<br />
-            <span className="text-red-400">Mà Cứ Mãi Không Ra Được?</span>
+            Muốn Tự Tay Làm Xôi Cốm<br />
+            <span className="text-red-600">Nhưng Không Biết Bắt Đầu Từ Đâu?</span>
           </h2>
-          <p className="text-zinc-500 mb-10 max-w-xl mx-auto">
-            Nhiều người đã thử đi chợ, lên mạng, hỏi công thức – nhưng kết quả vẫn không như mong đợi.
-            Không phải lỗi của bạn. Vấn đề nằm ở nguyên liệu và tỷ lệ.
+          <p className="text-gray-500 mb-10 max-w-xl mx-auto">
+            Bạn đã từng tìm nguyên liệu khắp nơi, thử theo công thức trên mạng, mà kết quả vẫn không như ý.
+            Xôi bị nhão, cốm không dẻo, hương vị nhạt nhẽo. Tốn tiền, tốn công, mà vẫn thất bại.
           </p>
           <div className="grid sm:grid-cols-2 gap-4 text-left">
             {[
-              { t: 'Không biết mua nguyên liệu ở đâu cho đúng', d: 'Cốm khô ngon, hạt sen sạch, bột cốt dừa chuẩn – tìm ngoài chợ khó, mua online không rõ chất lượng. Mua phải đồ kém là hỏng cả mẻ xôi.' },
-              { t: 'Làm hoài vẫn không ra vị chuẩn', d: 'Xôi bị nhão, hạt cốm không dẻo, thiếu hương lá dứa – làm nhiều lần mà vẫn không bằng hàng quán. Tốn nguyên liệu, mất thời gian, chán nản.' },
-              { t: 'Mua lẻ từng thứ phức tạp, thừa thiếu', d: 'Đi nhiều chỗ, mua về thừa hạt sen, thiếu lá dứa, hoặc mua nhiều không dùng hết bị hỏng. Tính ra đắt hơn mua sẵn.' },
-              { t: 'Không có ai chỉ cho tỷ lệ đúng', d: 'Công thức trên mạng mỗi người nói một kiểu. Lúc nhạt lúc ngọt quá – không bao giờ chắc chắn mình làm đúng.' },
+              { t: 'Tìm nguyên liệu chuẩn quá khó', d: 'Cốm khô ngon, hạt sen sạch, bột cốt dừa chất lượng -- ngoài chợ không có, mua online sợ hàng kém. Sai nguyên liệu là hỏng cả mẻ xôi, mất công vô ích.' },
+              { t: 'Làm mấy lần rồi mà vẫn không ngon', d: 'Xôi bị nhão, cốm cứng, thiếu hương lá dứa -- làm đi làm lại mà vẫn không được như ngoài hàng. Chán nản, muốn bỏ cuộc.' },
+              { t: 'Mua lẻ thì thừa thiếu, tốn kém', d: 'Chạy 3-4 chỗ, mua về thừa hạt sen, thiếu lá dứa, đường mua nhiều không dùng hết. Tính ra còn đắt hơn mua ngoài hàng.' },
+              { t: 'Công thức mỗi người nói một kiểu', d: 'Tra Google 10 bài 10 tỷ lệ khác nhau. Lúc nhạt lúc ngọt -- không bao giờ chắc chắn mình đang làm đúng hay sai.' },
             ].map(item => (
-              <div key={item.t} className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5">
-                <p className="font-bold text-zinc-100 mb-2">{item.t}</p>
-                <p className="text-zinc-500 text-sm leading-relaxed">{item.d}</p>
+              <div key={item.t} className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+                <p className="font-bold text-gray-900 mb-2">{item.t}</p>
+                <p className="text-gray-500 text-sm leading-relaxed">{item.d}</p>
               </div>
             ))}
           </div>
           <div className="mt-10 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 max-w-xl mx-auto">
-            <p className="text-zinc-300 text-base leading-relaxed">
-              Xôi cốm ngon cần <strong className="text-emerald-400">đúng nguyên liệu, đúng tỷ lệ, đúng kỹ thuật</strong>.
-              Và Cô Hạ đã giải quyết hết cho bạn rồi – gom vào một sét duy nhất.
+            <p className="text-gray-700 text-base leading-relaxed">
+              Tất cả những vấn đề trên đều có chung một nguyên nhân: <strong className="text-emerald-700">thiếu đúng nguyên liệu và đúng công thức từ người đã làm thành công</strong>.
+              Cô Hạ đã gom hết vào một sét duy nhất -- để bạn không phải loay hoay nữa.
             </p>
           </div>
         </FadeSection>
@@ -426,41 +438,45 @@ export default function SetXoiCom() {
         <FadeSection className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div className="relative flex justify-center">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-emerald-500/10 border border-zinc-800 max-w-xs w-full" style={{ aspectRatio: '3/4' }}>
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-emerald-500/10 border border-gray-200 max-w-xs w-full" style={{ aspectRatio: '3/4' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={COHA_IMG} alt="Cô Hạ – Bếp Cô Hạ" className="w-full h-full object-cover object-top" />
               </div>
               <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white font-extrabold text-sm px-5 py-2.5 rounded-full shadow-lg whitespace-nowrap">
-                Kèm công thức bí quyết
+                Video triệu view trên TikTok
               </div>
             </div>
             <div>
-              <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-5 uppercase">
-                Người đứng sau sét
+              <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-5 uppercase">
+                Người đứng sau sét nguyên liệu
               </p>
               <h2 className="text-3xl sm:text-4xl font-extrabold mb-5 leading-tight">
-                Gặp Cô Hạ –<br />
-                <span className="text-amber-400">Người Chọn Từng Nguyên Liệu</span><br />
-                Và Truyền Công Thức<br />Bí Quyết Cho Bạn.
+                Cô Hạ Đã Chọn Sẵn<br />
+                <span className="text-amber-600">Từng Nguyên Liệu Cho Bạn</span>
               </h2>
-              <p className="text-zinc-400 leading-relaxed mb-6">
-                Sau nhiều năm nấu nướng và hàng chục video viral về xôi cốm, Cô Hạ đã tỉ mỉ chọn đúng từng loại nguyên liệu – cốm khô, hạt sen, đậu xanh, bột cốt dừa, lá dứa...
-                Tất cả được đóng sẵn thành một sét, kèm theo công thức chi tiết từng bước.
-                <strong className="text-zinc-200"> Bạn chỉ cần mở ra và làm theo – là thành công ngay lần đầu.</strong>
+              <p className="text-gray-500 leading-relaxed mb-4">
+                Sau nhiều năm nấu nướng và hàng chục video viral về xôi cốm, Cô Hạ đã tỉ mỉ chọn đúng từng loại nguyên liệu -- cốm khô, hạt sen, đậu xanh, bột cốt dừa, lá dứa...
+              </p>
+              <p className="text-gray-500 leading-relaxed mb-6">
+                Tất cả được đóng sẵn thành một sét, kèm theo công thức bí quyết chi tiết từng bước.
+                <strong className="text-gray-800"> Bạn chỉ cần mở ra và làm theo -- thành công ngay lần đầu, không cần kinh nghiệm.</strong>
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  'Nguyên liệu đủ bộ, đúng loại',
-                  'Công thức từng bước rõ ràng',
-                  'Hàng trăm người đã thành công',
-                  'Đảm bảo – không ngon hoàn tiền',
+                  '8 nguyên liệu đủ bộ, đúng loại',
+                  'Công thức bí quyết từng bước',
+                  'Hàng trăm khách đã thành công',
+                  'Không ngon -- hoàn tiền 100%',
                 ].map(t => (
-                  <div key={t} className="flex items-center gap-2 bg-zinc-800/60 border border-zinc-700/50 rounded-xl p-3">
-                    <span className="text-emerald-400 font-bold flex-shrink-0">&#10003;</span>
-                    <span className="text-sm text-zinc-300">{t}</span>
+                  <div key={t} className="flex items-center gap-2 bg-white/60 border border-gray-200 rounded-xl p-3">
+                    <span className="text-emerald-700 font-bold flex-shrink-0">&#10003;</span>
+                    <span className="text-sm text-gray-700">{t}</span>
                   </div>
                 ))}
               </div>
+              <button onClick={scrollToOrder} className="mt-6 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98]">
+                Cho Tôi Sét Nguyên Liệu →
+              </button>
             </div>
           </div>
         </FadeSection>
@@ -470,15 +486,15 @@ export default function SetXoiCom() {
       <section id="san-pham" className="py-16 px-4 sm:px-6">
         <FadeSection className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-xs px-5 py-1.5 rounded-full tracking-widest mb-4 uppercase">Sản phẩm</p>
+            <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 font-bold text-xs px-5 py-1.5 rounded-full tracking-widest mb-4 uppercase">Trong sét có gì</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold">
-              Sét Nguyên Liệu Xôi Cốm Sen Dừa<br />
-              <span className="text-amber-400">Đầy Đủ – Chọn Lọc – Giao Tận Tay</span>
+              Mở Hộp Ra Là Có Đủ<br />
+              <span className="text-amber-600">Không Cần Đi Chợ, Không Cần Tìm Kiếm</span>
             </h2>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-2 sm:mb-3 h-52 sm:h-72">
             {SAN_PHAM.slice(0, 3).map(item => (
-              <div key={item.label} className="relative rounded-xl sm:rounded-2xl overflow-hidden group border border-zinc-800 h-full">
+              <div key={item.label} className="relative rounded-xl sm:rounded-2xl overflow-hidden group border border-gray-200 h-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={item.src} alt={item.label} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
@@ -487,7 +503,7 @@ export default function SetXoiCom() {
           </div>
           <div className="grid grid-cols-3 gap-2 sm:gap-3 h-44 sm:h-56">
             {SAN_PHAM.slice(3, 6).map(item => (
-              <div key={item.label} className="relative rounded-xl sm:rounded-2xl overflow-hidden group border border-zinc-800 h-full">
+              <div key={item.label} className="relative rounded-xl sm:rounded-2xl overflow-hidden group border border-gray-200 h-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={item.src} alt={item.label} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
@@ -496,23 +512,23 @@ export default function SetXoiCom() {
           </div>
           <div className="mt-8 text-center">
             <button onClick={scrollToOrder} className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transition-all active:scale-[0.98]">
-              Cho Tôi Sét Này →
+              Đặt Sét Này Về Nhà →
             </button>
           </div>
         </FadeSection>
       </section>
 
       {/* ══ VIDEO ══ */}
-      <section className="py-16 px-4 sm:px-6 bg-zinc-900/50">
+      <section className="py-16 px-4 sm:px-6 bg-gray-50/50">
         <FadeSection className="max-w-3xl mx-auto text-center">
-          <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-4 uppercase">Xem thực tế</p>
+          <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-4 uppercase">Xem thực tế</p>
           <h2 className="text-3xl sm:text-4xl font-extrabold mb-2">
-            Cô Hạ Hướng Dẫn Trực Tiếp<br />
-            <span className="text-amber-400">Xem Ngay – Làm Là Biết</span>
+            Xem Cô Hạ Làm Trực Tiếp<br />
+            <span className="text-amber-600">Thấy Rõ Từng Bước -- Tin Là Đặt</span>
           </h2>
-          <p className="text-zinc-500 text-sm mb-10">Video thực tế từ Bếp Cô Hạ – thấy nguyên liệu, thấy thành phẩm, thấy luôn cách làm</p>
+          <p className="text-gray-500 text-sm mb-10">Video thực tế từ Bếp Cô Hạ -- thấy nguyên liệu, thấy thành phẩm, thấy kết quả thật</p>
           <div className="flex justify-center">
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-emerald-500/10 border border-zinc-800 w-full max-w-xs" style={{ aspectRatio: '9/16' }}>
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-emerald-500/10 border border-gray-200 w-full max-w-xs" style={{ aspectRatio: '9/16' }}>
               <iframe
                 src="https://www.youtube.com/embed/_jXu55_QWng?rel=0&modestbranding=1"
                 title="Xôi Cốm Sen Dừa – Bếp Cô Hạ"
@@ -525,7 +541,7 @@ export default function SetXoiCom() {
           </div>
           <div className="mt-10">
             <button onClick={scrollToOrder} className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98]">
-              Đặt Sét Nguyên Liệu Ngay →
+              Tôi Muốn Thử -- Đặt Ngay →
             </button>
           </div>
         </FadeSection>
@@ -535,15 +551,15 @@ export default function SetXoiCom() {
       <section className="py-16 px-4 sm:px-6">
         <FadeSection className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-4 uppercase">Thành phần sét</p>
+            <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-4 uppercase">Thành phần sét</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold">
               Cô Hạ Chọn Sẵn 8 Nguyên Liệu<br />
-              <span className="text-amber-400">Bạn Chỉ Cần Nhận &amp; Làm Theo</span>
+              <span className="text-amber-600">Bạn Chỉ Cần Nhận &amp; Làm Theo</span>
             </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6">
-              <h3 className="font-extrabold text-xl text-emerald-400 mb-5">Nguyên Liệu Trong Sét</h3>
+            <div className="bg-gray-50 border border-gray-200 rounded-3xl p-6">
+              <h3 className="font-extrabold text-xl text-emerald-700 mb-5">Nguyên Liệu Trong Sét</h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   'Cốm khô',
@@ -555,169 +571,174 @@ export default function SetXoiCom() {
                   'Bột nghệ',
                   'Lá dứa',
                 ].map(name => (
-                  <div key={name} className="flex items-center gap-2 bg-zinc-800/60 border border-zinc-700/50 rounded-xl px-3 py-2.5">
+                  <div key={name} className="flex items-center gap-2 bg-white/60 border border-gray-200 rounded-xl px-3 py-2.5">
                     <span className="w-2 h-2 bg-emerald-400 rounded-full flex-shrink-0" />
-                    <span className="text-zinc-300 font-medium text-sm">{name}</span>
+                    <span className="text-gray-700 font-medium text-sm">{name}</span>
                   </div>
                 ))}
               </div>
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 mt-4">
-                <p className="text-emerald-400 font-bold text-sm">+ Công thức bí quyết của Bếp Cô Hạ tặng kèm</p>
-                <p className="text-emerald-500/70 text-xs mt-0.5">Tỷ lệ &amp; kỹ thuật chi tiết – ghi rõ từng bước</p>
+                <p className="text-emerald-700 font-bold text-sm">+ Công thức bí quyết của Bếp Cô Hạ tặng kèm</p>
+                <p className="text-emerald-600 text-xs mt-0.5">Tỷ lệ &amp; kỹ thuật chi tiết -- ghi rõ từng bước</p>
               </div>
             </div>
             <div className="space-y-4">
-              <div className="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6">
-                <h3 className="font-extrabold text-xl text-emerald-400 mb-4">Thành Phẩm Bạn Sẽ Có</h3>
-                <ul className="space-y-3 text-zinc-400 text-sm">
-                  <li className="flex gap-2.5"><span className="text-emerald-400 font-bold flex-shrink-0">&#10003;</span><span>Xôi tơi, hạt cốm <strong className="text-zinc-200">dẻo mềm</strong>, không dính nhão</span></li>
-                  <li className="flex gap-2.5"><span className="text-emerald-400 font-bold flex-shrink-0">&#10003;</span><span>Hạt sen <strong className="text-zinc-200">bùi</strong>, đậu xanh vàng tươi đẹp mắt</span></li>
-                  <li className="flex gap-2.5"><span className="text-emerald-400 font-bold flex-shrink-0">&#10003;</span><span>Hương <strong className="text-zinc-200">lá dứa và cốt dừa</strong> quyện nhẹ, thơm tự nhiên</span></li>
-                  <li className="flex gap-2.5"><span className="text-emerald-400 font-bold flex-shrink-0">&#10003;</span><span>Ăn nóng hoặc nguội đều ngon – phù hợp bữa sáng, cỗ chay, quà quê</span></li>
+              <div className="bg-gray-50 border border-gray-200 rounded-3xl p-6">
+                <h3 className="font-extrabold text-xl text-emerald-700 mb-4">Thành Phẩm Bạn Sẽ Có</h3>
+                <ul className="space-y-3 text-gray-500 text-sm">
+                  <li className="flex gap-2.5"><span className="text-emerald-700 font-bold flex-shrink-0">&#10003;</span><span>Xôi tơi, hạt cốm <strong className="text-gray-800">dẻo mềm</strong>, không dính nhão</span></li>
+                  <li className="flex gap-2.5"><span className="text-emerald-700 font-bold flex-shrink-0">&#10003;</span><span>Hạt sen <strong className="text-gray-800">bùi</strong>, đậu xanh vàng tươi đẹp mắt</span></li>
+                  <li className="flex gap-2.5"><span className="text-emerald-700 font-bold flex-shrink-0">&#10003;</span><span>Hương <strong className="text-gray-800">lá dứa và cốt dừa</strong> quyện nhẹ, thơm tự nhiên</span></li>
+                  <li className="flex gap-2.5"><span className="text-emerald-700 font-bold flex-shrink-0">&#10003;</span><span>Đủ cho <strong className="text-gray-800">4-6 người ăn</strong> -- bữa sáng, cỗ chay, quà quê</span></li>
                 </ul>
               </div>
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-6">
-                <h3 className="font-extrabold text-lg text-amber-400 mb-3">Lưu Ý</h3>
-                <ul className="space-y-2 text-zinc-400 text-sm">
-                  <li className="flex gap-2"><span className="text-amber-400">&#8226;</span> <span>Đây là <strong className="text-zinc-200">sét nguyên liệu</strong> – bạn tự làm tại nhà theo công thức tặng kèm</span></li>
-                  <li className="flex gap-2"><span className="text-amber-400">&#8226;</span> <span>Thời gian làm: khoảng <strong className="text-zinc-200">1–1,5 tiếng</strong> (ngâm + hấp)</span></li>
-                  <li className="flex gap-2"><span className="text-amber-400">&#8226;</span> <span>Cần có <strong className="text-zinc-200">xửng hấp</strong> hoặc nồi cơm điện chế độ hấp</span></li>
+                <h3 className="font-extrabold text-lg text-amber-600 mb-3">Lưu Ý Quan Trọng</h3>
+                <ul className="space-y-2 text-gray-500 text-sm">
+                  <li className="flex gap-2"><span className="text-amber-600">&#8226;</span> <span>Đây là <strong className="text-gray-800">sét nguyên liệu</strong> -- bạn tự làm tại nhà theo công thức tặng kèm</span></li>
+                  <li className="flex gap-2"><span className="text-amber-600">&#8226;</span> <span>Thời gian làm: khoảng <strong className="text-gray-800">1--1,5 tiếng</strong> (ngâm + hấp)</span></li>
+                  <li className="flex gap-2"><span className="text-amber-600">&#8226;</span> <span>Cần có <strong className="text-gray-800">xửng hấp</strong> hoặc nồi cơm điện chế độ hấp</span></li>
                 </ul>
               </div>
+            </div>
+          </div>
+        </FadeSection>
+      </section>
+
+      {/* ══ DÀNH CHO AI / KHÔNG DÀNH CHO AI ══ */}
+      <section className="py-14 px-4 sm:px-6 bg-gray-50/50">
+        <FadeSection className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl sm:text-4xl font-extrabold">Sét Này Có Phù Hợp Với Bạn?</h2>
+            <p className="text-gray-500 mt-2">Đọc xong là biết ngay -- không cần phân vân</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-6">
+              <h3 className="font-extrabold text-xl text-emerald-700 mb-4">Dành cho bạn nếu:</h3>
+              <ul className="space-y-3 text-gray-700 text-sm">
+                {[
+                  'Muốn tự tay làm xôi cốm ngon tại nhà nhưng chưa biết bắt đầu từ đâu',
+                  'Không có thời gian đi chợ tìm từng loại nguyên liệu',
+                  'Muốn món quà ý nghĩa, tự tay làm, tặng người thân dịp lễ Tết',
+                  'Thích nấu nướng nhưng cần công thức chuẩn từ người có kinh nghiệm',
+                ].map(t => (
+                  <li key={t} className="flex gap-2.5"><span className="text-emerald-700 flex-shrink-0">&#10003;</span> {t}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-6">
+              <h3 className="font-extrabold text-xl text-red-600 mb-4">KHÔNG phù hợp nếu:</h3>
+              <ul className="space-y-3 text-gray-700 text-sm">
+                {[
+                  'Bạn muốn mua xôi cốm đã nấu sẵn, ăn liền',
+                  'Bạn không có xửng hấp hoặc nồi cơm điện có chế độ hấp',
+                  'Bạn không muốn bỏ 1--1,5 tiếng để làm',
+                  'Bạn cần giao trong ngày (sét giao COD cần 2-4 ngày)',
+                ].map(t => (
+                  <li key={t} className="flex gap-2.5"><span className="text-red-600 flex-shrink-0">&#10007;</span> {t}</li>
+                ))}
+              </ul>
             </div>
           </div>
         </FadeSection>
       </section>
 
       {/* ══ USE CASES ══ */}
-      <section className="py-14 px-4 sm:px-6 bg-zinc-900/50">
+      <section className="py-14 px-4 sm:px-6">
         <FadeSection className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold mb-2">Phù Hợp Với Mọi Dịp</h2>
-          <p className="text-zinc-500 mb-10">Một sét nguyên liệu – vô vàn lý do để làm</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold mb-2">Một Sét -- Vô Vàn Dịp Để Làm</h2>
+          <p className="text-gray-500 mb-10">Dù bữa sáng hay mâm cỗ, xôi cốm luôn là lựa chọn ý nghĩa</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
               { name: 'Bữa sáng gia đình', sub: 'Ngon, bổ dưỡng, đơn giản' },
               { name: 'Cỗ chay, mâm cúng', sub: 'Truyền thống, trang nghiêm' },
-              { name: 'Quà quê tặng người thân', sub: 'Đặc sản Hà Nội địa phương' },
+              { name: 'Quà quê tặng người thân', sub: 'Đặc sản Hà Nội chính gốc' },
               { name: 'Tết, lễ, giỗ chạp', sub: 'Ý nghĩa, thơm thảo' },
               { name: 'Cưới hỏi, sinh nhật', sub: 'Khác biệt, đáng nhớ' },
               { name: 'Tân gia, họp mặt', sub: 'Ấm cúng, sum vầy' },
             ].map(item => (
-              <div key={item.name} className="bg-zinc-800/60 border border-zinc-700/50 rounded-2xl p-5 text-center">
-                <p className="font-bold text-zinc-100 mt-1">{item.name}</p>
-                <p className="text-sm text-emerald-400/80 mt-1">{item.sub}</p>
+              <div key={item.name} className="bg-white/60 border border-gray-200 rounded-2xl p-5 text-center">
+                <p className="font-bold text-gray-900 mt-1">{item.name}</p>
+                <p className="text-sm text-emerald-700/80 mt-1">{item.sub}</p>
               </div>
             ))}
           </div>
         </FadeSection>
       </section>
 
-      {/* ══ THÀNH PHẨM HỌC VIÊN ══ */}
-      <section className="py-16 px-4 sm:px-6">
+      {/* ══ THÀNH PHẨM KHÁCH HÀNG + SOCIAL PROOF ══ */}
+      <section className="py-16 px-4 sm:px-6 bg-gray-50/50">
         <FadeSection className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-xs px-5 py-1.5 rounded-full tracking-widest mb-4 uppercase">Thành phẩm học viên</p>
+            <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 font-bold text-xs px-5 py-1.5 rounded-full tracking-widest mb-4 uppercase">Bằng chứng thật</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold">
-              Họ Đã Làm Thành Công<br />
-              <span className="text-amber-400">Đây Là Thành Phẩm Thật Của Khách Hàng</span>
+              Khách Hàng Gửi Ảnh Thành Phẩm<br />
+              <span className="text-amber-600">Lần Đầu Làm -- Đẹp Và Ngon Như Ngoài Hàng</span>
             </h2>
-            <p className="text-zinc-500 mt-3">Tất cả đều làm theo đúng công thức trong sét nguyên liệu của Cô Hạ</p>
+            <p className="text-gray-500 mt-3">Tất cả đều lần đầu làm xôi cốm, chỉ dùng sét nguyên liệu + công thức của Cô Hạ</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {THANH_PHAM.map((src, i) => (
-              <div key={i} className="rounded-2xl overflow-hidden border border-zinc-800 group">
+              <div key={i} className="rounded-2xl overflow-hidden border border-gray-200 group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={`Thành phẩm học viên ${i + 1}`}
+                <img src={src} alt={`Thành phẩm khách hàng ${i + 1}`}
                   className="w-full h-44 object-cover object-center group-hover:scale-105 transition-transform duration-500" loading="lazy" />
               </div>
             ))}
           </div>
           <div className="mt-8 text-center">
             <button onClick={scrollToOrder} className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98]">
-              Tôi Cũng Muốn Thử Ngay →
+              Tôi Cũng Muốn Làm Được Như Vậy →
             </button>
           </div>
         </FadeSection>
       </section>
 
       {/* ══ UY TÍN ══ */}
-      <section className="py-16 px-4 sm:px-6 bg-zinc-900/50">
+      <section className="py-16 px-4 sm:px-6">
         <FadeSection className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <p className="inline-block border border-amber-500/30 bg-amber-500/10 text-amber-400 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-4 uppercase">Thương hiệu uy tín</p>
+            <p className="inline-block border border-amber-500/30 bg-amber-500/10 text-amber-600 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-4 uppercase">Thương hiệu uy tín</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold">
-              Bếp Cô Hạ – Triệu Người Tin Tưởng<br />
-              <span className="text-amber-400">Trên Khắp Các Nền Tảng</span>
+              Bếp Cô Hạ -- Triệu Lượt Xem<br />
+              <span className="text-amber-600">Trên TikTok, YouTube, Facebook</span>
             </h2>
+            <p className="text-gray-500 mt-3">Không phải thương hiệu mới -- Cô Hạ đã chia sẻ hàng trăm video nấu ăn được triệu người theo dõi</p>
           </div>
           <div className="grid grid-cols-3 gap-4 mb-10 max-w-3xl mx-auto">
             {UY_TIN.map(img => (
-              <div key={img.label} className="rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/80 flex flex-col">
-                <div className="h-52 sm:h-64 flex items-center justify-center bg-zinc-900 overflow-hidden">
+              <div key={img.label} className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex flex-col">
+                <div className="h-52 sm:h-64 flex items-center justify-center bg-gray-50 overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img.src} alt={img.label} className="w-full h-full object-contain" />
                 </div>
-                <p className="text-center text-xs font-semibold text-zinc-500 py-2.5 px-2 leading-tight">{img.label}</p>
+                <p className="text-center text-xs font-semibold text-gray-400 py-2.5 px-2 leading-tight">{img.label}</p>
               </div>
             ))}
           </div>
-          <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-3xl p-6 text-center max-w-2xl mx-auto">
-            <p className="text-zinc-300 font-bold text-lg mb-2 italic">&quot;Cô Hạ làm từ tâm – công thức chia sẻ thật sự, nguyên liệu chọn thật sự, kết quả thật sự.&quot;</p>
-            <p className="text-emerald-400/80 text-sm">– Bếp Cô Hạ, Hacofood.vn</p>
+          <div className="bg-white/60 border border-gray-200 rounded-3xl p-6 text-center max-w-2xl mx-auto">
+            <p className="text-gray-700 font-bold text-lg mb-2 italic">&quot;Cô Hạ làm từ tâm -- công thức chia sẻ thật sự, nguyên liệu chọn thật sự, kết quả thật sự.&quot;</p>
+            <p className="text-emerald-700/80 text-sm">-- Bếp Cô Hạ, Hacofood.vn</p>
           </div>
         </FadeSection>
       </section>
 
       {/* ══ GUARANTEE ══ */}
-      <section className="py-14 px-4 sm:px-6">
+      <section className="py-14 px-4 sm:px-6 bg-gray-50/50">
         <FadeSection className="max-w-2xl mx-auto">
-          <div className="bg-gradient-to-br from-emerald-950/50 to-zinc-900/80 border border-emerald-500/20 rounded-3xl p-8 text-center">
+          <div className="bg-gradient-to-br from-emerald-50 to-white border border-emerald-500/20 rounded-3xl p-8 text-center">
             <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-5">
-              <span className="text-3xl text-emerald-400 font-bold">100%</span>
+              <span className="text-3xl text-emerald-700 font-bold">100%</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">
-              Cam Kết <span className="text-emerald-400">Hoàn Tiền 100%</span>
+              Không Hài Lòng?<br /><span className="text-emerald-700">Hoàn Tiền 100% -- Không Hỏi Lý Do</span>
             </h2>
-            <p className="text-zinc-400 leading-relaxed max-w-lg mx-auto mb-4">
-              Nhận sét nguyên liệu, làm theo công thức, nếu bạn không hài lòng với chất lượng nguyên liệu – Cô Hạ hoàn tiền 100%, không hỏi lý do.
+            <p className="text-gray-500 leading-relaxed max-w-lg mx-auto mb-4">
+              Nhận sét nguyên liệu, kiểm tra chất lượng. Nếu bạn thấy nguyên liệu không đạt chuẩn -- liên hệ Cô Hạ, hoàn tiền 100% ngay lập tức, không hỏi thêm bất cứ điều gì.
             </p>
-            <p className="text-zinc-500 text-sm">
-              Bạn không có gì để mất. Chỉ có đĩa xôi cốm ngon đang chờ.
+            <p className="text-gray-700 text-sm font-semibold">
+              Bạn không mất gì cả. Chỉ có đĩa xôi cốm thơm dẻo đang chờ bạn.
             </p>
-          </div>
-        </FadeSection>
-      </section>
-
-      {/* ══ DÀNH CHO AI / KHÔNG DÀNH CHO AI ══ */}
-      <section className="py-14 px-4 sm:px-6 bg-zinc-900/50">
-        <FadeSection className="max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-6">
-              <h3 className="font-extrabold text-xl text-emerald-400 mb-4">Sét này dành cho bạn nếu:</h3>
-              <ul className="space-y-3 text-zinc-300 text-sm">
-                {[
-                  'Bạn muốn làm xôi cốm ngon tại nhà nhưng chưa biết bắt đầu từ đâu',
-                  'Bạn không có thời gian đi chợ tìm từng loại nguyên liệu',
-                  'Bạn muốn món quà ý nghĩa từ bếp nhà mình cho người thân',
-                  'Bạn thích tự tay làm nhưng cần người dẫn đường đúng cách',
-                ].map(t => (
-                  <li key={t} className="flex gap-2.5"><span className="text-emerald-400 flex-shrink-0">&#10003;</span> {t}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-6">
-              <h3 className="font-extrabold text-xl text-red-400 mb-4">Sét này KHÔNG phù hợp nếu:</h3>
-              <ul className="space-y-3 text-zinc-300 text-sm">
-                {[
-                  'Bạn muốn mua xôi cốm đã nấu sẵn, ăn liền',
-                  'Bạn không có xửng hấp hoặc nồi cơm điện có chế độ hấp',
-                  'Bạn không muốn bỏ 1–1,5 tiếng để làm',
-                  'Bạn muốn sản phẩm giao trong ngày (sét giao COD cần 2-4 ngày)',
-                ].map(t => (
-                  <li key={t} className="flex gap-2.5"><span className="text-red-400 flex-shrink-0">&#10007;</span> {t}</li>
-                ))}
-              </ul>
-            </div>
           </div>
         </FadeSection>
       </section>
@@ -726,15 +747,15 @@ export default function SetXoiCom() {
       <section className="py-16 px-4 sm:px-6">
         <FadeSection className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-4 uppercase">Khách đã nói gì</p>
+            <p className="inline-block border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-4 uppercase">Phản hồi thật từ khách hàng</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold">
-              Hàng Trăm Khách Hài Lòng<br />
-              <span className="text-amber-400">Đặt Lại Nhiều Lần, Giới Thiệu Người Thân</span>
+              Đặt Xong, Làm Xong, Khoe Ngay<br />
+              <span className="text-amber-600">Nhiều Khách Đặt Lại Lần 2, Lần 3</span>
             </h2>
           </div>
           <div className="columns-2 sm:columns-3 gap-3 space-y-3">
             {FEEDBACKS.map((src, i) => (
-              <div key={i} className="break-inside-avoid rounded-2xl overflow-hidden border border-zinc-800">
+              <div key={i} className="break-inside-avoid rounded-2xl overflow-hidden border border-gray-200">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={src} alt={`Phản hồi khách hàng ${i + 1}`} className="w-full h-auto object-cover" loading="lazy" />
               </div>
@@ -742,33 +763,35 @@ export default function SetXoiCom() {
           </div>
           <div className="mt-10 text-center">
             <button onClick={scrollToOrder} className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98]">
-              Cho Tôi Đặt Ngay →
+              Tôi Cũng Muốn Đặt →
             </button>
           </div>
         </FadeSection>
       </section>
 
       {/* ══ FAQ ══ */}
-      <section className="py-14 px-4 sm:px-6 bg-zinc-900/50">
+      <section className="py-14 px-4 sm:px-6 bg-gray-50/50">
         <FadeSection className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl sm:text-4xl font-extrabold">Câu Hỏi Thường Gặp</h2>
+            <h2 className="text-3xl sm:text-4xl font-extrabold">Còn Thắc Mắc? Đọc Ngay</h2>
+            <p className="text-gray-500 mt-2">Những câu hỏi khách thường hỏi trước khi đặt</p>
           </div>
           <div className="space-y-3">
             {[
-              { q: 'Sét này có phải xôi nấu sẵn không?', a: 'Không. Đây là sét NGUYÊN LIỆU – bạn nhận về và tự làm tại nhà theo công thức tặng kèm. Thời gian làm khoảng 1–1,5 tiếng.' },
-              { q: 'Một sét làm được bao nhiêu?', a: 'Một sét làm được khoảng 1 đĩa xôi cốm lớn, đủ cho 4-6 người ăn. Nếu cần nhiều hơn, đặt thêm sét.' },
-              { q: 'Ship bao lâu thì nhận?', a: 'Giao toàn quốc qua các đơn vị vận chuyển. Thời gian nhận hàng 2-4 ngày tùy khu vực. Có thể nhận hàng và trả tiền khi nhận (COD).' },
-              { q: 'Nếu làm không ngon thì sao?', a: 'Cô Hạ cam kết hoàn tiền 100% nếu bạn không hài lòng với chất lượng nguyên liệu. Bạn không có gì để mất.' },
-              { q: 'Tôi chưa bao giờ làm xôi cốm, có làm được không?', a: 'Được. Công thức ghi chi tiết từng bước, có hình minh họa. Hàng trăm người lần đầu làm đã thành công với sét này.' },
-              { q: 'Nguyên liệu có bảo quản được lâu không?', a: 'Có. Nguyên liệu khô (cốm khô, đậu xanh, hạt sen...) bảo quản ở nơi khô mát được vài tháng. Lá dứa nên dùng sớm sau khi nhận.' },
+              { q: 'Sét này có phải xôi nấu sẵn không?', a: 'Không. Đây là sét NGUYÊN LIỆU -- bạn nhận về và tự làm tại nhà theo công thức tặng kèm. Thời gian làm khoảng 1--1,5 tiếng. Nhiều khách nói quá trình làm cũng rất vui và thư giãn.' },
+              { q: 'Một sét làm được bao nhiêu phần?', a: 'Một sét làm được khoảng 1 đĩa xôi cốm lớn, đủ cho 4-6 người ăn no. Nếu cần cho mâm cỗ lớn hoặc tặng nhiều người, đặt thêm sét -- nhiều khách đặt 3-5 sét một lần.' },
+              { q: 'Ship bao lâu thì nhận? Phí ship bao nhiêu?', a: 'Giao toàn quốc qua các đơn vị vận chuyển. Thời gian nhận hàng 2-4 ngày tùy khu vực. Phí ship tính theo đơn vị vận chuyển (thường 20-40k). Có thể nhận hàng và trả tiền khi nhận (COD) -- không cần thanh toán trước.' },
+              { q: 'Tôi chưa bao giờ làm xôi cốm, có làm được không?', a: 'Được. Đây chính là lý do sét này tồn tại. Công thức ghi chi tiết từng bước, có hình minh họa. Hàng trăm người lần đầu làm đã thành công -- bạn xem ảnh thành phẩm ở trên là thấy.' },
+              { q: 'Nếu làm không ngon thì sao?', a: 'Cô Hạ cam kết hoàn tiền 100% nếu bạn không hài lòng với chất lượng nguyên liệu, không hỏi lý do. Nhưng thành thật mà nói, chưa có ai đòi hoàn tiền cả -- vì làm theo công thức là ngon.' },
+              { q: 'Nguyên liệu có bảo quản được lâu không?', a: 'Có. Nguyên liệu khô (cốm khô, đậu xanh, hạt sen...) bảo quản ở nơi khô mát được vài tháng. Lá dứa nên dùng sớm sau khi nhận để giữ độ tươi và hương thơm tốt nhất.' },
+              { q: 'Tại sao không bán xôi nấu sẵn cho nhanh?', a: 'Vì xôi cốm ngon nhất là khi vừa hấp xong -- dẻo, thơm, nóng hổi. Ship xôi nấu sẵn sẽ bị khô, mất vị. Cô Hạ muốn bạn được ăn đĩa xôi ngon NHẤT có thể, nên gửi nguyên liệu kèm công thức để bạn tự làm tại nhà.' },
             ].map(({ q, a }) => (
-              <details key={q} className="group bg-zinc-900/80 border border-zinc-800 rounded-2xl">
+              <details key={q} className="group bg-gray-50 border border-gray-200 rounded-2xl">
                 <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
-                  <span className="font-bold text-zinc-200 text-sm pr-4">{q}</span>
-                  <span className="text-zinc-500 group-open:rotate-45 transition-transform text-xl flex-shrink-0">+</span>
+                  <span className="font-bold text-gray-800 text-sm pr-4">{q}</span>
+                  <span className="text-gray-400 group-open:rotate-45 transition-transform text-xl flex-shrink-0">+</span>
                 </summary>
-                <div className="px-5 pb-4 text-zinc-400 text-sm leading-relaxed border-t border-zinc-800 pt-3">
+                <div className="px-5 pb-4 text-gray-500 text-sm leading-relaxed border-t border-gray-200 pt-3">
                   {a}
                 </div>
               </details>
@@ -781,66 +804,78 @@ export default function SetXoiCom() {
       <section ref={orderRef} id="dat-hang" className="py-20 px-4 sm:px-6">
         <FadeSection className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <p className="inline-block border border-amber-500/30 bg-amber-500/10 text-amber-400 font-bold text-xs px-5 py-1.5 rounded-full tracking-widest mb-4 uppercase">Đặt hàng</p>
+            <p className="inline-block border border-amber-500/30 bg-amber-500/10 text-amber-600 font-bold text-xs px-5 py-1.5 rounded-full tracking-widest mb-4 uppercase">Đặt hàng ngay</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold mb-3">
-              Nhận Sét Nguyên Liệu Về Nhà<br />
-              <span className="text-amber-400">Làm Ngay – Thành Công Ngay Lần Đầu</span>
+              Chỉ {fmt(PRICE)}/Sét -- Rẻ Hơn<br />
+              <span className="text-amber-600">Một Lần Đi Chợ Mua Lẻ Nguyên Liệu</span>
             </h2>
-            <p className="text-zinc-500 max-w-md mx-auto">Giao tận nhà toàn quốc · COD trả khi nhận · Kèm công thức bí quyết</p>
+            <p className="text-gray-500 max-w-md mx-auto">Giao tận nhà toàn quốc · COD trả khi nhận · Kèm công thức bí quyết · Hoàn tiền 100%</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-10 items-start">
             {/* Left: Value stack */}
             <div>
-              <div className="bg-gradient-to-br from-emerald-950/60 to-zinc-900 rounded-3xl p-6 border border-emerald-500/20 mb-6">
-                <p className="text-emerald-400 text-sm font-semibold mb-3 uppercase tracking-wider">Bạn nhận được:</p>
+              <div className="bg-gradient-to-br from-emerald-50 to-white rounded-3xl p-6 border border-emerald-500/20 mb-6">
+                <p className="text-emerald-700 text-sm font-semibold mb-3 uppercase tracking-wider">Bạn nhận được tất cả:</p>
                 <ul className="space-y-3 mb-6">
                   {[
-                    '8 nguyên liệu chọn sẵn, đủ bộ, đúng loại',
-                    'Công thức bí quyết của Cô Hạ tặng kèm',
-                    'Hướng dẫn từng bước – làm là thành công',
-                    'Đóng gói cẩn thận, giao toàn quốc',
-                    'Bảo hành: không ngon hoàn tiền 100%',
-                  ].map(item => (
+                    { item: '8 nguyên liệu chọn sẵn, đủ bộ, đúng loại', value: 'Tiết kiệm 3-4 tiếng đi chợ' },
+                    { item: 'Công thức bí quyết của Cô Hạ', value: 'Tỷ lệ chính xác, không đoán mò' },
+                    { item: 'Hướng dẫn từng bước có hình minh họa', value: 'Lần đầu cũng thành công' },
+                    { item: 'Đóng gói cẩn thận, giao toàn quốc COD', value: 'Nhận hàng mới trả tiền' },
+                    { item: 'Cam kết hoàn tiền 100%', value: 'Không hài lòng = hoàn tiền ngay' },
+                  ].map(({ item, value }) => (
                     <li key={item} className="flex items-start gap-3 text-sm">
-                      <span className="text-emerald-400 font-bold mt-0.5 flex-shrink-0">&#10003;</span>
-                      <span className="text-zinc-300">{item}</span>
+                      <span className="text-emerald-700 font-bold mt-0.5 flex-shrink-0">&#10003;</span>
+                      <div>
+                        <span className="text-gray-800 font-medium">{item}</span>
+                        <span className="block text-gray-400 text-xs mt-0.5">{value}</span>
+                      </div>
                     </li>
                   ))}
                 </ul>
-                <div className="border-t border-zinc-700 pt-5 flex items-end justify-between">
+                <div className="border-t border-gray-200 pt-5 flex items-end justify-between">
                   <div>
-                    <p className="text-zinc-500 text-sm">Giá chỉ</p>
-                    <p className="text-4xl font-extrabold text-white">{fmt(PRICE)}</p>
-                    <p className="text-zinc-500 text-xs">/sét nguyên liệu</p>
-                    <p className="mt-2 bg-red-500/20 text-red-400 text-xs font-bold px-2.5 py-1 rounded-full inline-block border border-red-500/30">Chưa bao gồm phí ship</p>
+                    <p className="text-gray-500 text-sm">Tất cả chỉ</p>
+                    <p className="text-4xl font-extrabold text-amber-600">{fmt(PRICE)}</p>
+                    <p className="text-gray-500 text-xs">/sét nguyên liệu</p>
+                    <p className="mt-2 bg-red-500/10 text-red-600 text-xs font-bold px-2.5 py-1 rounded-full inline-block border border-red-500/20">Chưa bao gồm phí ship</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-zinc-500">COD – trả khi nhận</p>
-                    <p className="text-xs text-zinc-500 mt-0.5">Miễn phí đổi trả</p>
+                    <p className="text-xs text-gray-500">COD -- trả khi nhận</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Miễn phí đổi trả</p>
                   </div>
                 </div>
               </div>
+
+              {/* Social proof mini near form */}
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-4">
+                <p className="text-amber-700 text-sm font-semibold text-center">
+                  Hàng trăm khách đã đặt sét này -- nhiều người đặt lại lần 2, lần 3 và giới thiệu cho người thân.
+                </p>
+              </div>
+
               <div className="space-y-3">
                 {[
-                  { t: 'Giao hàng toàn quốc', d: 'Ship tận nhà, đóng gói cẩn thận' },
-                  { t: 'COD – Thanh toán khi nhận', d: 'Nhận hàng, kiểm tra ổn mới trả tiền' },
-                  { t: 'Kèm công thức bí quyết', d: 'Tỷ lệ & kỹ thuật chi tiết, làm là thành công' },
-                  { t: 'Không ngon – hoàn tiền 100%', d: 'Cam kết chất lượng tuyệt đối' },
+                  { t: 'Giao hàng toàn quốc', d: 'Ship tận nhà 2-4 ngày, đóng gói cẩn thận' },
+                  { t: 'COD -- Thanh toán khi nhận', d: 'Nhận hàng, kiểm tra ổn mới trả tiền' },
+                  { t: 'Kèm công thức bí quyết', d: 'Từng bước chi tiết, lần đầu cũng thành công' },
+                  { t: 'Không ngon -- hoàn tiền 100%', d: 'Cam kết chất lượng, không hỏi lý do' },
                 ].map(item => (
                   <div key={item.t} className="flex gap-3 items-start">
                     <span className="w-2 h-2 bg-emerald-400 rounded-full flex-shrink-0 mt-1.5" />
                     <div>
-                      <p className="font-bold text-zinc-200 text-sm">{item.t}</p>
-                      <p className="text-zinc-500 text-xs">{item.d}</p>
+                      <p className="font-bold text-gray-800 text-sm">{item.t}</p>
+                      <p className="text-gray-400 text-xs">{item.d}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
             {/* Right: Form */}
-            <div className="bg-zinc-900/80 rounded-3xl p-6 sm:p-8 border border-zinc-800 shadow-2xl shadow-emerald-500/5">
-              <h3 className="font-extrabold text-xl text-emerald-400 mb-5 text-center">Điền Thông Tin Đặt Hàng</h3>
+            <div className="bg-gray-50 rounded-3xl p-6 sm:p-8 border border-gray-200 shadow-2xl shadow-emerald-500/5">
+              <h3 className="font-extrabold text-xl text-emerald-700 mb-1 text-center">Điền Thông Tin Nhận Hàng</h3>
+              <p className="text-gray-400 text-xs text-center mb-5">Chỉ mất 30 giây -- nhận hàng trong 2-4 ngày</p>
               <OrderForm />
             </div>
           </div>
@@ -850,38 +885,41 @@ export default function SetXoiCom() {
       {/* ══ FINAL PUSH / P.S. ══ */}
       <section className="py-12 px-4 sm:px-6">
         <FadeSection className="max-w-2xl mx-auto text-center">
-          <div className="bg-gradient-to-br from-amber-500/10 to-emerald-500/10 border border-zinc-800 rounded-3xl p-8">
-            <p className="text-amber-400 text-sm font-semibold mb-3">P.S.</p>
-            <p className="text-lg leading-relaxed text-zinc-300">
-              Cốm ngon nhất chỉ có <strong className="text-white">vài tháng trong năm</strong>. Khi Cô Hạ còn hàng – đặt ngay.
-              Nhận sét về, làm theo công thức, rồi chia sẻ thành phẩm cho Cô Hạ xem nhé!
+          <div className="bg-gradient-to-br from-amber-500/10 to-emerald-500/10 border border-gray-200 rounded-3xl p-8">
+            <p className="text-amber-600 text-sm font-semibold mb-3">P.S.</p>
+            <p className="text-lg leading-relaxed text-gray-700 mb-2">
+              Cốm khô ngon nhất chỉ có <strong className="text-gray-900">vài tháng trong năm</strong> -- vụ Thu qua là phải chờ năm sau mới có lại.
+            </p>
+            <p className="text-base leading-relaxed text-gray-500 mb-4">
+              Nếu bạn đang đọc đến đây, nghĩa là bạn thật sự muốn làm xôi cốm ngon.
+              Đừng để hết mùa cốm rồi mới tiếc. Đặt ngay, nhận sét về, và gửi ảnh thành phẩm cho Cô Hạ xem nhé!
             </p>
             <button onClick={scrollToOrder}
-              className="mt-6 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold px-10 py-4 rounded-2xl transition-all active:scale-[0.98] text-xl shadow-xl shadow-amber-500/30">
-              Cho Tôi Sét Nguyên Liệu →
+              className="mt-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold px-10 py-4 rounded-2xl transition-all active:scale-[0.98] text-xl shadow-xl shadow-amber-500/30">
+              Đặt Sét Nguyên Liệu Ngay →
             </button>
           </div>
         </FadeSection>
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer className="bg-zinc-950 border-t border-zinc-800 text-zinc-500 py-10 px-4 sm:px-6 text-center text-sm pb-24 md:pb-10">
+      <footer className="bg-gray-100 border-t border-gray-200 text-gray-400 py-10 px-4 sm:px-6 text-center text-sm pb-24 md:pb-10">
         <div className="max-w-3xl mx-auto space-y-3">
           <div className="flex justify-center">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 inline-flex items-center gap-2">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 inline-flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/images/logo-bep-co-ha.png" alt="Bếp Cô Hạ" className="h-9 w-9 object-contain"
                 onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
               <div className="text-left">
-                <p className="text-emerald-400 font-extrabold text-base leading-tight">Bếp Cô Hạ</p>
-                <p className="text-zinc-600 text-xs">Hacofood.vn</p>
+                <p className="text-emerald-700 font-extrabold text-base leading-tight">Bếp Cô Hạ</p>
+                <p className="text-gray-400 text-xs">Hacofood.vn</p>
               </div>
             </div>
           </div>
-          <p className="text-zinc-500">Sét Nguyên Liệu Xôi Cốm Sen Dừa – Kèm công thức bí quyết độc quyền của Bếp Cô Hạ</p>
-          <p className="text-zinc-500">Zalo: <strong className="text-zinc-400">0965 240 587</strong> · Facebook/TikTok: <strong className="text-zinc-400">Cô Hạ dạy nấu ăn</strong></p>
-          <p className="text-zinc-600 text-xs">Địa chỉ: Bếp Cô Hạ, Số 20 phố Cầu Am, Phường Hà Đông, TP Hà Nội</p>
-          <p className="text-zinc-700 text-xs">&copy; 2025 Hacofood.vn · Bếp Cô Hạ. All rights reserved.</p>
+          <p className="text-gray-400">Sét Nguyên Liệu Xôi Cốm Sen Dừa -- Kèm công thức bí quyết độc quyền của Bếp Cô Hạ</p>
+          <p className="text-gray-400">Zalo: <strong className="text-gray-500">0965 240 587</strong> · Facebook/TikTok: <strong className="text-gray-500">Cô Hạ dạy nấu ăn</strong></p>
+          <p className="text-gray-400 text-xs">Địa chỉ: Dịch Vụ 02, LK 74-75, Đìa Lão, Mậu Lương, Hà Đông, Hà Nội</p>
+          <p className="text-gray-300 text-xs">&copy; 2025 Hacofood.vn · Bếp Cô Hạ. All rights reserved.</p>
         </div>
       </footer>
 
