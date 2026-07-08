@@ -135,7 +135,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, message: 'Underpaid' })
       }
 
-      await confirmSxxPayment(refCode)
+      // Atomic: chỉ tiếp tục nếu CHÍNH request này chuyển đơn sang 'paid'
+      // (chống race condition khi SePay gọi webhook trùng lặp cho cùng giao dịch)
+      const justConfirmed = await confirmSxxPayment(refCode)
+      if (!justConfirmed) {
+        return NextResponse.json({ success: true, message: 'Already paid' })
+      }
 
       let pancakeUpdated = false
       if (order.pancake_order_id) {

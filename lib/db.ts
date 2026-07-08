@@ -966,13 +966,14 @@ export async function getSxxOrderByRef(refCode: string) {
   return rows[0] as SxxOrder | undefined
 }
 
-export async function confirmSxxPayment(refCode: string) {
+export async function confirmSxxPayment(refCode: string): Promise<boolean> {
   const sql = getDb()
-  await sql`
+  const rows = await sql`
     UPDATE sot_xa_xiu_orders
     SET payment_status = 'paid', paid_at = NOW()
-    WHERE ref_code = ${refCode}
+    WHERE ref_code = ${refCode} AND payment_status != 'paid'
   `
+  return rows.count > 0
 }
 
 export async function updateSxxPancakeId(refCode: string, pancakeOrderId: string) {

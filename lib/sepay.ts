@@ -1,6 +1,8 @@
 // SePay – Vietnamese payment gateway (bank transfer / QR code)
 // Docs: https://docs.sepay.vn
 
+import { randomBytes } from 'crypto'
+
 export interface SepayWebhookPayload {
   id: number
   gateway: string
@@ -34,7 +36,9 @@ export function generateSxcRef(phone: string): string {
 export function generateSxxRef(phone: string): string {
   const ts = Date.now().toString().slice(-6)
   const phonePart = phone.replace(/\D/g, '').slice(-4)
-  return `SXX${phonePart}${ts}`
+  // 4 ký tự ngẫu nhiên để mã khó đoán + tránh trùng
+  const rand = randomBytes(2).toString('hex').toUpperCase()
+  return `SXX${phonePart}${ts}${rand}`
 }
 
 // KDX = Khăn Đồ Xôi

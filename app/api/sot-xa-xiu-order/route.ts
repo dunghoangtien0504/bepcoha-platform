@@ -3,6 +3,7 @@ import { initDb, insertSxxOrder } from '@/lib/db'
 import { notifySxxPending } from '@/lib/telegram'
 import { createSxxPancakeOrder } from '@/lib/pancake'
 import { generateSxxRef, buildQRPayload } from '@/lib/sepay'
+import { rateLimit, getClientIp } from '@/lib/ratelimit'
 
 const PRICES: Record<string, number> = {
   '500g': 100000,
@@ -16,6 +17,15 @@ const PRODUCT_LABELS: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
+    // Chống spam: tối đa 5 đơn / IP / 10 phút
+    const ip = getClientIp(req)
+    if (!rateLimit(`sxx-order:${ip}`, 5, 10 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: 'Bạn đặt hàng quá nhanh, vui lòng thử lại sau ít phút.' },
+        { status: 429 },
+      )
+    }
+
     const body = await req.json()
     const { name, phone, email, address, product, quantity, note } = body
 

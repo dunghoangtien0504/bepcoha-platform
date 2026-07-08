@@ -3,6 +3,12 @@ const GIFT_GROUP_ID = process.env.TELEGRAM_GIFT_GROUP_ID || ''
 const COURSE_GROUP_ID = process.env.TELEGRAM_COURSE_GROUP_ID || ''
 const ORDER_GROUP_ID = process.env.TELEGRAM_ORDER_GROUP_ID || COURSE_GROUP_ID
 
+// Escape ký tự đặc biệt để Telegram parse_mode=HTML không bị lỗi 400 hoặc bị chèn link giả
+// (vd khách nhập tên/địa chỉ/ghi chú có <a href> hay & < > sẽ làm hỏng tin nhắn hoặc giả mạo link)
+function esc(s: unknown): string {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 async function sendMessage(chatId: string, text: string) {
   if (!BOT_TOKEN || !chatId) return
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`
@@ -201,12 +207,12 @@ export async function notifySxxPending(data: {
 }) {
   const msg = `🟡 <b>SỐT XÁ XÍU – CHỜ THANH TOÁN</b>
 
-• Tên: <b>${data.name}</b>
-• SĐT: <b>${data.phone}</b>
-• Địa chỉ: ${data.address}
-• Sản phẩm: ${data.product} x${data.quantity}
+• Tên: <b>${esc(data.name)}</b>
+• SĐT: <b>${esc(data.phone)}</b>
+• Địa chỉ: ${esc(data.address)}
+• Sản phẩm: ${esc(data.product)} x${data.quantity}
 • Tổng tiền: <b>${data.totalPrice.toLocaleString('vi-VN')}đ</b>
-• Mã TT: <code>${data.refCode}</code>${data.pancakeOrderId ? `\n• Đơn POScake: <b>#${data.pancakeOrderId}</b>` : ''}${data.note ? `\n• Ghi chú: ${data.note}` : ''}
+• Mã TT: <code>${esc(data.refCode)}</code>${data.pancakeOrderId ? `\n• Đơn POScake: <b>#${esc(data.pancakeOrderId)}</b>` : ''}${data.note ? `\n• Ghi chú: ${esc(data.note)}` : ''}
 • Thời gian: ${new Date().toLocaleString('vi-VN')}
 
 ⏳ Khách đang xem hướng dẫn chuyển khoản`
@@ -220,16 +226,16 @@ export async function notifySxxPaid(data: {
 }) {
   const posLine = data.pancakeOrderId
     ? (data.pancakeUpdated
-        ? `\n• POScake: <b>#${data.pancakeOrderId}</b> → Chờ chuyển hàng ✅`
-        : `\n• POScake: <b>#${data.pancakeOrderId}</b> – cập nhật tay sang "Chờ chuyển hàng"`)
+        ? `\n• POScake: <b>#${esc(data.pancakeOrderId)}</b> → Chờ chuyển hàng ✅`
+        : `\n• POScake: <b>#${esc(data.pancakeOrderId)}</b> – cập nhật tay sang "Chờ chuyển hàng"`)
     : ''
   const msg = `✅ <b>SỐT XÁ XÍU – ĐÃ THANH TOÁN</b>
 
-• Tên: <b>${data.name}</b>
-• SĐT: <b>${data.phone}</b>
-• Sản phẩm: ${data.product} x${data.quantity}
+• Tên: <b>${esc(data.name)}</b>
+• SĐT: <b>${esc(data.phone)}</b>
+• Sản phẩm: ${esc(data.product)} x${data.quantity}
 • Số tiền: <b>${data.totalPrice.toLocaleString('vi-VN')}đ ✓</b>
-• Mã TT: <code>${data.refCode}</code>${posLine}
+• Mã TT: <code>${esc(data.refCode)}</code>${posLine}
 • Thời gian TT: ${new Date().toLocaleString('vi-VN')}`
   await sendMessage(ORDER_GROUP_ID, msg)
 }
