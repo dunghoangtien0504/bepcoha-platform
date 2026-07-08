@@ -325,8 +325,8 @@ export default function SetXoiCom() {
           <div className="text-center mb-8 max-w-3xl mx-auto">
             <p className="text-amber-600 text-sm font-bold uppercase tracking-widest mb-4">Sét nguyên liệu -- Đóng gói mới mỗi ngày</p>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-5">
-              Mở Ra, Làm Theo,<br />
-              <span className="bg-gradient-to-r from-emerald-700 to-emerald-600 bg-clip-text text-transparent">Thành Công Ngay Lần Đầu</span>
+              Mở Ra, Làm Theo<br />
+              <span className="bg-gradient-to-r from-emerald-700 to-emerald-600 bg-clip-text text-transparent">Thành Công Ngay</span>
             </h1>
             <p className="text-gray-500 text-lg sm:text-xl max-w-xl mx-auto leading-relaxed">
               Cô Hạ chọn sẵn 8 nguyên liệu, đóng thành bộ, kèm công thức bí quyết.
