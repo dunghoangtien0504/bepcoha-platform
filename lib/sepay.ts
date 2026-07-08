@@ -30,6 +30,13 @@ export function generateSxcRef(phone: string): string {
   return `SXC${phonePart}${ts}`
 }
 
+// SXX = Sốt Xá Xíu
+export function generateSxxRef(phone: string): string {
+  const ts = Date.now().toString().slice(-6)
+  const phonePart = phone.replace(/\D/g, '').slice(-4)
+  return `SXX${phonePart}${ts}`
+}
+
 // KDX = Khăn Đồ Xôi
 export function generateKdxRef(phone: string): string {
   const ts = Date.now().toString().slice(-6)

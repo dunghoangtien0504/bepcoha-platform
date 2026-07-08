@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initDb, confirmPayment, getLeadByRef, markEmailSent, markTelegramSent, getStnOrderByRef, confirmStnPayment, getKdxOrderByRef, confirmKdxPayment, getSxcOrderByRef, confirmSxcPayment } from '@/lib/db'
+import { initDb, confirmPayment, getLeadByRef, markEmailSent, markTelegramSent, getStnOrderByRef, confirmStnPayment, getKdxOrderByRef, confirmKdxPayment, getSxcOrderByRef, confirmSxcPayment, getSxxOrderByRef, confirmSxxPayment } from '@/lib/db'
 import { sendCourseConfirmEmail } from '@/lib/email'
-import { notifyCourseLead, notifyPaymentMismatch, notifyStnPaid, notifyKdxPaid, notifySxcPaid } from '@/lib/telegram'
+import { notifyCourseLead, notifyPaymentMismatch, notifyStnPaid, notifyKdxPaid, notifySxcPaid, notifySxxPaid } from '@/lib/telegram'
 import { SepayWebhookPayload } from '@/lib/sepay'
 import { updatePancakeOrderStatus } from '@/lib/pancake'
 
@@ -112,6 +112,38 @@ export async function POST(req: NextRequest) {
       }
 
       await notifySxcPaid({
+        name: order.name, phone: order.phone,
+        product: order.product, quantity: order.quantity, totalPrice: order.total_price,
+        refCode, pancakeOrderId: order.pancake_order_id || undefined,
+        pancakeUpdated,
+      }).catch(console.error)
+
+      return NextResponse.json({ success: true })
+    }
+
+    // ── Sốt Xá Xíu (SXX prefix) ──────────────────────────────────────────────
+    const sxxMatch = content.match(/SXX[A-Z0-9]+/i)
+    if (sxxMatch) {
+      const refCode = sxxMatch[0].toUpperCase()
+      const order = await getSxxOrderByRef(refCode)
+      if (!order) return NextResponse.json({ success: true, message: 'SXX order not found' })
+      if (order.payment_status === 'paid') return NextResponse.json({ success: true, message: 'Already paid' })
+
+      const received = Number(payload.transferAmount) || 0
+      if (received < order.total_price) {
+        await notifyPaymentMismatch({ paymentRef: refCode, received, expected: order.total_price, content }).catch(console.error)
+        return NextResponse.json({ success: true, message: 'Underpaid' })
+      }
+
+      await confirmSxxPayment(refCode)
+
+      let pancakeUpdated = false
+      if (order.pancake_order_id) {
+        const updated = await updatePancakeOrderStatus(order.pancake_order_id, 9).catch(() => null)
+        pancakeUpdated = !!updated
+      }
+
+      await notifySxxPaid({
         name: order.name, phone: order.phone,
         product: order.product, quantity: order.quantity, totalPrice: order.total_price,
         refCode, pancakeOrderId: order.pancake_order_id || undefined,
