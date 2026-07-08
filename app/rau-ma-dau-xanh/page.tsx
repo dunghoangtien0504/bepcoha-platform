@@ -789,6 +789,15 @@ export default function RauMaDauXanhPage() {
       {/* ─── STICKY CTA (hiện khi scroll qua hero) ───────────────────────────── */}
       <StickyBar onCTA={scrollToForm} />
 
+      {/* ══ MESSENGER FLOAT ══ */}
+      <a href="https://www.facebook.com/messages/t/hacasau1987" target="_blank" rel="noopener noreferrer"
+        className="fixed bottom-24 right-4 z-50 w-14 h-14 bg-gradient-to-br from-[#00B2FF] to-[#006AFF] hover:brightness-110 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/30 transition-all hover:scale-110"
+        aria-label="Nhắn tin qua Messenger">
+        <svg viewBox="0 0 24 24" className="w-8 h-8" fill="white">
+          <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.652V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111C24 4.974 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.75 8l3.13 3.259L19.777 8l-6.586 6.963z" />
+        </svg>
+      </a>
+
       {/* ─── MODALS ───────────────────────────────────────────────────────────── */}
       {qrData && (
         <PaymentModal qr={qrData} onClose={() => setQrData(null)}
