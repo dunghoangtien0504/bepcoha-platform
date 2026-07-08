@@ -323,6 +323,39 @@ export default function KhoaHocDuaCaMuoi() {
         </div>
       </section>
 
+      {/* ══ UY TÍN ══ */}
+      <section className="py-14 px-4 sm:px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-8">
+            <span className="inline-block border border-amber-300 bg-amber-50 text-amber-700 font-bold text-xs px-4 py-1.5 rounded-full tracking-widest mb-3">THƯƠNG HIỆU UY TÍN</span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800">
+              Bếp Cô Hạ — Triệu Lượt Xem<br />
+              <span className="text-amber-600">Trên TikTok, YouTube, Facebook</span>
+            </h2>
+            <p className="text-gray-500 mt-2 text-sm max-w-lg mx-auto">Không phải thương hiệu mới — Cô Hạ đã chia sẻ hàng trăm video nấu ăn được triệu người theo dõi</p>
+          </div>
+          <div className="grid grid-cols-3 gap-5 mb-8 max-w-3xl mx-auto">
+            {[
+              { src: '/images/set-xoi-com/uy-tin/z7730296537408_96f9db97736016c93f9a740985d04d41.jpg', label: 'Cộng đồng Hacofood' },
+              { src: '/images/set-xoi-com/uy-tin/z7730296545695_e2cd4f391ad3a8ae76f1e8d8d6651042.jpg', label: 'TikTok & YouTube viral' },
+              { src: '/images/set-xoi-com/uy-tin/z7730387539278_d0ddcc6f279597ec3196aeae9a0af2ec.jpg', label: 'Hàng triệu lượt xem' },
+            ].map(img => (
+              <div key={img.label} className="rounded-2xl overflow-hidden shadow-md bg-white border border-gray-100 flex flex-col">
+                <div className="h-52 sm:h-64 flex items-center justify-center bg-gray-50 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img.src} alt={img.label} className="w-full h-full object-contain" />
+                </div>
+                <p className="text-center text-xs font-semibold text-gray-600 py-2.5 px-2 leading-tight">{img.label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="bg-[#F0FBE8] rounded-3xl p-6 text-center max-w-2xl mx-auto border border-green-100">
+            <p className="text-[#3F6B2E] font-bold text-lg mb-2">&ldquo;Cô Hạ làm từ tâm – công thức chia sẻ thật sự, nguyên liệu chọn thật sự, kết quả thật sự.&rdquo;</p>
+            <p className="text-green-700 text-sm italic">– Bếp Cô Hạ, Hacofood.vn</p>
+          </div>
+        </div>
+      </section>
+
       {/* ══ GALLERY: THÀNH PHẨM ══ */}
       <section className="py-12 px-4 sm:px-6 bg-white">
         <div className="max-w-5xl mx-auto">
