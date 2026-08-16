@@ -4,7 +4,7 @@ import { notifySxcPending } from '@/lib/telegram'
 import { createSxcPancakeOrder } from '@/lib/pancake'
 import { generateSxcRef, buildQRPayload } from '@/lib/sepay'
 
-const PRICE = 139000
+const PRICE = 148000
 const PRODUCT_KEY = 'set-xoi-com'
 const PRODUCT_LABEL = 'Sét Nguyên Liệu Xôi Cốm Sen Dừa Bếp Cô Hạ'
 

@@ -50,7 +50,7 @@ const UY_TIN = [
   { src: UT + 'z7730387539278_d0ddcc6f279597ec3196aeae9a0af2ec.jpg', label: 'Hàng triệu lượt xem' },
 ]
 
-const PRICE = 139000
+const PRICE = 148000
 function fmt(n: number) { return n.toLocaleString('vi-VN') + 'đ' }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
