@@ -45,6 +45,9 @@ export const CLIENT_EVENTS: Record<string, number> = {
   cook_mode: 5,
   product_click: 7,
   group_click: 6,
+  // v2-B: giỏ hàng (order_placed do máy chủ tự ghi)
+  cart_add: 7,
+  checkout_view: 7,
 }
 
 export interface SessionRow {
