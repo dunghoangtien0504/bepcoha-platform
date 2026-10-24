@@ -123,3 +123,18 @@ test('homeState: phiên mới có 0 điểm, chưa điểm danh, Sổ tay rỗng
   assert.deepEqual(h.saved_recipes, [])
   assert.equal(h.points_rules.checkin, 5)
 })
+
+test('points_earned: tiêu điểm không trừ tổng đã tích, trả lại khi huỷ đơn không cộng thêm', { skip }, async () => {
+  const id = (await svc.identify({ anon_id: anon(), phone: phone(6) }, ctx)).session.id
+  await ck.checkin(id)
+  const { promoteMiniSession } = await import('../lib/crm/mini')
+  await promoteMiniSession(id, 'staff', { type: 'staff', id: null })
+  const s = await svc.loadSession(id)
+  // Dòng âm chỉ ghi được khi đã gắn khách đã xác minh (ràng buộc DB).
+  await sql`INSERT INTO points_ledger (mini_session_id, customer_id, delta, reason, ref) VALUES (${id}, ${s.customer_id}, -3, 'dung_don', 'HMA-T1')`
+  await sql`INSERT INTO points_ledger (mini_session_id, customer_id, delta, reason, ref) VALUES (${id}, ${s.customer_id}, 3, 'hoan_don', 'HMA-T1')`
+  await sql`INSERT INTO points_ledger (mini_session_id, customer_id, delta, reason, ref) VALUES (${id}, ${s.customer_id}, -2, 'dung_don', 'HMA-T2')`
+  const h = await ck.homeState(s)
+  assert.equal(h.points, 3)
+  assert.equal(h.points_earned, 5)
+})

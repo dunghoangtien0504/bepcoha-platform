@@ -108,6 +108,15 @@ export async function pointsBalance(s: SessionRow, sql: Sql = getDb()): Promise<
   return r[0].n
 }
 
+/** Tổng Hạt Cốm đã TÍCH (để xếp hạng thành viên): chỉ khoản cộng, bỏ khoản trả lại khi huỷ đơn. Tiêu điểm không làm tụt hạng. */
+export async function pointsEarned(s: SessionRow, sql: Sql = getDb()): Promise<number> {
+  const cid = scopeCustomer(s)
+  const r = cid
+    ? await sql`SELECT COALESCE(SUM(delta), 0)::int AS n FROM points_ledger WHERE customer_id = ${cid} AND delta > 0 AND reason <> 'hoan_don'`
+    : await sql`SELECT COALESCE(SUM(delta), 0)::int AS n FROM points_ledger WHERE mini_session_id = ${s.id} AND delta > 0 AND reason <> 'hoan_don'`
+  return r[0].n
+}
+
 export async function savedRecipes(s: SessionRow, sql: Sql = getDb()): Promise<string[]> {
   const cid = scopeCustomer(s)
   const rows = cid
@@ -123,12 +132,14 @@ export function publicCheckin(st: StreakState) {
 /** Phần v2-A gắn vào /me: điểm, luật điểm, trạng thái điểm danh, Sổ tay. */
 export async function homeState(s: SessionRow, sql: Sql = getDb()) {
   try {
-    const [rules, days, points, saved] = await Promise.all([pointsRules(sql), checkinDays(s, sql), pointsBalance(s, sql), savedRecipes(s, sql)])
-    return { points, points_rules: rules, checkin: publicCheckin(computeStreak(days, vnDay())), saved_recipes: saved }
+    const [rules, days, points, earned, saved] = await Promise.all([
+      pointsRules(sql), checkinDays(s, sql), pointsBalance(s, sql), pointsEarned(s, sql), savedRecipes(s, sql),
+    ])
+    return { points, points_earned: earned, points_rules: rules, checkin: publicCheckin(computeStreak(days, vnDay())), saved_recipes: saved }
   } catch (e) {
     // Bảng v2-A chưa được tạo (phiên CRM giữ migration): /me vẫn chạy với giá trị rỗng thay vì lỗi cả trang.
     if ((e as { code?: string }).code !== '42P01') throw e
-    return { points: 0, points_rules: DEFAULT_POINTS, checkin: publicCheckin(computeStreak([], vnDay())), saved_recipes: [] as string[] }
+    return { points: 0, points_earned: 0, points_rules: DEFAULT_POINTS, checkin: publicCheckin(computeStreak([], vnDay())), saved_recipes: [] as string[] }
   }
 }
 

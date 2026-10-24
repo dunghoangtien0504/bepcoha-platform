@@ -58,6 +58,11 @@ export const CLIENT_EVENTS: Record<string, number> = {
   event_remind: 6,
   event_calendar: 6,
   event_join: 6,
+  // v4 (học Starbucks / Luckin / McDonald's): đặt lại 1 chạm, ví ưu đãi, gửi tặng
+  reorder: 7,
+  wallet_use: 7,
+  gift_order: 7,
+  gift_share: 9,
 }
 
 export interface SessionRow {
