@@ -48,6 +48,16 @@ export const CLIENT_EVENTS: Record<string, number> = {
   // v2-B: giỏ hàng (order_placed do máy chủ tự ghi)
   cart_add: 7,
   checkout_view: 7,
+  // v3-A: danh sách đi chợ, hẹn giờ khi nấu, thêm vào màn hình chính, sự kiện, thông báo
+  shopping_add: 5,
+  cook_timer: 5,
+  cook_done: 5,
+  add_to_home: 6,
+  event_open: 6,
+  notification_open: 6,
+  event_remind: 6,
+  event_calendar: 6,
+  event_join: 6,
 }
 
 export interface SessionRow {

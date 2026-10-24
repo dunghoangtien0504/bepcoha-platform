@@ -1,5 +1,6 @@
 import { homeState } from '@/lib/mini/checkin'
 import { miniRoute, sessionIdFrom } from '@/lib/mini/http'
+import { unreadCount } from '@/lib/mini/notifications'
 import { getMe, loadSession } from '@/lib/mini/service'
 
 /**
@@ -10,5 +11,5 @@ export const GET = miniRoute(async (req: Request) => {
   const id = await sessionIdFrom(req)
   const me = await getMe(id) // ném no_session nếu chưa đăng ký
   const s = (await loadSession(id))!
-  return Response.json({ ...me, ...(await homeState(s)) }, { headers: { 'Cache-Control': 'no-store' } })
+  return Response.json({ ...me, ...(await homeState(s)), unread_notifications: await unreadCount(s) }, { headers: { 'Cache-Control': 'no-store' } })
 })

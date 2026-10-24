@@ -1,0 +1,15 @@
+{
+  "name": "Bếp Cô Hạ",
+  "short_name": "Bếp Cô Hạ",
+  "description": "Công thức, khoá học và quà của Bếp Cô Hạ",
+  "lang": "vi",
+  "start_url": "/m/?utm_source=home_screen",
+  "scope": "/m/",
+  "display": "standalone",
+  "background_color": "#fbf6ee",
+  "theme_color": "#006e32",
+  "icons": [
+    { "src": "/m/brand/logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/m/brand/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
