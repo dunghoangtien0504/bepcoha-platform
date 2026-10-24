@@ -1,1 +1,6 @@
-{}
+{
+  "crons": [
+    { "path": "/api/crm/cron?task=sync", "schedule": "5 * * * *" },
+    { "path": "/api/crm/cron?task=daily", "schedule": "0 1 * * *" }
+  ]
+}

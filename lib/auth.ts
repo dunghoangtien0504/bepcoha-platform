@@ -41,6 +41,7 @@ export async function createToken(payload: any): Promise<string> {
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const verified = await jwtVerify(token, getJwtSecret())
+    if (!Number.isInteger(verified.payload.id)) return null
     return {
       id: verified.payload.id as number,
       email: verified.payload.email as string,
@@ -65,4 +66,17 @@ export async function verifyAuthHeader(authHeader: string | null): Promise<JWTPa
   const token = getTokenFromHeader(authHeader)
   if (!token) return null
   return verifyToken(token)
+}
+
+/**
+ * Dùng cho các thao tác nhạy cảm (xuất dữ liệu cá nhân): token hợp lệ CHƯA đủ, phải tra lại DB xem
+ * tài khoản còn hoạt động và còn là admin. Tài khoản admin lấy từ biến môi trường (id = 0) không có dòng trong DB.
+ */
+export async function verifyActiveAdmin(authHeader: string | null): Promise<JWTPayload | null> {
+  const payload = await verifyAuthHeader(authHeader)
+  if (!payload || payload.role !== 'admin') return null
+  if (payload.id === 0) return payload
+  const { getStaffById } = await import('./db')
+  const staff = await getStaffById(payload.id)
+  return staff && staff.status === 'active' && staff.role === 'admin' ? payload : null
 }
