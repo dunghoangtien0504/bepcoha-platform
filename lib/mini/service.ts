@@ -63,6 +63,13 @@ export const CLIENT_EVENTS: Record<string, number> = {
   wallet_use: 7,
   gift_order: 7,
   gift_share: 9,
+  // v6 (phản biện khách + CEO): đo phễu xem trang chủ / tab Đặt hàng / banner, kế hoạch đi chợ tuần, gợi ý mua kèm
+  home_view: 3,
+  shop_view: 7,
+  banner_click: 5,
+  week_plan_view: 5,
+  week_plan_share: 9,
+  upsell_add: 7,
 }
 
 export interface SessionRow {
