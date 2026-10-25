@@ -70,6 +70,12 @@ export const CLIENT_EVENTS: Record<string, number> = {
   week_plan_view: 5,
   week_plan_share: 9,
   upsell_add: 7,
+  // v7: mẹo vặt, cộng đồng Góc bếp chị em
+  tips_view: 5,
+  community_view: 6,
+  community_send: 6,
+  community_feed: 9,
+  community_post: 6,
 }
 
 export interface SessionRow {

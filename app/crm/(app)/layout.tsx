@@ -10,6 +10,7 @@ const NAV: NavItem[] = [
   { href: '/crm/co-hoi', label: 'Cơ hội bán', icon: '◆', perm: 'co_hoi.xem' },
   { href: '/crm/chien-dich', label: 'Chiến dịch', icon: '✉', perm: 'chien_dich.xem' },
   { href: '/crm/qr', label: 'QR & Mini App', icon: '▦', perm: 'qr.xem' },
+  { href: '/crm/cong-dong', label: 'Góc bếp chị em', icon: '❀', perm: 'su_kien.quan_ly' },
   { href: '/crm/cham-cong', label: 'Chấm công', icon: '◷', perm: 'cham_cong.cua_toi', group: 'Nhân sự' },
   { href: '/crm/phan-ca', label: 'Xếp ca', icon: '▤', perm: 'cham_cong.phan_ca', group: 'Nhân sự' },
   { href: '/crm/bang-cong', label: 'Bảng công', icon: '▥', perm: 'cham_cong.cua_toi', group: 'Nhân sự' },
