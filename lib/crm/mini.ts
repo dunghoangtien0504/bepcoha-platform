@@ -44,6 +44,8 @@ export async function promoteMiniSession(sessionId: number, via: VerifiedVia, ac
             AND (p.reason NOT IN ('diem_danh', 'moc_chuoi', 'dang_ky')
                  OR NOT EXISTS (SELECT 1 FROM points_ledger x WHERE x.customer_id = ${cid} AND x.reason = p.reason AND x.ref = p.ref))`
     await t`UPDATE saved_recipes SET customer_id = ${cid} WHERE mini_session_id = ${sessionId}`
+    await t`UPDATE event_reminders SET customer_id = ${cid} WHERE mini_session_id = ${sessionId} AND customer_id IS NULL`
+    await t`UPDATE notification_reads SET customer_id = ${cid} WHERE mini_session_id = ${sessionId} AND customer_id IS NULL`
     await t`UPDATE consents SET customer_id = ${cid}, verified = TRUE WHERE mini_session_id = ${sessionId}`
     // Đồng ý/rút lại từ phiên giờ mới được áp vào cờ "không liên hệ". Quy tắc (chặn thừa có chủ đích):
     // lượt mới nhất của phiên là RÚT LẠI ở BẤT KỲ kênh nào → bật opted_out_at cho cả khách. Không bao giờ tự tắt opted_out_at.

@@ -2,12 +2,15 @@ import { safeEqual } from '@/lib/internal-auth'
 import { ensureCrmSchema } from '@/lib/crm/schema'
 import { generateDailyTasks } from '@/lib/crm/tasks'
 import { syncRecentOrders } from '@/lib/crm/sync'
+import { pushOrdersToZl } from '@/lib/crm/zl-bridge'
+import { autoDowngrade } from '@/lib/crm/ai'
+import { runTroLyCeo, runGiuChan } from '@/lib/crm/ai-agents'
 import { logAction } from '@/lib/crm/audit'
 
 /**
  * Tác vụ định kỳ (Vercel Cron / GitHub Actions gọi kèm header Authorization: Bearer <CRON_SECRET>):
- *  ?task=sync  — mỗi giờ: đồng bộ đơn Pancake 14 ngày gần nhất, tra lại yêu cầu ghép đơn
- *  ?task=daily — 8h sáng: sinh việc theo vòng đời khách
+ *  ?task=sync  — mỗi giờ: đồng bộ đơn Pancake 14 ngày gần nhất, tra lại yêu cầu ghép đơn, gửi đơn đã chốt sang Zalo CRM
+ *  ?task=daily — 8h sáng: sinh việc theo vòng đời khách; Trung tâm AI: tự hạ cấp agent, bản tin Trợ lý CEO, đề xuất Giữ chân
  */
 export async function GET(req: Request) {
   // Vercel Cron gửi "Authorization: Bearer <CRON_SECRET>"; công cụ khác có thể gửi x-api-key
@@ -18,8 +21,22 @@ export async function GET(req: Request) {
   await ensureCrmSchema()
   const task = new URL(req.url).searchParams.get('task')
   try {
-    if (task === 'sync') return Response.json({ ok: true, ...(await syncRecentOrders()) })
-    if (task === 'daily') return Response.json({ ok: true, created: await generateDailyTasks() })
+    if (task === 'sync') {
+      const synced = await syncRecentOrders()
+      // Zalo CRM tắt hay lỗi không được làm hỏng lượt đồng bộ đơn
+      const zl = await pushOrdersToZl().catch(e => ({ error: e instanceof Error ? e.message : String(e) }))
+      return Response.json({ ok: true, ...synced, zl })
+    }
+    if (task === 'daily') {
+      const created = await generateDailyTasks()
+      // Agent lỗi không được làm hỏng việc sinh việc hằng ngày; agent tắt thì propose() tự bỏ qua
+      const ai = {
+        downgraded: await autoDowngrade().catch(e => `lỗi: ${e instanceof Error ? e.message : e}`),
+        brief: await runTroLyCeo().then(r => (r ? r.status : 'bỏ qua')).catch(e => `lỗi: ${e instanceof Error ? e.message : e}`),
+        giu_chan: await runGiuChan().catch(e => `lỗi: ${e instanceof Error ? e.message : e}`),
+      }
+      return Response.json({ ok: true, created, ai })
+    }
     return Response.json({ error: 'task phải là sync hoặc daily' }, { status: 400 })
   } catch (e) {
     console.error('[crm/cron]', task, e)

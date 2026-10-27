@@ -21,7 +21,7 @@ export function ensureCrmSchema(): Promise<void> {
 }
 
 // Đổi số này khi sửa DDL bên dưới để mọi instance chạy lại.
-export const CRM_SCHEMA_VERSION = 11
+export const CRM_SCHEMA_VERSION = 14
 
 async function runCrmSchema() {
   const sql = getDb()
@@ -555,4 +555,154 @@ async function crmSchemaBody(sql: Sql) {
   await sql`CREATE INDEX IF NOT EXISTS mini_orders_phone_idx ON mini_orders (phone, created_at DESC)`
   await sql`CREATE INDEX IF NOT EXISTS mini_orders_pos_idx ON mini_orders (pos_order_id) WHERE pos_order_id IS NOT NULL`
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS mini_orders_voucher_uq ON mini_orders (voucher_id) WHERE voucher_id IS NOT NULL`
+
+  // ── v12: Sự kiện & hộp thư trong Mini App (hợp đồng v3-A; Zalo Mini App 4.6: không like/bình luận trong app) ──
+  await sql`
+    CREATE TABLE IF NOT EXISTS events (
+      id SERIAL PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL CHECK (slug ~ '^[a-z0-9-]{3,80}$'),
+      title TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 200),
+      summary TEXT NOT NULL DEFAULT '',
+      body TEXT NOT NULL DEFAULT '',
+      kind TEXT NOT NULL CHECK (kind IN ('livestream', 'workshop', 'thu_thach', 'uu_dai', 'le_tet', 'khac')),
+      starts_at TIMESTAMPTZ NOT NULL,
+      ends_at TIMESTAMPTZ CHECK (ends_at IS NULL OR ends_at >= starts_at),
+      location TEXT NOT NULL DEFAULT '',
+      image TEXT NOT NULL DEFAULT '' CHECK (image = '' OR image ~ '^(/images/|https://)'),
+      join_url TEXT NOT NULL DEFAULT '' CHECK (join_url = '' OR join_url ~ '^https://'),
+      capacity INT CHECK (capacity IS NULL OR capacity > 0),
+      status TEXT NOT NULL DEFAULT 'nhap' CHECK (status IN ('nhap', 'cong_bo', 'huy')),
+      created_by INT REFERENCES staff(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `
+  await sql`CREATE INDEX IF NOT EXISTS events_status_idx ON events (status, starts_at)`
+  // Khách bấm "Nhắc tôi" / "Giữ chỗ". Số chỗ đã giữ = giu_cho chưa huỷ; phiên Mini App khoá theo sự kiện khi giữ chỗ.
+  await sql`
+    CREATE TABLE IF NOT EXISTS event_reminders (
+      id SERIAL PRIMARY KEY,
+      event_id INT NOT NULL REFERENCES events(id),
+      mini_session_id INT NOT NULL REFERENCES mini_sessions(id),
+      customer_id INT REFERENCES customers(id),
+      kind TEXT NOT NULL CHECK (kind IN ('nhac', 'giu_cho')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      cancelled_at TIMESTAMPTZ,
+      UNIQUE (event_id, mini_session_id, kind)
+    )
+  `
+  await sql`CREATE INDEX IF NOT EXISTS event_reminders_event_idx ON event_reminders (event_id, kind) WHERE cancelled_at IS NULL`
+  await sql`CREATE INDEX IF NOT EXISTS event_reminders_customer_idx ON event_reminders (customer_id) WHERE customer_id IS NOT NULL`
+  // Hộp thư trong app. Link chỉ là đường dẫn TRONG app (Zalo 4.1). Thông báo chung không được gắn người cụ thể.
+  await sql`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 200),
+      body TEXT NOT NULL DEFAULT '',
+      link TEXT NOT NULL DEFAULT '' CHECK (link = '' OR link ~ '^/[a-z0-9/_-]*$'),
+      image TEXT NOT NULL DEFAULT '' CHECK (image = '' OR image ~ '^(/images/|https://)'),
+      kind TEXT NOT NULL CHECK (kind IN ('su_kien', 'cong_thuc', 'uu_dai', 'don_hang', 'khoe_mon', 'he_thong')),
+      audience TEXT NOT NULL CHECK (audience IN ('tat_ca', 'da_xac_minh', 'khach', 'phien')),
+      customer_id INT REFERENCES customers(id),
+      mini_session_id INT REFERENCES mini_sessions(id),
+      event_id INT REFERENCES events(id),
+      publish_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ CHECK (expires_at IS NULL OR expires_at > publish_at),
+      created_by INT REFERENCES staff(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (audience <> 'khach' OR customer_id IS NOT NULL),
+      CHECK (audience <> 'phien' OR mini_session_id IS NOT NULL),
+      CHECK (audience NOT IN ('tat_ca', 'da_xac_minh') OR (customer_id IS NULL AND mini_session_id IS NULL))
+    )
+  `
+  await sql`CREATE INDEX IF NOT EXISTS notifications_publish_idx ON notifications (publish_at DESC)`
+  await sql`CREATE INDEX IF NOT EXISTS notifications_customer_idx ON notifications (customer_id) WHERE customer_id IS NOT NULL`
+  await sql`CREATE INDEX IF NOT EXISTS notifications_session_idx ON notifications (mini_session_id) WHERE mini_session_id IS NOT NULL`
+  // Một thông báo sự kiện "gửi mọi người" cho mỗi sự kiện (bấm công bố 2 lần không tạo 2 tin)
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS notifications_event_once_uq ON notifications (event_id) WHERE event_id IS NOT NULL AND audience = 'tat_ca'`
+  await sql`
+    CREATE TABLE IF NOT EXISTS notification_reads (
+      notification_id INT NOT NULL REFERENCES notifications(id),
+      mini_session_id INT NOT NULL REFERENCES mini_sessions(id),
+      customer_id INT REFERENCES customers(id),
+      read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (notification_id, mini_session_id)
+    )
+  `
+  await sql`CREATE INDEX IF NOT EXISTS notification_reads_customer_idx ON notification_reads (customer_id, notification_id) WHERE customer_id IS NOT NULL`
+
+  // ── v13: cầu nối sang Zalo CRM của HACO (HACO-ZL-CRM): đơn đã chốt được gửi sang webhook đơn hàng ký HMAC ──
+  await sql`ALTER TABLE pancake_orders ADD COLUMN IF NOT EXISTS zl_pushed_at TIMESTAMPTZ`
+  await sql`ALTER TABLE pancake_orders ADD COLUMN IF NOT EXISTS zl_push_error TEXT`
+  await sql`CREATE INDEX IF NOT EXISTS pancake_orders_zl_pending_idx ON pancake_orders (inserted_at)
+            WHERE zl_pushed_at IS NULL AND counts_revenue AND NOT phone_masked AND phone_norm <> ''`
+
+  // ── v14: Trung tâm AI — agent có mức tự chủ L0/L1/L2, hàng chờ duyệt + nhật ký hành động (kế hoạch HACO-ZL-CRM/haco) ──
+  // Điều khiển chung (dừng khẩn cấp, mô phỏng) nằm ở app_settings key 'ai_control'.
+  await sql`
+    CREATE TABLE IF NOT EXISTS ai_agents (
+      code TEXT PRIMARY KEY CHECK (code ~ '^[a-z_]{2,40}$'),
+      name TEXT NOT NULL,
+      purpose TEXT NOT NULL DEFAULT '',
+      kpi TEXT NOT NULL DEFAULT '',
+      level TEXT NOT NULL DEFAULT 'L0' CHECK (level IN ('L0', 'L1', 'L2')),
+      max_level TEXT NOT NULL DEFAULT 'L2' CHECK (max_level IN ('L0', 'L1', 'L2')),
+      enabled BOOLEAN NOT NULL DEFAULT FALSE,
+      home TEXT NOT NULL DEFAULT 'crm' CHECK (home IN ('crm', 'zalo')),
+      model_tier TEXT NOT NULL DEFAULT 're' CHECK (model_tier IN ('re', 'vua', 'manh')),
+      kinds TEXT[] NOT NULL DEFAULT '{}',
+      max_auto_per_day INT NOT NULL DEFAULT 20 CHECK (max_auto_per_day BETWEEN 0 AND 1000),
+      sort SMALLINT NOT NULL DEFAULT 0,
+      updated_by INT REFERENCES staff(id),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (level <= max_level)
+    )
+  `
+  await sql`
+    INSERT INTO ai_agents (code, name, purpose, kpi, level, max_level, enabled, home, model_tier, kinds, sort) VALUES
+      ('tro_ly_ceo', 'Trợ lý CEO kiêm Số liệu', 'Bản tin 8h cho Cô Hạ: doanh thu, đơn chốt, khách mới, việc quá hạn, hàng chờ duyệt. Chỉ đọc số, không ghi gì vào dữ liệu.',
+        '14 ngày bản tin liên tục, 0 số sai so với màn Thống kê Pancake', 'L2', 'L2', TRUE, 'crm', 're', '{bao_cao}', 1),
+      ('cskh', 'CSKH kiêm Follow-up', 'Soạn nháp trả lời khách 1-1 trong Zalo CRM theo kịch bản HACO; nhân viên đọc rồi mới gửi.',
+        'Phản hồi trung vị −50%; ≥ 80% nháp dùng nguyên văn', 'L1', 'L1', FALSE, 'zalo', 'vua', '{gui_tin}', 2),
+      ('giu_chan', 'Giữ chân & mua lại', 'Tìm khách đã mua 25–45 ngày (sốt, nguyên liệu sắp hết), soạn tin hỏi thăm mời mua lại để người duyệt.',
+        'Tỉ lệ mua lại 60 ngày +5 điểm %', 'L1', 'L1', FALSE, 'crm', 'vua', '{gui_tin,tao_viec}', 3),
+      ('noi_dung', 'Content đa kênh', 'Viết bài Fanpage / Zalo OA từ kho câu chuyện và phàn nàn của khách. Chỉ mở khi số liệu cho thấy content nghẽn.',
+        '20 bài/tuần, 0 vi phạm luật quảng cáo', 'L0', 'L1', FALSE, 'crm', 'manh', '{dang_bai}', 4),
+      ('kiem_duyet', 'Kiểm duyệt chất lượng', 'Soát tin và bài trước khi gửi: giá đúng kịch bản, không nói chữa bệnh, không chữ "nhất".',
+        '0 tin sai giá/chính sách lọt ra ngoài', 'L0', 'L2', FALSE, 'crm', 're', '{}', 5),
+      ('quang_cao', 'Quảng cáo', 'Đọc số quảng cáo và đề xuất. Không bao giờ tự tiêu tiền (khoá ở L0).',
+        'ROAS không giảm so với tuần trước', 'L0', 'L0', FALSE, 'crm', 'manh', '{}', 6)
+    ON CONFLICT (code) DO NOTHING`
+  await sql`
+    CREATE TABLE IF NOT EXISTS ai_actions (
+      id SERIAL PRIMARY KEY,
+      agent_code TEXT NOT NULL REFERENCES ai_agents(code),
+      kind TEXT NOT NULL CHECK (kind IN ('gui_tin', 'tao_viec', 'cap_nhat_khach', 'dang_bai', 'bao_cao')),
+      customer_id INT REFERENCES customers(id),
+      title TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 300),
+      body TEXT NOT NULL DEFAULT '',
+      original_body TEXT NOT NULL DEFAULT '',
+      payload JSONB NOT NULL DEFAULT '{}',
+      rationale TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL CHECK (status IN ('de_xuat', 'cho_duyet', 'mo_phong', 'da_thuc_hien', 'tu_choi', 'loi', 'da_hoan_tac', 'het_han')),
+      level_at_create TEXT NOT NULL CHECK (level_at_create IN ('L0', 'L1', 'L2')),
+      auto_executed BOOLEAN NOT NULL DEFAULT FALSE,
+      edited BOOLEAN NOT NULL DEFAULT FALSE,
+      sim_verdict TEXT CHECK (sim_verdict IN ('dong_y', 'khac')),
+      decided_by INT REFERENCES staff(id),
+      decided_at TIMESTAMPTZ,
+      decision_note TEXT NOT NULL DEFAULT '',
+      executed_at TIMESTAMPTZ,
+      result JSONB,
+      error TEXT,
+      dedupe_key TEXT UNIQUE,
+      expires_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (status NOT IN ('tu_choi') OR decision_note <> ''),
+      CHECK (status <> 'mo_phong' OR executed_at IS NULL)
+    )
+  `
+  await sql`CREATE INDEX IF NOT EXISTS ai_actions_status_idx ON ai_actions (status, created_at DESC)`
+  await sql`CREATE INDEX IF NOT EXISTS ai_actions_agent_idx ON ai_actions (agent_code, created_at DESC)`
+  await sql`CREATE INDEX IF NOT EXISTS ai_actions_customer_idx ON ai_actions (customer_id) WHERE customer_id IS NOT NULL`
 }

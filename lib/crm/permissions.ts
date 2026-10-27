@@ -33,6 +33,10 @@ export const PERMISSIONS = [
   'chien_dich.tao',
   'qr.xem',
   'qr.quan_ly',         // tạo lô QR, duyệt ghép đơn sàn
+  'su_kien.quan_ly',    // tạo sự kiện, soạn thông báo trong Mini App
+  'ai.xem',             // xem Trung tâm AI, bấm DỪNG KHẨN CẤP (dừng thì ai cũng được bấm)
+  'ai.duyet',           // duyệt / từ chối / hoàn tác việc agent đề xuất
+  'ai.quan_ly',         // đổi mức tự chủ agent, bật/tắt agent, mô phỏng, cho chạy lại sau dừng khẩn cấp
   'cham_cong.cua_toi',  // tự chấm công, xem ca của mình, gửi đơn
   'cham_cong.phan_ca',  // xếp ca cho bộ phận mình
   'cham_cong.duyet',    // duyệt đơn từ, sửa công
@@ -57,6 +61,10 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
   'chien_dich.tao': 'Tạo chiến dịch',
   'qr.xem': 'Xem lô QR & Mini App',
   'qr.quan_ly': 'Quản lý lô QR, duyệt ghép đơn',
+  'su_kien.quan_ly': 'Tạo sự kiện, gửi thông báo Mini App',
+  'ai.xem': 'Xem Trung tâm AI, dừng khẩn cấp',
+  'ai.duyet': 'Duyệt việc agent AI đề xuất',
+  'ai.quan_ly': 'Quản lý agent AI, cho chạy lại sau dừng',
   'cham_cong.cua_toi': 'Tự chấm công, gửi đơn',
   'cham_cong.phan_ca': 'Xếp ca bộ phận',
   'cham_cong.duyet': 'Duyệt đơn, sửa công',
@@ -68,19 +76,19 @@ export const PERMISSION_LABEL: Record<Permission, string> = {
 }
 
 const BASE: Permission[] = ['viec.cua_toi', 'cham_cong.cua_toi']
-const CUSTOMER_FACING: Permission[] = ['khach.xem', 'khach.xem_sdt', 'khach.sua', 'co_hoi.xem', 'co_hoi.sua', 'chien_dich.xem', 'qr.xem']
+const CUSTOMER_FACING: Permission[] = ['khach.xem', 'khach.xem_sdt', 'khach.sua', 'co_hoi.xem', 'co_hoi.sua', 'chien_dich.xem', 'qr.xem', 'ai.xem']
 
 const BY_DEPARTMENT: Record<Department, Permission[]> = {
   ban_giam_doc: [...PERMISSIONS],
   sale_cskh: CUSTOMER_FACING,
-  marketing: ['khach.xem', 'chien_dich.xem', 'qr.xem', 'bao_cao.xem'],
+  marketing: ['khach.xem', 'chien_dich.xem', 'qr.xem', 'su_kien.quan_ly', 'bao_cao.xem', 'ai.xem'],
   san_tmdt: ['khach.xem', 'qr.xem', 'qr.quan_ly'],
   bep: [],
   kho_van: ['qr.xem'],
   dao_tao: ['khach.xem', 'khach.xem_sdt', 'co_hoi.xem', 'co_hoi.sua'],
 }
 
-const MANAGER_EXTRA: Permission[] = ['viec.giao', 'cham_cong.phan_ca', 'cham_cong.duyet', 'bao_cao.xem', 'chien_dich.tao']
+const MANAGER_EXTRA: Permission[] = ['viec.giao', 'cham_cong.phan_ca', 'cham_cong.duyet', 'bao_cao.xem', 'chien_dich.tao', 'ai.xem', 'ai.duyet']
 
 export function permissionsFor(role: Role, department: Department | null, extra: string[] = []): Permission[] {
   if (role === 'admin') return [...PERMISSIONS]

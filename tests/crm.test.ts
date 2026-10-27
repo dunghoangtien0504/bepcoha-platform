@@ -6,6 +6,7 @@ import { productGroup, isWholesaleGroup, isClosedStatus, countsRevenue, regionOf
 import { permissionsFor } from '../lib/crm/permissions'
 import { distanceMeters } from '../lib/crm/attendance'
 import { weekdayShort, mondayOf, addDays, moneyShort } from '../lib/crm/format'
+import { vnLocalToDate, dateToVnLocal, slugify, parseEventInput, parseNotificationInput } from '../lib/crm/events'
 
 test('mã đơn: chuẩn hoá bỏ khoảng trắng, gạch, #, dấu chấm và viết hoa', () => {
   assert.equal(normalizeRef(' c5400123.0001 '), 'C54001230001')
@@ -106,4 +107,55 @@ test('nhóm sản phẩm & vùng miền theo bảng của skill báo cáo', () =
   assert.equal(regionOf(provinceName('Hà Nội')), 'Miền Bắc')
   assert.equal(regionOf(provinceName('Đà Nẵng')), 'Miền Trung & Tây Nguyên')
   assert.equal(regionOf(provinceName('')), 'Không rõ')
+})
+
+test('sự kiện & thông báo: giờ Việt Nam, đường dẫn tự tạo, link chỉ trong app', () => {
+  assert.equal(vnLocalToDate('2026-11-01T20:00')!.toISOString(), '2026-11-01T13:00:00.000Z')
+  assert.equal(dateToVnLocal('2026-11-01T13:00:00Z'), '2026-11-01T20:00')
+  assert.equal(vnLocalToDate('01/11/2026'), null)
+  assert.equal(slugify('Livestream gói Bánh Chưng Tết Đoàn viên!'), 'livestream-goi-banh-chung-tet-doan-vien')
+  const e = parseEventInput({ title: 'Xôi cốm mùa thu', kind: 'workshop', starts_at: '2026-11-01T09:00', ends_at: '2026-11-01T11:00', capacity: '20' })
+  assert.equal(e.slug, 'xoi-com-mua-thu')
+  assert.equal(e.capacity, 20)
+  assert.throws(() => parseEventInput({ title: 'A', kind: 'workshop', starts_at: '2026-11-01T09:00', ends_at: '2026-11-01T08:00' }))
+  assert.throws(() => parseEventInput({ title: 'Abc', kind: 'workshop', starts_at: '2026-11-01T09:00', join_url: 'http://x.vn' }))
+  assert.throws(() => parseEventInput({ title: 'Abc', kind: 'toString', starts_at: '2026-11-01T09:00' }))
+  const ok = { title: 'Công thức mới', kind: 'cong_thuc', audience: 'tat_ca' }
+  assert.equal(parseNotificationInput({ ...ok, link: '/cong-thuc/xoi-com' }).link, '/cong-thuc/xoi-com')
+  assert.throws(() => parseNotificationInput({ ...ok, link: 'https://shopee.vn/haco' }), /trong Mini App/)
+  assert.throws(() => parseNotificationInput({ ...ok, kind: 'don_hang' }))
+  assert.throws(() => parseNotificationInput({ ...ok, audience: 'phien' }))
+  assert.throws(() => parseNotificationInput({ ...ok, audience: 'khach' }))
+})
+
+test('cầu nối Zalo CRM: chữ ký HMAC đúng hợp đồng, nội dung đơn theo nhóm sản phẩm', async () => {
+  const { signZlPayload, zlOrderBody } = await import('../lib/crm/zl-bridge')
+  const { createHmac } = await import('node:crypto')
+  assert.equal(signZlPayload('whsec_x', '1700000000', '{"a":1}'), 'sha256=' + createHmac('sha256', 'whsec_x').update('1700000000.{"a":1}').digest('hex'))
+  const body = zlOrderBody({ pos_order_id: 'C123', phone_norm: '0977000001', name: 'Chị A', platform: 'facebook', status_name: 'Đã nhận',
+    revenue: '345000', cod: 0, prepaid: 0, discount: 0, seller_name: 'Thảo',
+    items: [{ sku: 'SXC', name: 'Sét xôi cốm', qty: 2, price: 148000, bonus: false, wholesale: false, line: 'xoi_com' },
+            { sku: 'KDX', name: 'Khăn đồ xôi', qty: 1, price: 49000, bonus: false, wholesale: false, line: 'khan' }] })
+  assert.equal(body.orderId, 'pancake:C123')
+  assert.equal(body.amount, 345000)
+  assert.equal(body.productName, 'Sét Xôi Cốm, Khăn đồ xôi')
+  assert.deepEqual(body.items.map(i => i.qty), [2, 1])
+})
+
+test('agent Giữ chân: tên gọi an toàn, tin không nói công dụng, theo món đã mua', async () => {
+  const { callName, repurchaseMessage } = await import('../lib/crm/ai-agents')
+  assert.equal(callName('Nguyễn Thị Lan'), 'Lan')
+  assert.equal(callName('Khách 0977'), '')
+  assert.equal(callName(null), '')
+  assert.equal(callName('CÔNG TY TNHH SULIG VIỆT NAM'), '')
+  assert.equal(callName('Cửa Hàng Ảnh Hạnh'), '')
+  assert.equal(callName('Phuonglien Tran'), 'Phuonglien')
+  assert.equal(callName('NGUYỄN THỊ HOA'), 'Hoa')
+  assert.equal(callName('Trần'), '')
+  const m = repurchaseMessage('Trần Văn Nam', ['sot_xa_xiu', 'khan'], 30)
+  assert.match(m, /anh\/chị Nam/)
+  assert.match(m, /Hũ sốt xá xíu/)
+  assert.match(m, /khoảng 4 tuần/)
+  assert.doesNotMatch(m, /nhất|chữa|bệnh/)
+  assert.match(repurchaseMessage(null, [], 40), /Từ lần mua trước tới nay đã khoảng 6 tuần/)
 })

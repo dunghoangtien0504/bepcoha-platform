@@ -8,7 +8,7 @@ const skip = !URL
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let sql: any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let orders: any, mini: any, att: any, tasks: any
+let orders: any, mini: any, att: any, tasks: any, events: any
 
 before(async () => {
   if (skip) return
@@ -21,6 +21,7 @@ before(async () => {
   mini = await import('../lib/crm/mini')
   att = await import('../lib/crm/attendance')
   tasks = await import('../lib/crm/tasks')
+  events = await import('../lib/crm/events')
 })
 
 const ago = (d: number) => new Date(Date.now() - d * 86400000).toISOString()
@@ -165,4 +166,156 @@ test('đơn Mini App: DB chặn giỏ quá giới hạn; huỷ trên CRM trả v
     VALUES ('HMA6002123456CDEF', ${s2}, '0977666002', ${base.name}, ${base.address}, ${sql.json([line(1)])}, 148000, 148000, 'chuyen_khoan')`
   const cid2 = await mini.promoteMiniSession(s2, 'otp', { type: 'system', id: null })
   assert.equal((await sql`SELECT customer_id FROM mini_orders WHERE ref_code = 'HMA6002123456CDEF'`)[0].customer_id, cid2)
+})
+
+test('sự kiện: không giảm chỗ dưới số đã giữ; công bố 2 lần chỉ 1 thông báo; DB chặn link ra ngoài; xác minh gắn đăng ký vào khách', { skip }, async () => {
+  const staff = (await sql`INSERT INTO staff (name, email, password_hash, role, department) VALUES ('MKT test', 'mkttest@haco.test', 'x', 'staff', 'marketing') RETURNING id`)[0].id
+  const id = await events.createEvent(events.parseEventInput({ title: 'Workshop xôi cốm', kind: 'workshop', starts_at: '2026-12-01T09:00', capacity: '5' }), staff, '127.0.0.1')
+  const s1 = (await sql`INSERT INTO mini_sessions (anon_id, phone) VALUES ('ev-1', '0977888001') RETURNING id`)[0].id
+  const s2 = (await sql`INSERT INTO mini_sessions (anon_id, phone) VALUES ('ev-2', '0977888002') RETURNING id`)[0].id
+  await sql`INSERT INTO event_reminders (event_id, mini_session_id, kind) VALUES (${id}, ${s1}, 'giu_cho'), (${id}, ${s2}, 'giu_cho'), (${id}, ${s1}, 'nhac')`
+  await assert.rejects(events.updateEvent(id, events.parseEventInput({ title: 'Workshop xôi cốm', kind: 'workshop', starts_at: '2026-12-01T09:00', capacity: '1' }), staff, '127.0.0.1'), /2 người giữ chỗ/)
+  await events.updateEvent(id, events.parseEventInput({ title: 'Workshop xôi cốm', kind: 'workshop', starts_at: '2026-12-01T09:00', capacity: '2' }), staff, '127.0.0.1')
+
+  const a = await events.setEventStatus(id, 'cong_bo', { notify: true }, staff, '127.0.0.1')
+  assert.ok(a.notificationId)
+  await events.setEventStatus(id, 'nhap', {}, staff, '127.0.0.1')
+  const b = await events.setEventStatus(id, 'cong_bo', { notify: true }, staff, '127.0.0.1')
+  assert.equal(b.notificationId, null, 'công bố lại không gửi thông báo thứ 2')
+  const n = (await sql`SELECT link, audience, kind FROM notifications WHERE event_id = ${id}`)
+  assert.equal(n.length, 1)
+  assert.equal(n[0].link, '/su-kien/workshop-xoi-com')
+  // đã công bố thì không đổi đường dẫn
+  await assert.rejects(events.updateEvent(id, events.parseEventInput({ title: 'Workshop xôi cốm', slug: 'doi-ten', kind: 'workshop', starts_at: '2026-12-01T09:00' }), staff, '127.0.0.1'))
+
+  await assert.rejects(sql`INSERT INTO notifications (title, kind, audience, link) VALUES ('x', 'uu_dai', 'tat_ca', 'https://shopee.vn')`)
+  await assert.rejects(sql`INSERT INTO notifications (title, kind, audience, mini_session_id) VALUES ('x', 'uu_dai', 'tat_ca', ${s1})`, 'tin chung không được gắn người')
+  await assert.rejects(sql`INSERT INTO notifications (title, kind, audience) VALUES ('x', 'uu_dai', 'khach')`)
+
+  await sql`INSERT INTO notification_reads (notification_id, mini_session_id) VALUES (${a.notificationId}, ${s1})`
+  const cid = await mini.promoteMiniSession(s1, 'otp', { type: 'system', id: null })
+  assert.equal((await sql`SELECT COUNT(*)::int AS n FROM event_reminders WHERE mini_session_id = ${s1} AND customer_id = ${cid}`)[0].n, 2)
+  assert.equal((await sql`SELECT customer_id FROM notification_reads WHERE mini_session_id = ${s1}`)[0].customer_id, cid)
+
+  const nid = await events.createNotification(events.parseNotificationInput({ title: 'Riêng chị', kind: 'uu_dai', audience: 'khach', customer_id: String(cid) }), staff, '127.0.0.1')
+  assert.equal(await events.expireNotification(nid, staff, '127.0.0.1'), true)
+  assert.equal(await events.expireNotification(nid, staff, '127.0.0.1'), false)
+})
+
+test('cầu nối Zalo CRM: chỉ gửi đơn chốt có SĐT thật từ mốc ngày; 4xx ghi lỗi, 401 dừng lượt', { skip }, async () => {
+  const zl = await import('../lib/crm/zl-bridge')
+  process.env.ZL_CRM_ORDER_WEBHOOK_URL = 'http://zl.test/hook'
+  process.env.ZL_CRM_ORDER_WEBHOOK_SECRET = 'whsec_test'
+  process.env.ZL_CRM_PUSH_SINCE = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10)
+  await orders.upsertOrders([
+    orders.fromExportRow({ id: 'ZL-1', at: ago(1), st: 3, total: 148000, srcn: 'Facebook', phone: '0977999001', items: [{ name: 'Sét xôi cốm', q: 1, p: 148000 }] }),
+    orders.fromExportRow({ id: 'ZL-2', at: ago(1), st: 6, total: 148000, srcn: 'Facebook', phone: '0977999002', items: [{ name: 'Sét xôi cốm', q: 1, p: 148000 }] }),
+    orders.fromExportRow({ id: 'ZL-3', at: ago(1), st: 3, total: 148000, srcn: 'Tiktok', phone: '+84977****03', items: [{ name: 'Sét xôi cốm', q: 1, p: 148000 }] }),
+    orders.fromExportRow({ id: 'ZL-4', at: ago(30), st: 3, total: 148000, srcn: 'Facebook', phone: '0977999004', items: [{ name: 'Sét xôi cốm', q: 1, p: 148000 }] }),
+    orders.fromExportRow({ id: 'ZL-5', at: ago(1), st: 3, total: 49000, srcn: 'Facebook', phone: '0977999005', items: [{ name: 'Khăn đồ xôi', q: 1, p: 49000 }] }),
+  ])
+  const seen: string[] = []
+  const fake = (status: (id: string) => number) => (async (_u: string, init: RequestInit) => {
+    const b = JSON.parse(String(init.body)); seen.push(b.orderId)
+    assert.equal((init.headers as Record<string, string>)['X-Signature'], zl.signZlPayload('whsec_test', (init.headers as Record<string, string>)['X-Timestamp'], String(init.body)))
+    return new Response('{}', { status: status(b.orderId) })
+  }) as unknown as typeof fetch
+  // 401 ngay đơn đầu → dừng, không đánh dấu gì
+  const r0 = await zl.pushOrdersToZl(50, sql, fake(() => 401))
+  assert.equal(r0.sent ?? 0, 0)
+  assert.equal((await sql`SELECT COUNT(*)::int AS n FROM pancake_orders WHERE zl_push_error IS NOT NULL OR zl_pushed_at IS NOT NULL`)[0].n, 0)
+  seen.length = 0
+  const r = await zl.pushOrdersToZl(50, sql, fake(id => id === 'pancake:ZL-5' ? 400 : 202))
+  assert.deepEqual(seen.filter(s => s.startsWith('pancake:ZL-')).sort(), ['pancake:ZL-1', 'pancake:ZL-5'], 'không gửi đơn hủy, đơn sàn che SĐT, đơn trước mốc')
+  assert.ok((r.sent ?? 0) >= 1)
+  assert.ok((await sql`SELECT zl_pushed_at FROM pancake_orders WHERE pos_order_id = 'ZL-1'`)[0].zl_pushed_at)
+  assert.match((await sql`SELECT zl_push_error FROM pancake_orders WHERE pos_order_id = 'ZL-5'`)[0].zl_push_error, /^400/)
+  // chạy lại: không gửi lại đơn đã gửi hay đơn đã lỗi
+  seen.length = 0
+  await zl.pushOrdersToZl(50, sql, fake(() => 202))
+  assert.equal(seen.filter(s => s === 'pancake:ZL-1' || s === 'pancake:ZL-5').length, 0)
+  delete process.env.ZL_CRM_ORDER_WEBHOOK_URL
+})
+
+test('Trung tâm AI: L0/L1/L2, dừng khẩn cấp chặn mọi việc, mô phỏng không làm thật, duyệt có sửa, hoàn tác, tự hạ cấp', { skip }, async () => {
+  const ai = await import('../lib/crm/ai')
+  const agents = await import('../lib/crm/ai-agents')
+  const boss = (await sql`INSERT INTO staff (name, email, password_hash, role, department) VALUES ('Sếp AI', 'sepai@haco.test', 'x', 'admin', 'ban_giam_doc') RETURNING id`)[0].id
+  const cust = (await sql`INSERT INTO customers (phone, name, source, order_count, total_spent, last_order_at, first_order_at, phone_verified_at)
+    VALUES ('0977123401', 'Nguyễn Thị Hoa', 'pancake', 2, 500000, NOW() - INTERVAL '30 days', NOW() - INTERVAL '90 days', NOW()) RETURNING id`)[0].id
+  const optedOut = (await sql`INSERT INTO customers (phone, name, source, order_count, total_spent, last_order_at, phone_verified_at, opted_out_at)
+    VALUES ('0977123402', 'Từ chối', 'pancake', 1, 100000, NOW() - INTERVAL '30 days', NOW(), NOW()) RETURNING id`)[0].id
+
+  // agent tắt → không đề xuất gì
+  assert.equal(await ai.propose({ agent: 'giu_chan', kind: 'gui_tin', customerId: cust, title: 'x', body: 'y' }), null)
+  await ai.updateAgent('giu_chan', { enabled: true }, boss, '127.0.0.1')
+  await assert.rejects(ai.updateAgent('giu_chan', { level: 'L2' }, boss, '127.0.0.1'), /chỉ được tới L1/)
+  await assert.rejects(ai.updateAgent('quang_cao', { level: 'L1' }, boss, '127.0.0.1'), /chỉ được tới L0/)
+  // agent không được làm loại việc ngoài phạm vi
+  await assert.rejects(ai.propose({ agent: 'giu_chan', kind: 'cap_nhat_khach', customerId: cust, title: 'x' }))
+  // khách từ chối nhận tin: không bao giờ đề xuất nhắn
+  assert.equal(await ai.propose({ agent: 'giu_chan', kind: 'gui_tin', customerId: optedOut, title: 'x', body: 'y' }), null)
+
+  // L1 → chờ duyệt; trùng khoá → bỏ qua
+  const a1 = (await ai.propose({ agent: 'giu_chan', kind: 'gui_tin', customerId: cust, title: 'Mời mua lại', body: 'Bản gốc', dedupeKey: 'test:1' }))!
+  assert.equal(a1.status, 'cho_duyet')
+  assert.equal(await ai.propose({ agent: 'giu_chan', kind: 'gui_tin', customerId: cust, title: 'Mời mua lại', body: 'Bản gốc', dedupeKey: 'test:1' }), null)
+
+  // DỪNG KHẨN CẤP: duyệt bị chặn; Zalo CRM được gọi đúng khoá
+  process.env.ZL_CRM_URL = 'http://zl.test'; process.env.ZL_CRM_API_KEY = 'key-test'
+  const calls: string[] = []
+  const fake = (async (u: string, init: RequestInit) => { calls.push(`${u} ${(init.headers as Record<string, string>)['x-api-key']} ${init.body}`); return new Response('{}', { status: 200 }) }) as unknown as typeof fetch
+  const stopped = await ai.setEmergencyStop(true, boss, 'diễn tập', '127.0.0.1', sql, fake)
+  assert.equal(stopped.zalo?.ok, true)
+  assert.match(calls[0], /\/api\/public\/ai\/kill-switch key-test .*"action":"stop"/)
+  await assert.rejects(ai.approveAction(a1.id, boss, {}), /DỪNG KHẨN CẤP/)
+  assert.equal((await sql`SELECT status FROM ai_actions WHERE id = ${a1.id}`)[0].status, 'cho_duyet')
+  await ai.setEmergencyStop(false, boss, 'xong diễn tập', '127.0.0.1', sql, fake)
+  delete process.env.ZL_CRM_URL
+
+  // duyệt bản đã sửa → thành việc cho người phụ trách, đánh dấu đã sửa; hoàn tác → bỏ việc
+  const done = await ai.approveAction(a1.id, boss, { body: 'Bản người sửa' })
+  assert.equal(done.status, 'da_thuc_hien')
+  assert.equal(done.edited, true)
+  const task = (await sql`SELECT kind, suggestion, status FROM crm_tasks WHERE id = ${done.result.task_id}`)[0]
+  assert.deepEqual([task.kind, task.suggestion, task.status], ['ai_gui_tin', 'Bản người sửa', 'can_lam'])
+  await ai.undoAction(a1.id, boss, 'thử hoàn tác', '127.0.0.1')
+  assert.equal((await sql`SELECT status FROM crm_tasks WHERE id = ${done.result.task_id}`)[0].status, 'bo_qua')
+
+  // từ chối phải có lý do
+  const a2 = (await ai.propose({ agent: 'giu_chan', kind: 'tao_viec', customerId: cust, title: 'Gọi khách', body: 'gọi' }))!
+  await assert.rejects(ai.rejectAction(a2.id, boss, ' ', '127.0.0.1'), /lý do/)
+  await ai.rejectAction(a2.id, boss, 'khách vừa mua hôm qua', '127.0.0.1')
+
+  // mô phỏng: chỉ ghi lại, không duyệt được, chấm giống/khác
+  await ai.setSimulation(true, boss, '127.0.0.1')
+  const s1 = (await ai.propose({ agent: 'giu_chan', kind: 'tao_viec', customerId: cust, title: 'Mô phỏng', body: 'x' }))!
+  assert.equal(s1.status, 'mo_phong')
+  await assert.rejects(ai.approveAction(s1.id, boss, {}))
+  await ai.setSimVerdict(s1.id, boss, 'dong_y')
+  await ai.setSimulation(false, boss, '127.0.0.1')
+
+  // Trợ lý CEO (L2) tự làm bản tin; chạy lại trong ngày không tạo bản thứ 2
+  const brief = (await agents.runTroLyCeo(sql))!
+  assert.equal(brief.status, 'da_thuc_hien')
+  assert.equal(brief.auto_executed, true)
+  assert.match(brief.body, /Doanh thu hôm qua/)
+  assert.equal(await agents.runTroLyCeo(sql), null)
+
+  // Giữ chân: khách mua 30 ngày trước được đề xuất 1 lần, khách từ chối thì không
+  await sql`UPDATE ai_actions SET created_at = NOW() - INTERVAL '40 days' WHERE customer_id = ${cust}`
+  const g = await agents.runGiuChan(50, sql)
+  assert.ok(g.proposed >= 1)
+  const mine = await sql`SELECT body FROM ai_actions WHERE agent_code = 'giu_chan' AND customer_id = ${cust} AND created_at > NOW() - INTERVAL '1 hour'`
+  assert.equal(mine.length, 1)
+  assert.match(mine[0].body, /anh\/chị Hoa/)
+  assert.equal((await sql`SELECT COUNT(*)::int AS n FROM ai_actions WHERE customer_id = ${optedOut}`)[0].n, 0)
+
+  // tự hạ cấp: L2 bị từ chối > 20% trên ≥ 20 việc → về L1
+  await sql`UPDATE ai_agents SET level = 'L2', kinds = '{bao_cao,tao_viec}' WHERE code = 'tro_ly_ceo'`
+  for (let i = 0; i < 20; i++) {
+    await sql`INSERT INTO ai_actions (agent_code, kind, title, status, level_at_create, decision_note) VALUES ('tro_ly_ceo', 'tao_viec', 'x', ${i < 6 ? 'tu_choi' : 'da_thuc_hien'}, 'L2', 'không đúng')`
+  }
+  assert.deepEqual(await ai.autoDowngrade(sql), ['tro_ly_ceo'])
+  assert.equal((await sql`SELECT level FROM ai_agents WHERE code = 'tro_ly_ceo'`)[0].level, 'L1')
 })

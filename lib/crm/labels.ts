@@ -12,6 +12,7 @@ export const TASK_KINDS = {
   ghep_don: 'Duyệt ghép đơn sàn (Mini App)',
   duyet_don_tu: 'Duyệt đơn từ chấm công',
   noi_bo: 'Việc nội bộ / theo ca',
+  ai_gui_tin: 'Gửi tin AI soạn (đã duyệt)',
   khac: 'Khác',
 } as const
 export type TaskKind = keyof typeof TASK_KINDS
