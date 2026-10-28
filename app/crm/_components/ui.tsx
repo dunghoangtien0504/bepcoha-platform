@@ -16,7 +16,7 @@ export function PageHeader({ title, sub, actions }: { title: string; sub?: React
 
 export function Card({ title, actions, children, className = '', pad = true }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; pad?: boolean }) {
   return (
-    <section className={`min-w-0 rounded-xl border border-stone-200 bg-white shadow-sm ${className}`}>
+    <section className={`min-w-0 rounded-2xl border border-stone-200/80 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${className}`}>
       {(title || actions) && (
         <div className="flex items-center justify-between gap-2 border-b border-stone-100 px-4 py-3">
           <h2 className="text-sm font-semibold text-stone-800">{title}</h2>
@@ -83,7 +83,7 @@ export function Tabs({ items, current }: { items: { href: string; label: string;
     <div className="mb-4 flex gap-1 overflow-x-auto border-b border-stone-200">
       {items.map(t => (
         <Link key={t.key} href={t.href}
-          className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm ${t.key === current ? 'border-emerald-700 font-medium text-emerald-800' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>
+          className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm ${t.key === current ? 'border-amber-500 font-medium text-stone-900' : 'border-transparent text-stone-500 hover:text-stone-800'}`}>
           {t.label}{t.count !== undefined && <span className="ml-1 text-xs text-stone-400">{t.count}</span>}
         </Link>
       ))}

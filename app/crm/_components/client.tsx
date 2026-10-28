@@ -34,7 +34,7 @@ export function useAction() {
 }
 
 const BTN = {
-  primary: 'bg-emerald-700 text-white hover:bg-emerald-800 disabled:bg-emerald-300',
+  primary: 'bg-[#006E32] text-white hover:bg-[#00592a] disabled:bg-emerald-300',
   secondary: 'border border-stone-300 bg-white text-stone-700 hover:bg-stone-50 disabled:text-stone-300',
   danger: 'border border-rose-300 bg-white text-rose-700 hover:bg-rose-50',
   ghost: 'text-stone-600 hover:bg-stone-100',
@@ -64,5 +64,5 @@ export function Feedback({ error, message }: { error: string | null; message?: s
   return null
 }
 
-export const inputClass = 'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-100'
+export const inputClass = 'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100'
 export const labelClass = 'mb-1 block text-xs font-medium text-stone-600'
