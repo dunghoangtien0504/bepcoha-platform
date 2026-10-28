@@ -1,14 +1,47 @@
 import { Resend } from 'resend'
+import { createPromoParams } from '@/lib/promo'
+import { unsubscribeUrl, confirmOptInUrl } from '@/lib/unsubscribe'
+import { isEmailOptedOut } from '@/lib/db'
+
+function escHtml(s: string): string {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build')
 }
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Bếp Cô Hạ <no-reply@hacofood.vn>'
 
-export async function sendGiftEmail(to: { name: string; email: string }) {
+/**
+ * Gửi email chăm sóc/marketing. Bắt buộc: (1) bỏ qua người đã hủy nhận, (2) chân thư có link hủy,
+ * (3) header List-Unsubscribe 1-click (Gmail/Yahoo yêu cầu với thư hàng loạt). Thiếu khoá UNSUBSCRIBE_SECRET thì
+ * KHÔNG gửi (lỗi rõ ràng), không bao giờ gửi thư marketing mà khách không hủy được.
+ */
+async function sendMarketing(
+  email: string,
+  params: Parameters<Resend['emails']['send']>[0],
+  opts: { transactional?: boolean; extraHtml?: string } = {},
+) {
+  // Thư giao dịch (giao quà đã hứa) vẫn giao được kể cả khi khách từng hủy; thư marketing thì không
+  if (!opts.transactional && (await isEmailOptedOut(email))) return { data: null, error: null, skipped: true as const }
+  const url = unsubscribeUrl(email)
+  if (!url && !opts.transactional) throw new Error('UNSUBSCRIBE_SECRET chưa cấu hình: không gửi email marketing')
+  const unsubLine = url ? ` Không muốn nhận nữa? <a href="${url}" style="color:#6b7280;">Hủy nhận tin</a>` : ''
+  const footer = `${opts.extraHtml ?? ''}<div style="max-width:600px;margin:12px auto 24px;text-align:center;font-size:12px;color:#9ca3af;font-family:Arial,sans-serif;">Bạn nhận email này vì đã đăng ký nhận quà/tin từ HaCo Food.${unsubLine}</div>`
+  const html = typeof params.html === 'string' ? (/<\/body>/i.test(params.html) ? params.html.replace(/<\/body>/i, `${footer}</body>`) : params.html + footer) : params.html
+  return getResend().emails.send({
+    ...params,
+    html,
+    ...(url ? { headers: { ...(params.headers ?? {}), 'List-Unsubscribe': `<${url}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } } : {}),
+  } as Parameters<Resend['emails']['send']>[0])
+}
+
+export async function sendGiftEmail(to: { name: string; email: string; askConfirm?: boolean }) {
   const driveLink = process.env.DRIVE_LINK_GIFT || '#'
 
-  return getResend().emails.send({
+  const confirmUrl = to.askConfirm ? confirmOptInUrl(to.email) : null
+  const confirmBlock = confirmUrl ? `<div style="max-width:600px;margin:16px auto 0;padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;text-align:center;font-family:Arial,sans-serif;"><p style="margin:0 0 10px;color:#166534;font-size:14px;">Bạn có muốn nhận thêm công thức và ưu đãi từ Cô Hạ qua email không?</p><a href="${confirmUrl}" style="display:inline-block;background:#006400;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">Có, xác nhận nhận tin</a></div>` : ''
+  return sendMarketing(to.email, {
     from: FROM_EMAIL,
     to: [to.email],
     subject: '🎁 Quà tặng từ HaCo Food – Công thức Cà Muối Mắm Giòn 7 Ngày!',
@@ -30,7 +63,7 @@ export async function sendGiftEmail(to: { name: string; email: string }) {
 
     <!-- BODY -->
     <div style="padding:36px 32px;">
-      <h2 style="color:#006400;font-size:22px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#006400;font-size:22px;margin-top:0;">Xin chào ${escHtml(to.name)}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
         Cảm ơn bạn đã quan tâm! Đây là phần quà Cô Hạ dành riêng cho bạn:
       </p>
@@ -112,7 +145,7 @@ export async function sendGiftEmail(to: { name: string; email: string }) {
 </body>
 </html>
     `,
-  })
+  }, { transactional: true, extraHtml: confirmBlock })
 }
 
 export async function sendCourseConfirmEmail(to: { name: string; email: string; amount?: number }) {
@@ -123,7 +156,7 @@ export async function sendCourseConfirmEmail(to: { name: string; email: string; 
   const promoNote = amount < 299000 ? `
       <div style="background:#fef2f2;border:2px solid #dc2626;border-radius:10px;padding:16px 20px;margin:0 0 24px;">
         <p style="margin:0;color:#991b1b;font-size:14px;line-height:1.7;">
-          🎉 <strong>Chúc mừng ${to.name}!</strong> Bạn đã nhận được <strong>ƯU ĐÃI ĐẶC BIỆT cuối cùng</strong> từ Cô Hạ với mức giá <strong>${amountText}</strong> (thay vì 299.000đ). Đây là phần thưởng cho những học viên đồng hành cùng Cô đến phút chót. Cảm ơn bạn đã tin tưởng! 💚
+          🎉 <strong>Chúc mừng ${escHtml(to.name)}!</strong> Bạn đã nhận được <strong>ƯU ĐÃI ĐẶC BIỆT cuối cùng</strong> từ Cô Hạ với mức giá <strong>${amountText}</strong> (thay vì 299.000đ). Đây là phần thưởng cho những học viên đồng hành cùng Cô đến phút chót. Cảm ơn bạn đã tin tưởng! 💚
         </p>
       </div>` : ''
 
@@ -143,7 +176,7 @@ export async function sendCourseConfirmEmail(to: { name: string; email: string; 
       <p style="color:#bbf7d0;margin:8px 0 0;font-size:16px;">Chào mừng bạn đến với Khóa học Dưa Cà Muối Chuyên Sâu</p>
     </div>
     <div style="padding:40px 32px;">
-      <h2 style="color:#166534;font-size:22px;margin-top:0;">Xin chào ${to.name}! 🎉</h2>
+      <h2 style="color:#166534;font-size:22px;margin-top:0;">Xin chào ${escHtml(to.name)}! 🎉</h2>
       <p style="color:#4b5563;line-height:1.8;font-size:16px;">
         Cô Hạ rất vui khi bạn đã tham gia khóa học! Dưới đây là thông tin bước tiếp theo:
       </p>
@@ -230,7 +263,7 @@ export async function sendGiftSequenceEmail1(to: { name: string; email: string }
   const communityLink = process.env.COMMUNITY_GROUP_LINK || 'https://www.facebook.com/groups/nauancungcoha'
   const driveLink = process.env.DRIVE_LINK_GIFT || '#'
 
-  return getResend().emails.send({
+  return sendMarketing(to.email, {
     from: FROM_EMAIL,
     to: [to.email],
     subject: `${to.name} ơi, bạn đã xem video chưa? 🎬`,
@@ -246,7 +279,7 @@ export async function sendGiftSequenceEmail1(to: { name: string; email: string }
       <p style="margin:8px 0 0;font-size:14px;color:#dcfce7;">Cô Hạ đang chờ nghe kết quả của bạn!</p>
     </div>
     <div style="padding:36px 32px;">
-      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${escHtml(to.name)}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
         Hôm qua Cô Hạ đã gửi cho bạn video hướng dẫn làm <strong>Cà Muối Mắm Giòn</strong> – không biết bạn đã có dịp xem chưa?
       </p>
@@ -297,7 +330,7 @@ export async function sendGiftSequenceEmail1(to: { name: string; email: string }
 
 export async function sendGiftSequenceEmail2(to: { name: string; email: string }) {
   const communityLink = process.env.COMMUNITY_GROUP_LINK || 'https://www.facebook.com/groups/nauancungcoha'
-  return getResend().emails.send({
+  return sendMarketing(to.email, {
     from: FROM_EMAIL,
     to: [to.email],
     subject: '5 sai lầm khiến dưa bị hỏng – và cách sửa ngay hôm nay 🔧',
@@ -315,7 +348,7 @@ export async function sendGiftSequenceEmail2(to: { name: string; email: string }
     </div>
 
     <div style="padding:36px 32px;">
-      <h2 style="color:#dc2626;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#dc2626;font-size:20px;margin-top:0;">Xin chào ${escHtml(to.name)}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
         Hôm qua Cô Hạ nhận tin nhắn từ chị T ở TP.HCM:
       </p>
@@ -463,7 +496,7 @@ export async function sendGiftSequenceEmail2(to: { name: string; email: string }
 }
 
 export async function sendGiftSequenceEmail3(to: { name: string; email: string }) {
-  return getResend().emails.send({
+  return sendMarketing(to.email, {
     from: FROM_EMAIL,
     to: [to.email],
     subject: `${to.name} ơi – Cô Hạ muốn mời bạn vào một điều đặc biệt 🎓`,
@@ -481,7 +514,7 @@ export async function sendGiftSequenceEmail3(to: { name: string; email: string }
     </div>
 
     <div style="padding:36px 32px;">
-      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${escHtml(to.name)}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
         Mấy ngày qua Cô Hạ đã chia sẻ với bạn về những sai lầm khi làm dưa và cách bảo quản đúng. Cô hi vọng bạn đã thử và thấy có ích!
       </p>
@@ -596,7 +629,7 @@ export async function sendGiftSequenceEmail3(to: { name: string; email: string }
 
 export async function sendGiftSequenceEmail4(to: { name: string; email: string }) {
   const communityLink = process.env.COMMUNITY_GROUP_LINK || 'https://www.facebook.com/groups/nauancungcoha'
-  return getResend().emails.send({
+  return sendMarketing(to.email, {
     from: FROM_EMAIL,
     to: [to.email],
     subject: 'Bí quyết giữ dưa ngon 30 ngày – không cần tủ lạnh 🥒',
@@ -614,7 +647,7 @@ export async function sendGiftSequenceEmail4(to: { name: string; email: string }
     </div>
 
     <div style="padding:36px 32px;">
-      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${escHtml(to.name)}! 👋</h2>
       <p style="color:#374151;line-height:1.8;font-size:15px;">
         Cô Hạ hay nhận được câu hỏi: <em>"Làm dưa xong để được bao lâu? Có cần bỏ tủ lạnh không?"</em>
       </p>
@@ -801,10 +834,15 @@ export async function sendGiftSequenceEmail4(to: { name: string; email: string }
 }
 
 export async function sendGiftSequenceEmail5(to: { name: string; email: string }) {
-  return getResend().emails.send({
+  // Link khuyến mãi có chữ ký riêng cho email này, hết hạn sau 48h. Không có PROMO_SECRET thì
+  // KHÔNG gửi (thà chờ cấu hình còn hơn hứa 239k rồi thu 299k).
+  const promoParams = createPromoParams(to.email)
+  if (!promoParams) throw new Error('PROMO_SECRET chưa được cấu hình — hoãn gửi Email 5')
+  const promoLink = `https://khoaduacamuoi.hacofood.vn/?promo=239&x=${promoParams.x}&t=${promoParams.t}#khoa-hoc`
+  return sendMarketing(to.email, {
     from: FROM_EMAIL,
     to: [to.email],
-    subject: `Cô Hạ muốn nói thật với ${to.name} một điều – đọc trước 23h59 nhé 🙏`,
+    subject: `Cô Hạ muốn nói thật với ${to.name} một điều – ưu đãi còn 48 giờ 🙏`,
     html: `
 <!DOCTYPE html>
 <html lang="vi">
@@ -820,14 +858,14 @@ export async function sendGiftSequenceEmail5(to: { name: string; email: string }
 
     <!-- GIÁ NỔI BẬT -->
     <div style="background:#fef2f2;padding:20px 32px;text-align:center;border-bottom:3px solid #dc2626;">
-      <p style="color:#6b7280;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;">Ưu đãi cuối – chỉ hôm nay</p>
+      <p style="color:#6b7280;font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;">Ưu đãi cuối – trong 48 giờ</p>
       <p style="margin:0;font-size:14px;color:#9ca3af;text-decoration:line-through;">299.000đ</p>
       <p style="margin:4px 0;font-size:36px;font-weight:900;color:#dc2626;">239.000đ</p>
-      <p style="margin:0;font-size:13px;color:#16a34a;font-weight:700;">Tiết kiệm 60.000đ · Hết lúc 23h59 hôm nay</p>
+      <p style="margin:0;font-size:13px;color:#16a34a;font-weight:700;">Tiết kiệm 60.000đ · Còn hiệu lực 48 giờ kể từ khi bạn nhận email này</p>
     </div>
 
     <div style="padding:36px 32px;">
-      <h2 style="color:#1f2937;font-size:19px;margin-top:0;">Xin chào ${to.name}! 👋</h2>
+      <h2 style="color:#1f2937;font-size:19px;margin-top:0;">Xin chào ${escHtml(to.name)}! 👋</h2>
 
       <p style="color:#374151;line-height:1.8;font-size:15px;">
         Đây là email cuối cùng Cô Hạ gửi cho bạn trong chuỗi này. Và Cô muốn nói thật – không phải để bán hàng, mà vì Cô thật sự quan tâm.
@@ -895,14 +933,14 @@ export async function sendGiftSequenceEmail5(to: { name: string; email: string }
 
       <!-- GIÁ VÀ CTA -->
       <div style="background:#fef2f2;border:3px solid #dc2626;border-radius:12px;padding:24px;margin:24px 0;text-align:center;">
-        <p style="margin:0 0 6px;color:#6b7280;font-size:13px;">Giá ưu đãi cuối – chỉ hôm nay</p>
+        <p style="margin:0 0 6px;color:#6b7280;font-size:13px;">Giá ưu đãi cuối – trong 48 giờ</p>
         <p style="margin:0 0 4px;font-size:14px;color:#9ca3af;text-decoration:line-through;">299.000đ</p>
         <p style="margin:0 0 16px;font-size:34px;font-weight:900;color:#dc2626;">239.000đ</p>
-        <a href="https://khoaduacamuoi.hacofood.vn/?promo=239#khoa-hoc"
+        <a href="${promoLink}"
            style="display:block;background:#dc2626;color:#fff;padding:16px 32px;border-radius:10px;text-decoration:none;font-weight:900;font-size:17px;box-shadow:0 4px 12px rgba(220,38,38,0.25);">
           🎓 Tôi muốn tham gia – 239.000đ
         </a>
-        <p style="color:#6b7280;font-size:12px;margin:12px 0 0;">Hết lúc 23h59 hôm nay · Thanh toán chuyển khoản an toàn</p>
+        <p style="color:#6b7280;font-size:12px;margin:12px 0 0;">Còn hiệu lực 48 giờ kể từ khi nhận email · Thanh toán chuyển khoản an toàn</p>
       </div>
 
       <p style="color:#374151;line-height:1.8;font-size:14px;">
@@ -919,6 +957,106 @@ export async function sendGiftSequenceEmail5(to: { name: string; email: string }
         © 2025 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp;
         <a href="https://khoaduacamuoi.hacofood.vn" style="color:#006400;text-decoration:none;">khoaduacamuoi.hacofood.vn</a><br>
         Bạn nhận email này vì đã đăng ký nhận quà tại website của chúng tôi.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+  })
+}
+
+// ── Chăm sóc khách hàng (loyalty / nhắc tái mua) ───────────────────────────────
+
+/** Email chăm sóc thủ công do nhân viên soạn, gửi hàng loạt từ hacoadmin. */
+export async function sendCustomerCareEmail(
+  to: { name: string; email: string },
+  subject: string,
+  messageText: string
+) {
+  const paragraphs = messageText
+    .split(/\n{2,}/)
+    .map(p => p.trim())
+    .filter(Boolean)
+    .map(p => `<p style="color:#374151;line-height:1.8;font-size:15px;margin:0 0 14px;">${escHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .join('')
+
+  return sendMarketing(to.email, {
+    from: FROM_EMAIL,
+    to: [to.email],
+    subject,
+    html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f0fff0;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#003200,#006400);padding:32px;text-align:center;">
+      <p style="font-size:36px;margin:0 0 8px;">👩‍🍳</p>
+      <h1 style="color:#fff;margin:0;font-size:22px;font-weight:800;">HaCo Food – Bếp Cô Hạ</h1>
+    </div>
+    <div style="padding:32px;">
+      <h2 style="color:#006400;font-size:19px;margin-top:0;">Xin chào ${escHtml(to.name)}! 👋</h2>
+      ${paragraphs}
+      <p style="color:#6b7280;font-size:13px;line-height:1.7;margin-top:20px;">
+        Có câu hỏi gì cứ nhắn cho Cô Hạ nhé! 🌸
+      </p>
+    </div>
+    <div style="background:#f9fafb;padding:18px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;font-size:12px;margin:0;">
+        © 2026 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp;
+        <a href="https://hacofood.vn" style="color:#006400;text-decoration:none;">hacofood.vn</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+    `,
+  })
+}
+
+/** Email nhắc nhẹ khách đã lâu không mua lại — gửi tự động qua cron, không kèm mã giảm giá. */
+export async function sendRepeatPurchaseReminderEmail(
+  to: { name: string; email: string },
+  data: { daysSince: number }
+) {
+  return sendMarketing(to.email, {
+    from: FROM_EMAIL,
+    to: [to.email],
+    subject: `${to.name} ơi, Cô Hạ nhớ bạn quá! 🥰`,
+    html: `
+<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f0fff0;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#003200,#006400);padding:36px 32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">🥰</p>
+      <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">Đã lâu rồi không gặp bạn!</h1>
+    </div>
+    <div style="padding:36px 32px;">
+      <h2 style="color:#006400;font-size:20px;margin-top:0;">Xin chào ${escHtml(to.name)}! 👋</h2>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Cô Hạ để ý đã khoảng ${data.daysSince} ngày rồi bạn chưa ghé mua lại. Không biết
+        sản phẩm lần trước bạn dùng có ưng ý không? Có gì Cô Hạ cải thiện được thì cứ
+        nhắn cho Cô biết nhé! 💚
+      </p>
+      <p style="color:#374151;line-height:1.8;font-size:15px;">
+        Cô vẫn đang làm mẻ mới mỗi ngày, mong sớm được phục vụ bạn lần nữa.
+      </p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="https://hacofood.vn" style="display:inline-block;background:#006400;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:800;font-size:16px;">
+          🛒 Ghé lại Bếp Cô Hạ
+        </a>
+      </div>
+      <p style="color:#6b7280;font-size:13px;line-height:1.7;">
+        Cảm ơn bạn đã đồng hành cùng Cô Hạ! 🌸
+      </p>
+    </div>
+    <div style="background:#f9fafb;padding:18px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;font-size:12px;margin:0;">
+        © 2026 HaCo Food – Bếp Cô Hạ &nbsp;|&nbsp;
+        <a href="https://hacofood.vn" style="color:#006400;text-decoration:none;">hacofood.vn</a>
       </p>
     </div>
   </div>

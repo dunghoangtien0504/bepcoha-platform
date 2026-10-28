@@ -26,7 +26,7 @@ export function CopyWeek({ from, to }: { from: string; to: string }) {
   return (
     <span className="flex flex-col items-end">
       <button disabled={pending} className={btnClass('primary')}
-        onClick={() => confirm('Chép toàn bộ lịch tuần trước sang tuần này? Ca đã có sẽ giữ nguyên.') && run(() => api<{ created: number }>('/api/crm/shifts', 'POST', { action: 'copy_week', from, to }), r => `Đã chép ${r.created} ca`)}>
+        onClick={() => confirm('Chép lịch của tuần trước đó sang tuần đang xem? Ca đã có sẽ giữ nguyên.') && run(() => api<{ created: number }>('/api/crm/shifts', 'POST', { action: 'copy_week', from, to }), r => `Đã chép ${r.created} ca`)}>
         Chép lịch tuần trước</button>
       <Feedback error={error} message={message} />
     </span>

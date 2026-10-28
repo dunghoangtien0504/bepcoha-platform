@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { GIFT_CONSENT_TEXT } from '@/lib/consent-text'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormData { name: string; email: string; phone: string }
@@ -63,6 +64,7 @@ function LeadForm({ ctaText, ctaColor, onSuccess }: {
   onSuccess: (data: FormData & Record<string, unknown>) => void
 }) {
   const [form, setForm] = useState<FormData>({ name: '', email: '', phone: '' })
+  const [consent, setConsent] = useState(false)   // KHÔNG tick sẵn: đồng ý phải do khách tự chọn
   const [step, setStep] = useState<Step>('idle')
   const [error, setError] = useState('')
   const endpoint = ctaColor === 'red' ? '/api/course-form' : '/api/gift-form'
@@ -72,11 +74,12 @@ function LeadForm({ ctaText, ctaColor, onSuccess }: {
     if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) { setError('Vui lòng điền đầy đủ 3 thông tin'); return }
     setStep('loading')
     try {
-      // Lấy mã khuyến mãi từ URL (?promo=239) khi đăng ký khóa học
-      const promo = typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search).get('promo')
-        : null
-      const payload = ctaColor === 'red' && promo ? { ...form, promo } : form
+      // Link khuyến mãi từ Email 5 có dạng ?promo=239&x=<hạn>&t=<chữ ký>: gửi nguyên cho máy chủ kiểm tra — giá do máy chủ quyết
+      const q = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
+      const ref = q.get('ref') || undefined
+      const payload = ctaColor === 'red'
+        ? { ...form, promo: q.get('promo') || undefined, x: q.get('x') || undefined, t: q.get('t') || undefined, ref }
+        : { ...form, consent, ref }
       const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Lỗi')
@@ -96,6 +99,12 @@ function LeadForm({ ctaText, ctaColor, onSuccess }: {
           className="w-full border-2 border-gray-200 rounded-xl px-4 py-3.5 text-base focus:border-[#2E7D32] focus:outline-none transition-colors placeholder-gray-400 bg-white"
         />
       ))}
+      {ctaColor === 'green' && (
+        <label className="flex items-start gap-2 text-left text-sm text-gray-600">
+          <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-1 h-4 w-4 accent-[#2E7D32]" />
+          <span>{GIFT_CONSENT_TEXT} <span className="text-gray-400">(Không tick vẫn nhận quà.)</span></span>
+        </label>
+      )}
       {error && <p className="text-red-500 text-sm text-center bg-red-50 rounded-lg py-2 px-3">{error}</p>}
       <button type="submit" disabled={step === 'loading'}
         className={`w-full py-4 rounded-xl font-bold text-white text-lg transition-all active:scale-95 disabled:opacity-60 shadow-lg ${

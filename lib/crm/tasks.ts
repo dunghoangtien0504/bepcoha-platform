@@ -39,6 +39,15 @@ async function assignRoundRobin(sql: Sql, keyPrefix: string) {
   `
 }
 
+/** "Khách lớn" (Cô Hạ chốt 27/10/2026): mua từ 3 lần trở lên VÀ chi trên 3 triệu trong 12 tháng gần nhất. Dùng với bí danh c. */
+export const VIP_MIN_ORDERS = 3
+export const VIP_MIN_SPENT_12M = 3_000_000
+export const VIP_CALLS_PER_SALE_PER_DAY = 5
+export function vipSql(sql: Sql) {
+  return sql`(c.order_count >= ${VIP_MIN_ORDERS} AND (SELECT COALESCE(SUM(o.revenue), 0) FROM pancake_orders o
+    WHERE o.customer_id = c.id AND o.counts_revenue AND o.inserted_at > NOW() - INTERVAL '365 days') > ${VIP_MIN_SPENT_12M})`
+}
+
 export interface GenerateLimits { perKind?: number; winbackPerDay?: number }
 
 /** Chạy mỗi sáng (cron 8h). Trả về số việc mới theo loại. Mỗi loại độc lập: 1 loại lỗi không chặn loại khác. */
@@ -98,21 +107,20 @@ export async function generateDailyTasks(limits: GenerateLimits = {}, sql: Sql =
     ORDER BY c.last_order_at DESC LIMIT ${per}
     ON CONFLICT (auto_key) WHERE auto_key IS NOT NULL DO NOTHING`)
 
-  // ④ Khách lớn: top 5% chi tiêu 12 tháng, còn mua trong 180 ngày → gọi điện mời khoá offline/combo sỉ (mỗi quý 1 lần)
+  // ④ Khách lớn (Cô Hạ chốt 27/10): mua từ 3 lần VÀ chi trên 3 triệu trong 12 tháng → gọi mời khoá offline/combo sỉ (mỗi quý 1 lần).
+  //    Mức 2, không "Gấp". Việc được rải dần tối đa 5 khách/sale/ngày bằng scheduleVipBacklog().
   await run('goi_vip', () => sql`
-    WITH p AS (
-      SELECT percentile_cont(0.95) WITHIN GROUP (ORDER BY total_spent) AS p95
-      FROM customers WHERE last_order_at > NOW() - INTERVAL '365 days' AND total_spent > 0
-    )
     INSERT INTO crm_tasks (customer_id, title, kind, priority, due_at, assigned_staff_id, created_by, auto_key, source, suggestion, department)
-    SELECT c.id, 'Gọi khách lớn: ' || ${name}, 'goi_vip', 1, NOW() + INTERVAL '2 days', c.assigned_staff_id, 0,
+    SELECT c.id, 'Gọi khách lớn: ' || ${name}, 'goi_vip', 2, NOW() + INTERVAL '2 days', c.assigned_staff_id, 0,
            'vip:' || c.id || ':' || to_char(NOW(), 'YYYY"Q"Q'), 'tu_dong',
            CASE WHEN c.is_wholesale THEN 'Khách sỉ: mời combo sỉ theo bảng giá hiện hành.' ELSE 'Mời khoá offline (chốt bằng điện thoại).' END
-             || ' Tổng chi: ' || replace(to_char(c.total_spent, 'FM999,999,999'), ',', '.') || 'đ, ' || c.order_count || ' lần mua.',
+             || ' Chi 12 tháng: ' || replace(to_char(v.spent12, 'FM999,999,999'), ',', '.') || 'đ, ' || c.order_count || ' lần mua.',
            'sale_cskh'
-    FROM customers c, p
-    WHERE c.total_spent >= p.p95 AND c.last_order_at > NOW() - INTERVAL '180 days' AND ${ok}
-    ORDER BY c.total_spent DESC LIMIT ${per}
+    FROM customers c JOIN LATERAL (
+      SELECT COALESCE(SUM(o.revenue), 0) AS spent12 FROM pancake_orders o
+      WHERE o.customer_id = c.id AND o.counts_revenue AND o.inserted_at > NOW() - INTERVAL '365 days') v ON TRUE
+    WHERE ${vipSql(sql)} AND ${ok}
+    ORDER BY v.spent12 DESC LIMIT ${per}
     ON CONFLICT (auto_key) WHERE auto_key IS NOT NULL DO NOTHING`)
 
   // ⑤ Đánh thức: đã mua, > 120 ngày chưa quay lại (tệp ngủ đông / khách Tết). Giới hạn mỗi ngày, ưu tiên chi tiêu cao.
@@ -193,3 +201,49 @@ export function isTaskResult(v: unknown): v is TaskResult { return typeof v === 
 export function isTaskKind(v: unknown): v is TaskKind { return typeof v === 'string' && v in TASK_KINDS }
 
 export { PRODUCT_LINES }
+
+/**
+ * Việc máy tự sinh quá hạn N ngày mà chưa ai làm → đóng "bỏ qua", ghi lý do, để danh sách không dồn ứ (phản biện CEO/COO 27/10).
+ * CHỈ chạy khi quản trị bật app_settings 'task_auto_expire_days' (đóng hàng loạt là quyết định của CEO). Không đụng việc người giao tay.
+ */
+export async function expireStaleAutoTasks(sql: Sql = getDb()): Promise<number | null> {
+  const r = (await sql`SELECT value FROM app_settings WHERE key = 'task_auto_expire_days'`)[0]
+  const days = Number(r?.value)
+  if (!Number.isInteger(days) || days < 1) return null
+  // Giữ lại việc gọi khách lớn đúng định nghĩa (rải dần bằng scheduleVipBacklog), không cho hết hạn
+  const rows = await sql`
+    UPDATE crm_tasks t SET status = 'bo_qua', done_at = NOW(), edit_reason = ${'Hết hạn tự động (quá ' + days + ' ngày chưa làm)'}
+    WHERE t.status = 'can_lam' AND t.source = 'tu_dong' AND t.due_at < NOW() - make_interval(days => ${days})
+      AND NOT (t.kind = 'goi_vip' AND EXISTS (SELECT 1 FROM customers c WHERE c.id = t.customer_id AND ${vipSql(sql)}))
+    RETURNING t.id`
+  return rows.length
+}
+
+/**
+ * Rải dần việc gọi khách lớn còn mở: chia đều cho Sale đang làm (giữ người đã được giao nếu là Sale),
+ * mỗi người tối đa 5 khách/ngày — khách chi nhiều gọi trước. Đặt lại hạn từng ngày nên "Hôm nay" chỉ hiện 5 việc.
+ */
+export async function scheduleVipBacklog(sql: Sql = getDb()): Promise<number> {
+  const staff = await saleStaff(sql)
+  if (!staff.length) return 0
+  const rows = await sql`
+    WITH v AS (
+      SELECT t.id, t.assigned_staff_id,
+        (SELECT COALESCE(SUM(o.revenue), 0) FROM pancake_orders o WHERE o.customer_id = t.customer_id AND o.counts_revenue
+           AND o.inserted_at > NOW() - INTERVAL '365 days') AS spent12
+      FROM crm_tasks t JOIN customers c ON c.id = t.customer_id
+      WHERE t.kind = 'goi_vip' AND t.status = 'can_lam' AND ${vipSql(sql)}
+    ), a AS (
+      SELECT v.id, v.spent12,
+        CASE WHEN v.assigned_staff_id = ANY(${staff}::int[]) THEN v.assigned_staff_id
+             ELSE (${staff}::int[])[((ROW_NUMBER() OVER (ORDER BY v.spent12 DESC, v.id) - 1) % ${staff.length}) + 1] END AS who
+      FROM v
+    ), r AS (
+      SELECT a.id, a.who, (ROW_NUMBER() OVER (PARTITION BY a.who ORDER BY a.spent12 DESC, a.id) - 1) / ${VIP_CALLS_PER_SALE_PER_DAY} AS day_no FROM a
+    )
+    UPDATE crm_tasks x SET assigned_staff_id = r.who,
+      due_at = (date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') + make_interval(days => r.day_no::int) + INTERVAL '17 hours') AT TIME ZONE 'Asia/Ho_Chi_Minh'
+    FROM r WHERE x.id = r.id
+    RETURNING x.id`
+  return rows.length
+}

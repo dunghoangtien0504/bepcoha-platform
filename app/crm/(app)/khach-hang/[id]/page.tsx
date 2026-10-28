@@ -8,6 +8,8 @@ import { LIFECYCLE, SEGMENT_LABEL, PLATFORM_LABEL, PRODUCT_LINES, TASK_KINDS, TA
 import { money, moneyShort, date, dateTime, num } from '@/lib/crm/format'
 import { PageHeader, Card, Badge, Table, Td, Forbidden } from '../../../_components/ui'
 import { CustomerEditor, ActivityForm, NewOpportunity } from './customer-client'
+import { getPancakeConversationUrl } from '@/lib/pancake'
+import type { ChatMessage } from '@/lib/crm/pancake-chat'
 
 export const metadata = { title: 'Hồ sơ khách' }
 
@@ -24,6 +26,9 @@ export default async function Customer360(props: PageProps<'/crm/khach-hang/[id]
   if (showPhone) await logAction({ actorId: user.id, action: 'VIEW_PII', table: 'customers', recordId: id }).catch(() => {})
   const staff = can(user, 'khach.sua') ? await getDb()`SELECT id, name FROM staff WHERE status = 'active' AND department IN ('sale_cskh', 'dao_tao', 'ban_giam_doc') ORDER BY name` : []
   const realOrders = d.orders.filter(o => o.is_real)
+  // Hội thoại inbox Pancake đã ghép với khách theo SĐT (đồng bộ mỗi giờ, chỉ đọc)
+  const chats = await getDb()`SELECT pancake_conversation_id, page_name, platform, last_message_preview, last_message_at, assignees, is_unread, messages
+                              FROM conversations WHERE customer_id = ${id} ORDER BY last_message_at DESC NULLS LAST LIMIT 5`
 
   return (
     <>
@@ -60,6 +65,40 @@ export default async function Customer360(props: PageProps<'/crm/khach-hang/[id]
                 </tr>
               ))}
             </Table>
+          </Card>
+          <Card title={`Hội thoại Pancake (${chats.length})`}>
+            {chats.length === 0 ? <p className="text-sm text-stone-500">Chưa thấy hội thoại inbox nào có SĐT của khách này (ghép theo SĐT khách để lại trong chat).</p> : (
+              <ul className="space-y-3">
+                {chats.map(v => {
+                  const msgs = ((v.messages as ChatMessage[]) ?? []).slice(-20)
+                  return (
+                    <li key={v.pancake_conversation_id} className="rounded-lg border border-stone-200 p-3">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-stone-500">
+                        <span className="font-medium text-stone-700">{v.page_name || 'Pancake'}</span>
+                        <span>· {dateTime(v.last_message_at)}</span>
+                        {(v.assignees as string[]).length > 0 && <span>· phụ trách: {(v.assignees as string[]).join(', ')}</span>}
+                        {v.is_unread && <Badge tone="red">Khách đang chờ trả lời</Badge>}
+                        <a href={getPancakeConversationUrl(v.pancake_conversation_id)} target="_blank" rel="noreferrer" className="ml-auto text-emerald-700 underline">Mở trên Pancake</a>
+                      </div>
+                      <p className="mt-1 text-sm text-stone-700">{v.last_message_preview}</p>
+                      {msgs.length > 0 && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-xs text-emerald-800">Xem {msgs.length} tin gần nhất</summary>
+                          <ul className="mt-2 space-y-1.5 text-sm">
+                            {msgs.map(m => (
+                              <li key={m.id} className={`max-w-[85%] rounded-lg px-3 py-1.5 ${m.fromCustomer ? 'bg-stone-100' : 'ml-auto bg-emerald-50'}`}>
+                                <div className="text-[11px] text-stone-500">{m.sender} · {m.at ? dateTime(m.at) : ''}</div>
+                                <div className="whitespace-pre-wrap">{m.text}</div>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
           </Card>
           <Card title="Dòng thời gian">
             <ActivityForm customerId={id} />

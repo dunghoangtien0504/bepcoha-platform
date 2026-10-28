@@ -48,3 +48,6 @@ vbsec-reports/
 
 # Database phát triển trên máy
 /.devdb/
+
+# Bản sao lưu database (không đưa lên git, không đồng bộ iCloud)
+backups.nosync/

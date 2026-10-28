@@ -21,7 +21,7 @@ export function ensureCrmSchema(): Promise<void> {
 }
 
 // Đổi số này khi sửa DDL bên dưới để mọi instance chạy lại.
-export const CRM_SCHEMA_VERSION = 14
+export const CRM_SCHEMA_VERSION = 17
 
 async function runCrmSchema() {
   const sql = getDb()
@@ -705,4 +705,37 @@ async function crmSchemaBody(sql: Sql) {
   await sql`CREATE INDEX IF NOT EXISTS ai_actions_status_idx ON ai_actions (status, created_at DESC)`
   await sql`CREATE INDEX IF NOT EXISTS ai_actions_agent_idx ON ai_actions (agent_code, created_at DESC)`
   await sql`CREATE INDEX IF NOT EXISTS ai_actions_customer_idx ON ai_actions (customer_id) WHERE customer_id IS NOT NULL`
+
+  // ── v15: Kho việc (Buổi 2 · Easymart): việc cha → việc con, gắn bộ phận / ca; vào ca là sinh việc của ca ──
+  await sql`ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS group_name TEXT NOT NULL DEFAULT ''`
+  await sql`ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS due_offset_min INT CHECK (due_offset_min IS NULL OR due_offset_min BETWEEN 0 AND 1440)`
+  await sql`ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS sort INT NOT NULL DEFAULT 0`
+  await sql`ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'tay'`
+  await sql`ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS updated_by INT REFERENCES staff(id)`
+  await sql`ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
+  await dropCheck(sql, 'task_templates', 'source')
+  await sql`ALTER TABLE task_templates ADD CONSTRAINT task_templates_source_check CHECK (source IN ('tay', 'de_xuat'))`
+  // Kho việc đề xuất sẵn (TẮT): quản lý đọc, sửa, bật — "AI đề xuất kho việc, người duyệt một lượt" (B2 phần 12)
+  await sql`
+    INSERT INTO task_templates (department, group_name, title, checklist, repeat, due_offset_min, sort, active, source) VALUES
+      ('bep', 'Mở ca bếp', 'Kiểm nhiệt độ tủ mát, tủ đông và ghi sổ', '[{"text":"Tủ mát 0–5°C","done":false},{"text":"Tủ đông ≤ −18°C","done":false},{"text":"Ghi vào sổ nhiệt độ","done":false}]', 'moi_ca', 30, 1, FALSE, 'de_xuat'),
+      ('bep', 'Mở ca bếp', 'Vệ sinh khu sơ chế trước khi làm', '[{"text":"Lau bàn, dao thớt","done":false},{"text":"Đủ găng tay, mũ, tạp dề","done":false}]', 'moi_ca', 30, 2, FALSE, 'de_xuat'),
+      ('bep', 'Sản xuất', 'Làm theo phiếu sản xuất trong ngày', '[{"text":"Đối chiếu số lượng với đơn chờ giao","done":false},{"text":"Ghi số lô và hạn dùng lên nhãn","done":false}]', 'hang_ngay', NULL, 3, FALSE, 'de_xuat'),
+      ('bep', 'Đóng ca bếp', 'Vệ sinh cuối ca, khoá gas', '[{"text":"Rửa dụng cụ, lau sàn","done":false},{"text":"Đổ rác","done":false},{"text":"Khoá gas, tắt điện","done":false}]', 'moi_ca', NULL, 4, FALSE, 'de_xuat'),
+      ('kho_van', 'Đóng gói đơn', 'In phiếu và soạn đơn Pancake trong ngày', '[{"text":"In phiếu đơn đã xác nhận","done":false},{"text":"Đóng gói đủ món, kèm thẻ QR Mini App","done":false},{"text":"Chụp ảnh gói hàng đơn từ 500.000đ","done":false}]', 'hang_ngay', 180, 1, FALSE, 'de_xuat'),
+      ('kho_van', 'Kiểm kho', 'Kiểm tồn sốt và nguyên liệu cuối ngày', '[{"text":"Đếm hũ sốt theo loại","done":false},{"text":"Báo quản lý món sắp hết","done":false}]', 'hang_ngay', NULL, 2, FALSE, 'de_xuat'),
+      ('sale_cskh', 'Đầu ca', 'Trả lời hết tin nhắn tồn từ tối qua', '[{"text":"Fanpage / Pancake","done":false},{"text":"Zalo CRM","done":false}]', 'moi_ca', 60, 1, FALSE, 'de_xuat'),
+      ('sale_cskh', 'Chăm khách', 'Làm hết việc chăm khách máy giao hôm nay', '[]', 'hang_ngay', NULL, 2, FALSE, 'de_xuat'),
+      ('sale_cskh', 'Cuối ca', 'Ghi phàn nàn của khách vào hồ sơ khách', '[{"text":"Ghi rõ món, vấn đề, cách đã xử lý","done":false}]', 'moi_ca', NULL, 3, FALSE, 'de_xuat')
+    ON CONFLICT (department, title) DO NOTHING`
+  await sql`CREATE INDEX IF NOT EXISTS crm_tasks_staff_due_idx ON crm_tasks (assigned_staff_id, due_at) WHERE status IN ('can_lam', 'dang_lam')`
+
+  // ── v16: Cô Hạ đồng ý (27/10/2026) bật tự đóng việc máy sinh quá hạn 3 ngày; việc gọi khách lớn được giữ lại và rải dần.
+  //    Chỉ đặt khi chưa có, để quản trị chỉnh sau này không bị ghi đè.
+  await sql`INSERT INTO app_settings (key, value) VALUES ('task_auto_expire_days', '3') ON CONFLICT (key) DO NOTHING`
+
+  // ── v17: hội thoại Pancake (inbox) gắn với khách CRM theo SĐT — kết nối học theo Chat Quality Agent ──
+  await sql`ALTER TABLE conversations ADD COLUMN IF NOT EXISTS customer_id INT REFERENCES customers(id)`
+  await sql`CREATE INDEX IF NOT EXISTS conversations_customer_idx ON conversations (customer_id, last_message_at DESC) WHERE customer_id IS NOT NULL`
+  await sql`CREATE INDEX IF NOT EXISTS conversations_waiting_idx ON conversations (last_message_at) WHERE is_unread`
 }

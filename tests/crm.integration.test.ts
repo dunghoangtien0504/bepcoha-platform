@@ -319,3 +319,140 @@ test('Trung tâm AI: L0/L1/L2, dừng khẩn cấp chặn mọi việc, mô ph�
   assert.deepEqual(await ai.autoDowngrade(sql), ['tro_ly_ceo'])
   assert.equal((await sql`SELECT level FROM ai_agents WHERE code = 'tro_ly_ceo'`)[0].level, 'L1')
 })
+
+test('Kho việc → vào ca là có việc: chỉ việc đang bật của đúng bộ phận/ca, không sinh trùng; Hôm nay và hộp duyệt đếm đúng', { skip }, async () => {
+  const kv = await import('../lib/crm/kho-viec')
+  const duyet = await import('../lib/crm/duyet')
+  const { permissionsFor } = await import('../lib/crm/permissions')
+  const boss = (await sql`INSERT INTO staff (name, email, password_hash, role, department) VALUES ('QL bếp', 'qlbep@haco.test', 'x', 'quan_ly', 'bep') RETURNING id`)[0].id
+  const cook = (await sql`INSERT INTO staff (name, email, password_hash, role, department) VALUES ('Bếp A', 'bepa@haco.test', 'x', 'staff', 'bep') RETURNING id`)[0].id
+  const tpl = (await sql`INSERT INTO shift_templates (code, name, start_time, end_time) VALUES ('KV-S', 'Ca sáng KV', '06:00', '14:00') RETURNING id`)[0].id
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+  const asg = (await sql`INSERT INTO shift_assignments (staff_id, work_date, template_id) VALUES (${cook}, ${today}, ${tpl}) RETURNING id`)[0].id
+
+  // việc đề xuất sẵn đang TẮT → chưa sinh gì
+  assert.equal(await kv.generateShiftTasks(cook, asg), 0)
+  // quản lý duyệt & bật 2 việc đề xuất, thêm 1 việc riêng cho ca khác
+  const props = await sql`SELECT id FROM task_templates WHERE department = 'bep' AND source = 'de_xuat' ORDER BY sort LIMIT 2`
+  for (const p of props) await kv.setTemplateActive(p.id, true, boss, '127.0.0.1')
+  await kv.saveTemplate(null, kv.parseTemplate({ department: 'bep', group_name: 'Ca chiều', title: 'Việc chỉ ca chiều', repeat: 'moi_ca', shift_code: 'KHAC' }), boss, '127.0.0.1')
+  await assert.rejects(Promise.resolve().then(() => kv.parseTemplate({ department: 'khong_co', title: 'x' })), /bộ phận/)
+
+  assert.equal(await kv.generateShiftTasks(cook, asg), 2, 'chỉ 2 việc đang bật của bộ phận bếp, bỏ việc của ca khác')
+  assert.equal(await kv.generateShiftTasks(cook, asg), 0, 'chấm vào ca lần 2 không sinh trùng')
+  const tasks = await sql`SELECT checklist, due_at, source FROM crm_tasks WHERE assigned_staff_id = ${cook} ORDER BY id`
+  assert.equal(tasks.length, 2)
+  assert.ok(tasks.every((t: { source: string }) => t.source === 'kho_viec'))
+  assert.ok(tasks[0].checklist.length >= 2, 'việc mang theo danh sách cần làm từ kho')
+
+  const board = await kv.todayBoard(cook)
+  assert.equal(board.total, 2); assert.equal(board.open, 2); assert.equal(board.done, 0)
+
+  // nhân viên làm xong 1 việc → quản lý thấy 1 việc chờ duyệt
+  const first = (await sql`SELECT id FROM crm_tasks WHERE assigned_staff_id = ${cook} ORDER BY id LIMIT 1`)[0].id
+  await sql`UPDATE crm_tasks SET status = 'xong', done_at = NOW(), result = 'da_xong' WHERE id = ${first}`
+  assert.equal((await kv.todayBoard(cook)).done, 1)
+  const qlUser = { id: boss, name: 'QL bếp', email: 'qlbep@haco.test', role: 'quan_ly' as const, department: 'bep' as const, title: '', permissions: permissionsFor('quan_ly', 'bep') }
+  const c = await duyet.approvalCounts(qlUser)
+  assert.ok(c.tasks >= 1, 'việc đã xong của bếp nằm trong hộp duyệt của quản lý bếp')
+  assert.equal(duyet.canApproveAnything({ ...qlUser, role: 'staff', permissions: permissionsFor('staff', 'bep') }), false, 'nhân viên bếp không có mục Cần duyệt')
+})
+
+test('sau phản biện: trần 15 việc chăm khách trên Hôm nay, hết hạn tự động chỉ chạy khi bật, máy chấm chỉ đăng ký khi hợp lệ, tin AI không đổ về người duyệt', { skip }, async () => {
+  const kv = await import('../lib/crm/kho-viec')
+  const tasksLib = await import('../lib/crm/tasks')
+  const ai = await import('../lib/crm/ai')
+  const sale = (await sql`INSERT INTO staff (name, email, password_hash, role, department) VALUES ('Sale X', 'salex@haco.test', 'x', 'staff', 'sale_cskh') RETURNING id`)[0].id
+  const boss = (await sql`INSERT INTO staff (name, email, password_hash, role, department) VALUES ('Bếp trưởng X', 'bepx@haco.test', 'x', 'quan_ly', 'bep') RETURNING id`)[0].id
+  const cust = (await sql`INSERT INTO customers (phone, name, source, order_count, total_spent, phone_verified_at) VALUES ('0977345001', 'Khách X', 'pancake', 1, 100000, NOW()) RETURNING id`)[0].id
+  for (let i = 0; i < 20; i++) {
+    await sql`INSERT INTO crm_tasks (customer_id, title, kind, priority, due_at, assigned_staff_id, created_by, source)
+              VALUES (${cust}, ${'Đánh thức ' + i}, 'danh_thuc', 2, NOW() - INTERVAL '10 days', ${sale}, 0, 'tu_dong')`
+  }
+  await sql`INSERT INTO crm_tasks (customer_id, title, kind, priority, due_at, assigned_staff_id, created_by, source)
+            VALUES (${cust}, 'Hỏi thăm sau giao', 'sau_giao', 1, NOW(), ${sale}, 0, 'tu_dong')`
+  const b = await kv.todayBoard(sale)
+  assert.equal(b.care.length, 15, 'chỉ hiện 15 việc chăm khách')
+  assert.equal(b.care[0].kind, 'sau_giao', 'việc sau giao lên đầu')
+  assert.equal(b.careOpen, 21); assert.equal(b.hiddenCare, 6)
+
+  // hết hạn tự động: tắt (không có cài đặt) → không đóng gì; bật 3 ngày → đóng 20 việc quá hạn, có lý do
+  assert.equal((await sql`SELECT value FROM app_settings WHERE key = 'task_auto_expire_days'`)[0]?.value, 3, 'schema v16 bật mặc định 3 ngày')
+  await sql`DELETE FROM app_settings WHERE key = 'task_auto_expire_days'`
+  assert.equal(await tasksLib.expireStaleAutoTasks(sql), null)
+  await sql`INSERT INTO app_settings (key, value) VALUES ('task_auto_expire_days', '3') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`
+  assert.ok((await tasksLib.expireStaleAutoTasks(sql))! >= 20)
+  assert.match((await sql`SELECT edit_reason FROM crm_tasks WHERE assigned_staff_id = ${sale} AND kind = 'danh_thuc' LIMIT 1`)[0].edit_reason, /Hết hạn tự động/)
+  assert.equal((await sql`SELECT status FROM crm_tasks WHERE assigned_staff_id = ${sale} AND kind = 'sau_giao'`)[0].status, 'can_lam')
+  await sql`DELETE FROM app_settings WHERE key = 'task_auto_expire_days'`
+
+  // máy chấm công: lượt đầu không có vị trí → không đăng ký máy
+  await sql`INSERT INTO work_sites (name, lat, lng, radius_m) SELECT 'Bếp test 2', 21.0285, 105.8542, 100 WHERE NOT EXISTS (SELECT 1 FROM work_sites WHERE active)`
+  await att.punch(sale, { kind: 'vao', lat: null, lng: null, accuracy: null, deviceId: 'may-nha' })
+  assert.equal((await sql`SELECT registered_device FROM staff WHERE id = ${sale}`)[0].registered_device, null)
+
+  // tin AI đã duyệt: khách chưa có người phụ trách → giao cho Sale, không giao cho bếp trưởng duyệt
+  await ai.updateAgent('giu_chan', { enabled: true }, boss, '127.0.0.1')
+  const a = (await ai.propose({ agent: 'giu_chan', kind: 'gui_tin', customerId: cust, title: 'Mời mua lại X', body: 'Chào chị' }))!
+  const done = await ai.approveAction(a.id, boss, {})
+  const owner = (await sql`SELECT s.department FROM crm_tasks t JOIN staff s ON s.id = t.assigned_staff_id WHERE t.id = ${done.result.task_id}`)[0]
+  assert.equal(owner.department, 'sale_cskh')
+})
+
+test('khách lớn (≥3 lần, >3tr/12 tháng): việc gọi được giữ khi tự đóng việc quá hạn, rải 5 khách/sale/ngày', { skip }, async () => {
+  const tasksLib = await import('../lib/crm/tasks')
+  const sales = await sql`SELECT id FROM staff WHERE status = 'active' AND department = 'sale_cskh' ORDER BY id`
+  assert.ok(sales.length >= 1)
+  const mk = async (i: number, orders: number, spent: number) => {
+    const c = (await sql`INSERT INTO customers (phone, name, source, order_count, total_spent, phone_verified_at)
+                         VALUES (${'09775600' + String(i).padStart(2, '0')}, ${'VIP ' + i}, 'pancake', ${orders}, ${spent}, NOW()) RETURNING id`)[0].id
+    await sql`INSERT INTO pancake_orders (pos_order_id, customer_id, inserted_at, status, total, revenue, counts_revenue, is_real, is_closed, items, platform)
+              VALUES (${'VIPT-' + i}, ${c}, NOW() - INTERVAL '20 days', 3, ${spent}, ${spent}, TRUE, TRUE, TRUE, '[]', 'facebook')`
+    await sql`INSERT INTO crm_tasks (customer_id, title, kind, priority, due_at, created_by, source)
+              VALUES (${c}, ${'Gọi khách lớn ' + i}, 'goi_vip', 2, NOW() - INTERVAL '10 days', 0, 'tu_dong')`
+    return c
+  }
+  const vips: number[] = []
+  for (let i = 0; i < 12; i++) vips.push(await mk(i, 3, 3_500_000 + i * 1000))
+  const notVip = await mk(50, 2, 9_000_000)
+  const small = await mk(51, 5, 2_000_000)
+
+  const n = await tasksLib.scheduleVipBacklog(sql)
+  assert.ok(n >= 12)
+  const perDay = await sql`SELECT assigned_staff_id, (due_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS d, COUNT(*)::int AS n
+                           FROM crm_tasks WHERE kind = 'goi_vip' AND customer_id = ANY(${vips}) GROUP BY 1, 2`
+  assert.ok(perDay.every((r: { n: number }) => r.n <= 5), 'không ai quá 5 khách lớn một ngày')
+  assert.ok(perDay.every((r: { assigned_staff_id: number }) => sales.some((s: { id: number }) => s.id === r.assigned_staff_id)), 'giao cho Sale')
+
+  await sql`INSERT INTO app_settings (key, value) VALUES ('task_auto_expire_days', '3') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`
+  await sql`UPDATE crm_tasks SET due_at = NOW() - INTERVAL '10 days' WHERE kind = 'goi_vip' AND customer_id = ANY(${[...vips, notVip, small]})`
+  await tasksLib.expireStaleAutoTasks(sql)
+  const st = async (c: number) => (await sql`SELECT status FROM crm_tasks WHERE kind = 'goi_vip' AND customer_id = ${c}`)[0].status
+  assert.equal(await st(vips[0]), 'can_lam', 'khách lớn được giữ')
+  assert.equal(await st(notVip), 'bo_qua', 'mua 2 lần không phải khách lớn → đóng')
+  assert.equal(await st(small), 'bo_qua', 'chi dưới 3 triệu → đóng')
+})
+
+test('đồng bộ inbox Pancake: ghép khách theo SĐT có sẵn (không tạo khách mới), lưu tin cho hội thoại đã ghép, khách chờ trả lời', { skip }, async () => {
+  const chat = await import('../lib/crm/pancake-chat')
+  const cust = (await sql`INSERT INTO customers (phone, name, source, phone_verified_at) VALUES ('0977888111', 'Chị Chat', 'pancake', NOW()) RETURNING id`)[0].id
+  const before = (await sql`SELECT COUNT(*)::int AS n FROM customers`)[0].n
+  const now = new Date().toISOString()
+  const fake = (async (u: string) => {
+    if (u.includes('/messages')) return new Response(JSON.stringify({ messages: new globalThis.URL(u).searchParams.get('current_count') ? [] : [{ id: 'mm1', message: 'Còn sốt xá xíu không ạ', from: { id: 'psid1', name: 'Chị Chat' }, inserted_at: now }] }))
+    return new Response(JSON.stringify({ conversations: [
+      { id: 'cv-1', type: 'INBOX', updated_at: now, customers: [{ id: 'psid1', name: 'Chị Chat' }], recent_phone_numbers: ['0977888111'], last_sent_by: { id: 'psid1' } },
+      { id: 'cv-2', type: 'INBOX', updated_at: now, customers: [{ id: 'psid2', name: 'Người lạ' }], recent_phone_numbers: ['0911222333'], last_sent_by: { id: '999', admin_id: 'a' } },
+    ] }))
+  }) as unknown as typeof fetch
+  const r = await chat.syncPancakeChats({ pages: [{ pageId: '999', token: 't', name: 'Page test' }], fetchImpl: fake }, sql)
+  assert.equal(r.errors.length, 0, r.errors.join('; '))
+  assert.equal(r.conversations, 2)
+  assert.equal((await sql`SELECT COUNT(*)::int AS n FROM customers`)[0].n, before, 'không tạo khách mới từ chat')
+  const v1 = (await sql`SELECT customer_id, is_unread, messages FROM conversations WHERE pancake_conversation_id = 'cv-1'`)[0]
+  assert.equal(v1.customer_id, cust); assert.equal(v1.is_unread, true); assert.equal(v1.messages[0].text, 'Còn sốt xá xíu không ạ')
+  assert.equal((await sql`SELECT customer_id FROM conversations WHERE pancake_conversation_id = 'cv-2'`)[0].customer_id, null)
+  const w = await chat.waitingChats(10, sql)
+  assert.ok(w.rows.some(x => x.pancake_conversation_id === 'cv-1'))
+  assert.ok(!w.rows.some(x => x.pancake_conversation_id === 'cv-2'), 'page đã trả lời thì không còn chờ')
+})

@@ -216,12 +216,17 @@ async function execute(a: ActionRow, staffId: number | null, t: Sql): Promise<Re
     case 'gui_tin':
     case 'tao_viec': {
       // CRM HACO chưa tự gửi Zalo: tin đã duyệt thành việc cho người phụ trách khách gửi tay (giữ đúng L1).
+      // Khách chưa có người phụ trách → giao Sale đang ít việc nhất hôm nay (không đổ về người duyệt).
       const kind = a.kind === 'gui_tin' ? 'ai_gui_tin' : String(a.payload.task_kind || 'khac')
       const due = a.kind === 'gui_tin' ? null : (a.payload.due_hours ? Number(a.payload.due_hours) : 24)
       const task = (await t`
         INSERT INTO crm_tasks (customer_id, title, kind, priority, due_at, assigned_staff_id, created_by, source, suggestion, department, auto_key)
         SELECT ${a.customer_id}, ${a.title}, ${kind}, 2, NOW() + make_interval(hours => ${due ?? 4}),
-               COALESCE((SELECT assigned_staff_id FROM customers WHERE id = ${a.customer_id}), ${staffId}), ${staffId ?? 0}, 'ai',
+               COALESCE((SELECT assigned_staff_id FROM customers WHERE id = ${a.customer_id}),
+                        (SELECT s.id FROM staff s WHERE s.status = 'active' AND s.department = 'sale_cskh'
+                         ORDER BY (SELECT COUNT(*) FROM crm_tasks x WHERE x.assigned_staff_id = s.id AND x.status IN ('can_lam', 'dang_lam')
+                                   AND x.created_at > NOW() - INTERVAL '1 day'), s.id LIMIT 1),
+                        ${staffId}), ${staffId ?? 0}, 'ai',
                ${a.body}, 'sale_cskh', ${'ai:' + a.id}
         RETURNING id`)[0]
       return { task_id: task.id }

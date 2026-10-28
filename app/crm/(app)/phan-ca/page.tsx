@@ -14,7 +14,10 @@ export default async function SchedulePage(props: PageProps<'/crm/phan-ca'>) {
   const user = await pageUser()
   if (!can(user, 'cham_cong.phan_ca')) return <Forbidden />
   const sp = await props.searchParams
-  const mon = mondayOf(typeof sp.tuan === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(sp.tuan) ? sp.tuan : todayVN())
+  // Từ thứ Năm trở đi mặc định mở TUẦN SAU: quản lý xếp ca chiều Chủ nhật cho tuần tới (Buổi 2 · Easymart)
+  const wd = new Date(todayVN() + 'T00:00:00Z').getUTCDay()
+  const defaultDay = wd === 0 || wd >= 4 ? addDays(todayVN(), 7) : todayVN()
+  const mon = mondayOf(typeof sp.tuan === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(sp.tuan) ? sp.tuan : defaultDay)
   const days = Array.from({ length: 7 }, (_, i) => addDays(mon, i))
   const sql = getDb()
   const deptFilter = user.role === 'admin' ? null : user.department

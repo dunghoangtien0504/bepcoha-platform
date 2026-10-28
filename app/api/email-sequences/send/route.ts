@@ -7,6 +7,7 @@ import {
   sendGiftSequenceEmail4,
   sendGiftSequenceEmail5,
 } from '@/lib/email'
+import { checkApiKey } from '@/lib/internal-auth'
 
 // Hỗ trợ cả GET (cron-job.org) và POST
 export async function GET(req: NextRequest) {
@@ -18,12 +19,10 @@ export async function POST(req: NextRequest) {
 
 async function handleSequence(req: NextRequest) {
   try {
-    // API key protection
-    const apiKey = req.headers.get('x-api-key')
-    const expectedKey = process.env.EMAIL_SEQUENCE_API_KEY || 'hacofood_email_2026'
-    if (apiKey !== expectedKey) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // K3: không còn khoá dự phòng trong code — thiếu cấu hình thì từ chối (500), sai khoá thì 401
+    const auth = checkApiKey(req, 'EMAIL_SEQUENCE_API_KEY')
+    if (auth === 'misconfigured') return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+    if (auth !== 'ok') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     await initDb()
     const pendingLeads = await getGiftLeadsPendingEmails()
@@ -31,7 +30,7 @@ async function handleSequence(req: NextRequest) {
 
     for (const lead of pendingLeads) {
       try {
-        let emailFn: ((data: { name: string; email: string }) => Promise<any>) | null = null
+        let emailFn: ((data: { name: string; email: string }) => Promise<{ error?: { message: string } | null; skipped?: boolean } | null | undefined>) | null = null
         let nextStatus = ''
         let nextEmailAt: Date | undefined
 
@@ -70,7 +69,9 @@ async function handleSequence(req: NextRequest) {
 
         if (!emailFn) continue
 
-        await emailFn({ name: lead.name, email: lead.email })
+        const res = await emailFn({ name: lead.name, email: lead.email })
+        // Resend trả {error} = CHƯA gửi được: không tiến bước, lần chạy sau thử lại
+        if (res?.error) throw new Error(`Resend: ${res.error.message}`)
         await updateGiftLeadSequence(lead.id, nextStatus, nextEmailAt)
 
         results.push({ id: lead.id, email: lead.email, status: nextStatus, success: true })

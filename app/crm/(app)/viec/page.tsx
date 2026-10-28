@@ -16,8 +16,10 @@ export default async function TasksPage(props: PageProps<'/crm/viec'>) {
   const sql = getDb()
 
   let rows
-  if (tab === 'doi' && manager) rows = await listTasks({ status: 'mo', kind, department: user.role === 'admin' ? undefined : user.department ?? undefined, limit: 300 })
-  else if (tab === 'cho_duyet' && manager) rows = (await listTasks({ status: 'xong', kind, limit: 300 })).filter(r => !r.reviewed_at)
+  const allDepts = user.role === 'admin' || user.department === 'ban_giam_doc'
+  const dept = allDepts ? undefined : user.department ?? undefined
+  if (tab === 'doi' && manager) rows = await listTasks({ status: 'mo', kind, department: dept, limit: 300 })
+  else if (tab === 'cho_duyet' && manager) rows = (await listTasks({ status: 'xong', kind, department: dept, limit: 300 })).filter(r => !r.reviewed_at)
   else if (tab === 'xong') rows = await listTasks({ staffId: user.id, status: 'xong', kind, limit: 100 })
   else rows = await listTasks({ staffId: user.id, status: 'mo', kind })
 

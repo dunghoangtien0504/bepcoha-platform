@@ -29,8 +29,8 @@ export default function LoginPage() {
           <h1 className="mt-1 text-2xl font-semibold text-stone-900">HACO CRM</h1>
           <p className="mt-1 text-sm text-stone-500">Đăng nhập bằng tài khoản nhân viên</p>
         </div>
-        <label className={labelClass} htmlFor="email">Email</label>
-        <input id="email" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} className={inputClass} />
+        <label className={labelClass} htmlFor="email">Email hoặc tên đăng nhập</label>
+        <input id="email" type="text" autoComplete="username" autoCapitalize="none" required value={email} onChange={e => setEmail(e.target.value)} className={inputClass} />
         <label className={`${labelClass} mt-3`} htmlFor="pw">Mật khẩu</label>
         <input id="pw" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className={inputClass} />
         {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}

@@ -6,7 +6,7 @@ import { TASK_KINDS, TASK_RESULTS, type TaskKind } from '@/lib/crm/labels'
 import { dateTime, relative } from '@/lib/crm/format'
 
 interface Task {
-  id: number; title: string; kind: string; priority: number; status: string; due_at: string | null; done_at: string | null
+  id: number; title: string; kind: string; source?: string; priority: number; status: string; due_at: string | null; done_at: string | null
   suggestion: string; description: string; result: string | null; result_note: string; edit_reason: string; checklist: { text: string; done: boolean }[]
   customer_id: number | null; customer_name: string | null; customer_phone: string | null; phone_verified_at: unknown
   assigned_staff_id: number | null; assignee_name: string | null; reviewer_name: string | null; review_note: string; reviewed_at: unknown
@@ -22,6 +22,18 @@ export function TaskCard({ task, manager, staff, mine }: { task: Task; manager: 
   const [deviated, setDeviated] = useState(false)
   const [reason, setReason] = useState('')
   const [checklist, setChecklist] = useState(task.checklist || [])
+  const [callbackAt, setCallbackAt] = useState('')
+  const [copied, setCopied] = useState(false)
+  // Việc trong ca (kho việc / nội bộ): không có "kết quả với khách", xong là xong (phản biện CEO/COO 27/10)
+  const internal = task.source === 'kho_viec' || task.kind === 'noi_bo' || task.kind === 'duyet_don_tu'
+  const missing = checklist.filter(c => !c.done).length
+  const telHref = task.customer_phone && !task.customer_phone.includes('*') ? `tel:${task.customer_phone.replace(/[^\d+]/g, '')}` : null
+  async function toggle(i: number, done: boolean) {
+    const next = checklist.map((x, j) => j === i ? { ...x, done } : x)
+    setChecklist(next)
+    // Lưu ngay từng dấu tick (tải lại trang không mất)
+    if (mine) await api(`/api/crm/tasks/${task.id}`, 'PATCH', { action: 'checklist', checklist: next }).catch(() => setChecklist(checklist))
+  }
   const overdue = task.due_at && new Date(task.due_at) < new Date() && (task.status === 'can_lam' || task.status === 'dang_lam')
   const doneLike = task.status === 'xong' || task.status === 'bo_qua'
   const patch = (body: object, ok: string) => run(() => api(`/api/crm/tasks/${task.id}`, 'PATCH', body), ok)
@@ -40,18 +52,29 @@ export function TaskCard({ task, manager, staff, mine }: { task: Task; manager: 
       {task.customer_id && (
         <div className="mt-1 text-sm">
           <Link href={`/crm/khach-hang/${task.customer_id}`} className="text-emerald-700 hover:underline">{task.customer_name || `Khách #${task.customer_id}`}</Link>
-          {task.customer_phone && <span className="ml-2 tabular-nums text-stone-600">{task.customer_phone}</span>}
+          {task.customer_phone && (telHref
+            ? <a href={telHref} className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 tabular-nums text-emerald-800 ring-1 ring-emerald-200">☎ {task.customer_phone}</a>
+            : <span className="ml-2 tabular-nums text-stone-600">{task.customer_phone}</span>)}
           {!task.phone_verified_at && <span className="ml-2 rounded bg-amber-50 px-1.5 text-xs text-amber-800">SĐT chưa xác minh</span>}
         </div>
       )}
-      {task.suggestion && <p className="mt-2 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-700"><span className="font-medium">Gợi ý: </span>{task.suggestion}</p>}
+      {task.suggestion && (
+        <div className="mt-2 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-700">
+          <span className="font-medium">{task.kind === 'ai_gui_tin' ? 'Tin đã duyệt: ' : 'Gợi ý: '}</span><span className="whitespace-pre-wrap">{task.suggestion}</span>
+          {task.kind === 'ai_gui_tin' && (
+            <button type="button" className={`${btnClass('secondary', 'sm')} mt-2 block`}
+              onClick={() => navigator.clipboard?.writeText(task.suggestion).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })}>
+              {copied ? 'Đã chép ✓' : 'Chép tin để dán vào Zalo'}</button>
+          )}
+        </div>
+      )}
       {task.description && <p className="mt-2 text-sm text-stone-600">{task.description}</p>}
 
       {checklist.length > 0 && (
         <ul className="mt-2 space-y-1 text-sm">
           {checklist.map((c, i) => (
-            <li key={i}><label className="flex items-center gap-2">
-              <input type="checkbox" checked={c.done} disabled={doneLike} onChange={e => setChecklist(checklist.map((x, j) => j === i ? { ...x, done: e.target.checked } : x))} />
+            <li key={i}><label className="flex min-h-9 items-center gap-3">
+              <input type="checkbox" className="h-5 w-5 accent-emerald-700" checked={c.done} disabled={doneLike || pending} onChange={e => toggle(i, e.target.checked)} />
               <span className={c.done ? 'text-stone-400 line-through' : ''}>{c.text}</span></label></li>
           ))}
         </ul>
@@ -67,9 +90,18 @@ export function TaskCard({ task, manager, staff, mine }: { task: Task; manager: 
         </div>
       ) : (
         <div className="mt-3">
-          {!open ? (
+          {internal && mine ? (
+            <div className="space-y-2">
+              {missing > 0 && <input className={inputClass} value={reason} onChange={e => setReason(e.target.value)} placeholder={`Còn ${missing} mục chưa đánh dấu: ghi lý do nếu vẫn báo xong`} />}
+              <div className="flex flex-wrap gap-2">
+                <button disabled={pending || (missing > 0 && !reason.trim())} className={`${btnClass('primary')} min-w-28 py-2.5`}
+                  onClick={() => patch({ action: 'done', checklist, edit_reason: reason }, 'Đã xong')}>Xong</button>
+                <button disabled={pending} className={btnClass('ghost')} onClick={() => { const r = prompt('Không làm được việc này vì sao?'); if (r) patch({ action: 'skip', edit_reason: r }, 'Đã báo không làm') }}>Không làm được</button>
+              </div>
+            </div>
+          ) : !open ? (
             <div className="flex flex-wrap gap-2">
-              {(mine || manager) && <button className={btnClass('primary', 'sm')} onClick={() => { setOpen(true); if (task.status === 'can_lam') patch({ action: 'start' }, '') }}>Làm việc này</button>}
+              {(mine || manager) && <button className={`${btnClass('primary')} py-2.5`} onClick={() => { setOpen(true); if (task.status === 'can_lam') patch({ action: 'start' }, '') }}>Làm việc này</button>}
               {manager && staff.length > 0 && (
                 <select className="rounded-lg border border-stone-300 px-2 py-1 text-xs" defaultValue="" disabled={pending}
                   onChange={e => e.target.value && patch({ action: 'reassign', staff_id: Number(e.target.value) }, 'Đã giao lại')}>
@@ -87,6 +119,9 @@ export function TaskCard({ task, manager, staff, mine }: { task: Task; manager: 
                   {Object.entries(TASK_RESULTS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
                 {result === 'tu_choi' && <p className="mt-1 text-xs text-amber-700">Khách sẽ được đánh dấu “không liên hệ” ở mọi luồng. Chỉ quản trị gỡ được.</p>}
+                {result === 'hen_lai' && <div className="mt-2"><label className={labelClass}>Gọi lại lúc</label>
+                  <input type="datetime-local" className={inputClass} value={callbackAt} onChange={e => setCallbackAt(e.target.value)} />
+                  <p className="mt-1 text-xs text-stone-500">Máy tạo sẵn việc “Gọi lại” đúng giờ này cho bạn.</p></div>}
               </div>
               <div>
                 <label className={labelClass}>Ghi chú (khách nói gì)</label>
@@ -102,10 +137,11 @@ export function TaskCard({ task, manager, staff, mine }: { task: Task; manager: 
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
-                <button disabled={pending || !result} className={btnClass('primary', 'sm')}
-                  onClick={() => patch({ action: 'done', result, result_note: note, deviated, edit_reason: reason, checklist }, 'Đã ghi kết quả')}>Xong</button>
-                <button disabled={pending} className={btnClass('secondary', 'sm')} onClick={() => patch({ action: 'skip', edit_reason: reason, result_note: note }, 'Đã bỏ qua')}>Bỏ qua</button>
-                <button className={btnClass('ghost', 'sm')} onClick={() => setOpen(false)}>Đóng</button>
+                <button disabled={pending || !result || (result === 'hen_lai' && !callbackAt)} className={`${btnClass('primary')} min-w-24 py-2.5`}
+                  onClick={() => patch({ action: 'done', result, result_note: note, deviated, edit_reason: reason, checklist,
+                    callback_at: result === 'hen_lai' && callbackAt ? new Date(callbackAt).toISOString() : undefined }, result === 'hen_lai' ? 'Đã hẹn, việc gọi lại đã tạo' : 'Đã ghi kết quả')}>Xong</button>
+                <button disabled={pending} className={btnClass('secondary')} onClick={() => patch({ action: 'skip', edit_reason: reason, result_note: note }, 'Đã bỏ qua')}>Bỏ qua</button>
+                <button className={btnClass('ghost')} onClick={() => setOpen(false)}>Đóng</button>
               </div>
             </div>
           )}

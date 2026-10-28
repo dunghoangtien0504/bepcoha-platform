@@ -4,6 +4,7 @@
 import { getDb } from '../db'
 import { propose } from './ai'
 import { businessSummary, reportAsOf } from './reports'
+import { timesheet } from './attendance'
 import { contactableSql } from './tasks'
 import { PRODUCT_LINES, type ProductLine } from './labels'
 import { moneyShort, num, addDays } from './format'
@@ -17,16 +18,23 @@ export async function runTroLyCeo(sql: Sql = getDb()) {
   const { asOf, stale } = await reportAsOf(sql)
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
   const y = addDays(today, -1)
-  const [day, month, extra] = await Promise.all([
+  const [day, month, extra, sheet] = await Promise.all([
     businessSummary(y, y, sql),
     businessSummary(y.slice(0, 8) + '01', y, sql),
     sql`SELECT
           (SELECT COUNT(*)::int FROM crm_tasks WHERE status IN ('can_lam', 'dang_lam') AND due_at < NOW()) AS overdue,
           (SELECT COUNT(*)::int FROM ai_actions WHERE status IN ('cho_duyet', 'de_xuat')) AS waiting,
           (SELECT COUNT(*)::int FROM order_claims WHERE status = 'cho_duyet') AS claims,
-          (SELECT COUNT(*)::int FROM customers WHERE first_order_at >= ${y}::date AND first_order_at < ${today}::date) AS new_customers`,
+          (SELECT COUNT(*)::int FROM customers WHERE first_order_at >= ${y}::date AND first_order_at < ${today}::date) AS new_customers,
+          (SELECT COUNT(*)::int FROM crm_tasks WHERE status IN ('xong', 'bo_qua') AND reviewed_at IS NULL AND done_at < NOW() - INTERVAL '24 hours'
+             AND done_at > NOW() - INTERVAL '7 days' AND kind NOT IN ('duyet_don_tu', 'ghep_don') AND COALESCE(edit_reason, '') NOT LIKE 'Hết hạn tự động%') AS review_late,
+          (SELECT COUNT(*)::int FROM crm_tasks WHERE edit_reason LIKE 'Hết hạn tự động%' AND done_at >= ${y}::date) AS expired,
+          (SELECT MAX(finished_at) FROM sync_runs WHERE ok) AS last_sync`,
+    timesheet(y, y),
   ])
   const d = day.tong, m = month.tong, x = extra[0]
+  const late = sheet.filter(r => ['di_muon', 've_som', 'muon_som'].includes(r.day_status as string)).length
+  const absent = sheet.filter(r => ['vang', 'thieu_cham'].includes(r.day_status as string)).length
   const topChannel = [...day.kenh].sort((a, b) => b.doanh_thu - a.doanh_thu)[0]
   const lines = [
     `Bản tin ${y.slice(8)}/${y.slice(5, 7)}`,
@@ -34,8 +42,13 @@ export async function runTroLyCeo(sql: Sql = getDb()) {
     `• Từ đầu tháng ${moneyShort(m.doanh_thu)} · ${num(m.don_chot)} đơn chốt · hủy ${pc(m.ty_le_huy)} · hoàn ${pc(m.ty_le_hoan)}`,
     topChannel ? `• Kênh dẫn đầu hôm qua: ${topChannel.k} (${moneyShort(topChannel.doanh_thu)})` : '• Hôm qua chưa có đơn tính doanh thu',
     `• Khách mua lần đầu hôm qua: ${num(x.new_customers)}`,
-    `• Việc quá hạn: ${num(x.overdue)} · chờ duyệt AI: ${num(x.waiting)} · ghép đơn sàn chờ duyệt: ${num(x.claims)}`,
+    `• Chấm công hôm qua: ${num(late)} lượt đi muộn/về sớm · ${num(absent)} ca vắng hoặc thiếu chấm (trên ${num(sheet.length)} ca)`,
+    `• Việc quá hạn: ${num(x.overdue)} · chờ duyệt AI: ${num(x.waiting)} · ghép đơn sàn chờ duyệt: ${num(x.claims)} · việc chờ duyệt quá 24 giờ: ${num(x.review_late)}`,
   ]
+  if (x.expired) lines.push(`• ${num(x.expired)} việc tự sinh đã tự đóng vì quá hạn (xem nhật ký việc)`)
+  if (!x.last_sync || Date.now() - new Date(x.last_sync).getTime() > 3 * 3600_000) {
+    lines.push(`⚠ Đồng bộ Pancake chưa chạy hơn 3 giờ (lần cuối ${x.last_sync ? new Date(x.last_sync).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'chưa có'}): số đơn có thể thiếu.`)
+  }
   if (stale) lines.push(`⚠ Đơn mới nhất trong CRM là ${asOf.toLocaleDateString('vi-VN')}: số hôm qua có thể thiếu, kiểm tra đồng bộ Pancake.`)
   return propose({
     agent: 'tro_ly_ceo', kind: 'bao_cao', title: lines[0], body: lines.slice(1).join('\n'), dedupeKey: `brief:${y}`,

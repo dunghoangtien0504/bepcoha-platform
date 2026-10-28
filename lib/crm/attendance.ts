@@ -57,9 +57,10 @@ export async function punch(staffId: number, p: PunchInput, sql: Sql = getDb()):
       validity = 'khong_vi_tri'
     }
     // Thiết bị: lần đầu chấm công thì đăng ký máy này; về sau máy khác bị gắn cờ (quản lý có thể đặt lại thiết bị).
+    // Chỉ đăng ký máy khi lượt chấm đầu tiên HỢP LỆ (đúng vị trí): bấm thử ở nhà không biến máy đó thành máy chấm công.
     const device = (p.deviceId || '').slice(0, 100) || null
     if (device && !staff.registered_device) {
-      await t`UPDATE staff SET registered_device = ${device} WHERE id = ${staffId}`
+      if (validity === 'hop_le') await t`UPDATE staff SET registered_device = ${device} WHERE id = ${staffId}`
     } else if (validity === 'hop_le' && (!device || device !== staff.registered_device)) {
       validity = 'thiet_bi_la'
     }

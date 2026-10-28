@@ -88,16 +88,29 @@ const BY_DEPARTMENT: Record<Department, Permission[]> = {
   dao_tao: ['khach.xem', 'khach.xem_sdt', 'co_hoi.xem', 'co_hoi.sua'],
 }
 
-const MANAGER_EXTRA: Permission[] = ['viec.giao', 'cham_cong.phan_ca', 'cham_cong.duyet', 'bao_cao.xem', 'chien_dich.tao', 'ai.xem', 'ai.duyet']
+// Quản lý nào cũng giao/duyệt việc, xếp ca, duyệt đơn — nhưng chỉ trong bộ phận mình (kiểm ở API bằng managesDept).
+const MANAGER_EXTRA: Permission[] = ['viec.giao', 'cham_cong.phan_ca', 'cham_cong.duyet']
+// Quyền chạm khách, tiền, số kinh doanh chỉ cấp cho quản lý bộ phận cần (phản biện CEO/COO 27/10: bếp trưởng không duyệt tin gửi khách, không xem doanh thu)
+const MANAGER_BY_DEPARTMENT: Partial<Record<Department, Permission[]>> = {
+  sale_cskh: ['ai.xem', 'ai.duyet', 'bao_cao.xem', 'chien_dich.tao'],
+  marketing: ['ai.xem', 'ai.duyet', 'bao_cao.xem', 'chien_dich.tao'],
+  san_tmdt: ['bao_cao.xem'],
+}
 
 export function permissionsFor(role: Role, department: Department | null, extra: string[] = []): Permission[] {
   if (role === 'admin') return [...PERMISSIONS]
   const set = new Set<Permission>(BASE)
   for (const p of department ? BY_DEPARTMENT[department] : []) set.add(p)
-  if (role === 'quan_ly') for (const p of MANAGER_EXTRA) set.add(p)
+  if (role === 'quan_ly') for (const p of [...MANAGER_EXTRA, ...((department && MANAGER_BY_DEPARTMENT[department]) || [])]) set.add(p)
   for (const p of extra) if ((PERMISSIONS as readonly string[]).includes(p)) set.add(p as Permission)
   return [...set]
 }
 
 export function isRole(v: unknown): v is Role { return typeof v === 'string' && (ROLES as readonly string[]).includes(v) }
 export function isDepartment(v: unknown): v is Department { return typeof v === 'string' && (DEPARTMENTS as readonly string[]).includes(v) }
+
+/** Phạm vi quản lý: admin và ban giám đốc quản mọi bộ phận; quản lý chỉ quản bộ phận mình. */
+export function managesDept(user: { role: Role; department: Department | null }, department: string | null | undefined): boolean {
+  if (user.role === 'admin' || user.department === 'ban_giam_doc') return true
+  return !!department && department === user.department
+}

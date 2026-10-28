@@ -2,7 +2,9 @@ import { getDb } from '@/lib/db'
 import { pageUser, can } from '@/lib/crm/session'
 import { DEPARTMENT_LABEL, type Department } from '@/lib/crm/permissions'
 import { PRODUCT_LINES, type ProductLine } from '@/lib/crm/labels'
-import { money } from '@/lib/crm/format'
+import { money, dateTime } from '@/lib/crm/format'
+import { getPancakePages } from '@/lib/pancake'
+import { PancakeChatClient } from '@/lib/crm/pancake-chat'
 import { PageHeader, Card, Table, Td, Forbidden, Note } from '../../_components/ui'
 import { SiteForm, ShiftForm, TargetRow, ProductRow, VoucherForm, PointsForm } from './settings-client'
 
@@ -20,9 +22,25 @@ export default async function SettingsPage() {
     sql`SELECT value FROM app_settings WHERE key = 'mini_voucher'`,
     sql`SELECT value FROM app_settings WHERE key = 'mini_points'`,
   ])
+  // Kết nối inbox Pancake: page lấy từ biến môi trường, kiểm tra token bằng 1 lượt gọi đọc (không hiện token)
+  const pancakePages = await getPancakePages().catch(() => [])
+  const pancakeHealth = await Promise.all(pancakePages.map(async p => {
+    try { await new PancakeChatClient(p).healthCheck(); return { name: p.name, pageId: p.pageId, ok: true, error: '' } }
+    catch (e) { return { name: p.name, pageId: p.pageId, ok: false, error: e instanceof Error ? e.message : String(e) } }
+  }))
+  const chatStats = (await sql`SELECT COUNT(*)::int AS n, COUNT(customer_id)::int AS linked, MAX(updated_at) AS last FROM conversations WHERE page_id IS NOT NULL`)[0]
   return (
     <>
       <PageHeader title="Cài đặt" />
+      <Card title="Kết nối Pancake (inbox)" className="mb-4">
+        {pancakeHealth.length === 0 ? <p className="text-sm text-stone-500">Chưa có page nào. Thêm biến môi trường PANCAKE_PAGE_ID và PANCAKE_PAGE_TOKEN (hoặc _1, _2…) trên máy chủ.</p> : (
+          <ul className="space-y-1 text-sm">
+            {pancakeHealth.map(p => <li key={p.pageId}>{p.ok ? '✓' : '✗'} <b>{p.name}</b> <span className="text-stone-500">({p.pageId})</span> {p.ok ? <span className="text-emerald-700">kết nối tốt</span> : <span className="text-rose-600">{p.error}</span>}</li>)}
+          </ul>
+        )}
+        <p className="mt-2 text-sm text-stone-600">Đã đồng bộ {chatStats.n} hội thoại, ghép được {chatStats.linked} với khách theo SĐT. Lần cuối: {chatStats.last ? dateTime(chatStats.last) : 'chưa có'}.</p>
+        <p className="mt-2 text-xs text-stone-500">Lấy token: Pancake → mở page → Cài đặt → Công cụ → “Public API access token” → Sao chép (đã có token thì chỉ Sao chép, đừng bấm Tạo Token vì token cũ sẽ mất hiệu lực). Token đọc được mọi hội thoại và gửi tin thay page: chỉ đặt trong biến môi trường máy chủ, không dán vào chat. CRM chỉ đọc, không gửi tin.</p>
+      </Card>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Điểm làm việc (chấm công GPS)">
           {sites.map(s => <SiteForm key={s.id} site={{ id: s.id, name: s.name, address: s.address, lat: s.lat, lng: s.lng, radius_m: s.radius_m, allowed_ips: (s.allowed_ips as string[]).join(', ') }} />)}

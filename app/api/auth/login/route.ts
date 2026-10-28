@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initDb, getStaffByEmail, updateLastLogin } from '@/lib/db'
 import { verifyPassword, createToken } from '@/lib/auth'
+import { safeEqual } from '@/lib/internal-auth'
+import { rateLimit, getClientIp } from '@/lib/ratelimit'
 
 export async function POST(req: NextRequest) {
   try {
+    if (!rateLimit(`legacy-login:${getClientIp(req)}`, 10, 10 * 60 * 1000)) {
+      return NextResponse.json({ error: 'Thử đăng nhập quá nhiều lần, vui lòng đợi 10 phút' }, { status: 429 })
+    }
     const body = await req.json()
     const { email, password } = body
 
@@ -18,7 +23,7 @@ export async function POST(req: NextRequest) {
     // Cho phép bất kỳ email nào dùng ADMIN_PASSWORD để vào với quyền admin
     // Fail-closed: không có fallback mặc định — thiếu env thì bỏ qua nhánh admin
     const adminPassword = (process.env.ADMIN_PASSWORD || '').trim()
-    if (adminPassword && password.trim() === adminPassword) {
+    if (adminPassword && safeEqual(String(password).trim(), adminPassword)) {
       const token = await createToken({
         id: 0,
         email: email.toLowerCase().trim(),

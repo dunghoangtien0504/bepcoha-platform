@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { safeEqual } from './internal-auth'
 
 /**
  * Kiểm tra mật khẩu admin cho các API portal.
@@ -12,5 +13,12 @@ export function checkAdminAuth(req: NextRequest): boolean {
     return false
   }
   const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
-  return token.length > 0 && token === expected
+  return token.length > 0 && safeEqual(token, expected)
+}
+
+/** Chấp nhận mật khẩu admin (portal cũ) HOẶC JWT nhân viên (CRM mới). */
+export async function checkPortalAuth(req: NextRequest): Promise<boolean> {
+  if (checkAdminAuth(req)) return true
+  const { verifyAuthHeader } = await import('./auth')
+  return !!(await verifyAuthHeader(req.headers.get('authorization')))
 }

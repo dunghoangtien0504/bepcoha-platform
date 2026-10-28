@@ -159,3 +159,52 @@ test('agent Giữ chân: tên gọi an toàn, tin không nói công dụng, theo
   assert.doesNotMatch(m, /nhất|chữa|bệnh/)
   assert.match(repurchaseMessage(null, [], 40), /Từ lần mua trước tới nay đã khoảng 6 tuần/)
 })
+
+test('quyền quản lý theo bộ phận: bếp trưởng không duyệt AI / xem doanh thu; quản lý sale thì có; chỉ quản bộ phận mình', async () => {
+  const { permissionsFor, managesDept } = await import('../lib/crm/permissions')
+  const bep = permissionsFor('quan_ly', 'bep')
+  for (const p of ['viec.giao', 'cham_cong.phan_ca', 'cham_cong.duyet'] as const) assert.ok(bep.includes(p), p)
+  for (const p of ['ai.duyet', 'bao_cao.xem', 'chien_dich.tao', 'ai.xem'] as const) assert.ok(!bep.includes(p), p)
+  const sale = permissionsFor('quan_ly', 'sale_cskh')
+  for (const p of ['ai.duyet', 'bao_cao.xem', 'chien_dich.tao'] as const) assert.ok(sale.includes(p), p)
+  assert.equal(managesDept({ role: 'quan_ly', department: 'bep' }, 'bep'), true)
+  assert.equal(managesDept({ role: 'quan_ly', department: 'bep' }, 'sale_cskh'), false)
+  assert.equal(managesDept({ role: 'quan_ly', department: 'bep' }, null), false)
+  assert.equal(managesDept({ role: 'staff', department: 'ban_giam_doc' }, 'kho_van'), true)
+  assert.equal(managesDept({ role: 'admin', department: null }, 'kho_van'), true)
+})
+
+test('Pancake inbox: lật trang hội thoại, lỗi success:false, không lộ token, thử lại khi 429, đọc đúng người trả lời', async () => {
+  const { PancakeChatClient, parseConversation, parseMessage, PancakeChatError } = await import('../lib/crm/pancake-chat')
+  const page = { pageId: '111', token: 'TOKEN-BI-MAT', name: 'Bếp Cô Hạ' }
+  const urls: string[] = []
+  let calls429 = 0
+  const fake = (async (u: string) => {
+    urls.push(u)
+    if (u.includes('/tags')) return new Response(JSON.stringify({ success: false, message: 'Invalid access_token', error_code: 102 }))
+    if (u.includes('/messages')) {
+      if (calls429++ === 0) return new Response('', { status: 429 })
+      const cc = Number(new URL(u).searchParams.get('current_count') || 0)
+      const batch = cc === 0 ? [{ id: 'm3', message: 'mới' }, { id: 'm4', message: 'mới hơn' }] : cc === 2 ? [{ id: 'm1', message: 'cũ' }, { id: 'm2', message: 'cũ hơn' }] : []
+      return new Response(JSON.stringify({ messages: batch }))
+    }
+    const last = new URL(u).searchParams.get('last_conversation_id')
+    const list = last ? [{ id: 'c61', type: 'INBOX' }] : Array.from({ length: 60 }, (_, i) => ({ id: 'c' + i, type: 'INBOX' }))
+    return new Response(JSON.stringify({ conversations: list }))
+  }) as unknown as typeof fetch
+  const client = new PancakeChatClient(page, fake, 0, 1)
+  const convs = await client.conversationsSince(0)
+  assert.equal(convs.length, 61, 'lật sang trang 2 bằng last_conversation_id')
+  assert.ok(urls[0].includes('/public_api/v2/pages/111/conversations') && urls[0].includes('type=INBOX'))
+  const msgs = await client.messages('c1')
+  assert.deepEqual(msgs.map(m => m.id), ['m1', 'm2', 'm3', 'm4'], 'ghép lô cũ trước, mới sau; 429 thì thử lại')
+  await assert.rejects(client.healthCheck(), (e: Error) => e instanceof PancakeChatError && /Invalid access_token/.test(e.message) && !e.message.includes('TOKEN-BI-MAT'))
+
+  const row = parseConversation({ id: 'c9', type: 'INBOX', updated_at: '2026-10-27T03:00:00', customers: [{ id: 'psid', name: 'Chị Lan' }],
+    recent_phone_numbers: [{ phone_number: '+84 977 123 456' }], last_sent_by: { id: 'psid', name: 'Chị Lan' }, current_assign_users: [{ name: 'Hiền' }] }, '111')!
+  assert.equal(row.phone, '0977123456'); assert.equal(row.isUnread, true); assert.deepEqual(row.assignees, ['Hiền'])
+  assert.equal(parseConversation({ id: 'c10', type: 'COMMENT' }, '111'), null, 'bỏ bình luận')
+  assert.equal(parseConversation({ id: 'c11', type: 'INBOX', last_sent_by: { id: '111', admin_id: 'a1' } }, '111')!.isUnread, false, 'page đã trả lời')
+  const m = parseMessage({ id: 'x', message: '<div>Dạ em chào chị</div>', page_id: '111', from: { id: '111', admin_name: 'Thảo', name: 'Bếp Cô Hạ' } }, '111')
+  assert.equal(m.fromCustomer, false); assert.equal(m.sender, 'Thảo'); assert.equal(m.text.trim(), 'Dạ em chào chị')
+})
